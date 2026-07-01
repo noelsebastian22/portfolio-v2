@@ -88,6 +88,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <slot name="head" />
   </head>
   <body>
+    <div id="scroll-progress" aria-hidden="true"></div>
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <slot />
 
@@ -142,5 +143,57 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
         });
       })();
     </script>
+
+    <script is:inline>
+      // ── Scroll progress bar ────────────────────────────────────────────────
+      (function () {
+        var bar = document.getElementById('scroll-progress');
+        if (!bar) return;
+
+        function updateProgress() {
+          var scrollTop = window.scrollY;
+          var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+          var progress = docHeight > 0 ? scrollTop / docHeight : 0;
+          bar.style.transform = 'scaleX(' + Math.min(progress, 1) + ')';
+        }
+
+        window.addEventListener('scroll', function () {
+          requestAnimationFrame(updateProgress);
+        }, { passive: true });
+
+        updateProgress();
+      })();
+
+      // ── Hero parallax ──────────────────────────────────────────────────────
+      (function () {
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduce) return;
+
+        var panelInner = document.querySelector('.hero-panel-inner');
+        var textCol = document.querySelector('.hero-text-col');
+        var heroEl = document.querySelector('header');
+
+        if (!panelInner && !textCol) return;
+
+        function updateParallax() {
+          var scrollY = window.scrollY;
+          var heroHeight = heroEl ? heroEl.offsetHeight : 0;
+
+          if (scrollY >= heroHeight + 80) {
+            if (panelInner) panelInner.style.transform = '';
+            if (textCol) textCol.style.transform = '';
+            return;
+          }
+
+          if (panelInner) panelInner.style.transform = 'translateY(' + (-scrollY * 0.22) + 'px)';
+          if (textCol) textCol.style.transform = 'translateY(' + (-scrollY * 0.1) + 'px)';
+        }
+
+        window.addEventListener('scroll', function () {
+          requestAnimationFrame(updateParallax);
+        }, { passive: true });
+      })();
+    </script>
+
   </body>
 </html>

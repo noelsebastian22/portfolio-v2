@@ -5,10 +5,11 @@ import { stats } from '../data/content';
 <section class="border-b-2 border-t-2 border-ink bg-accent">
   <div class="stats-grid mx-auto grid max-w-[1200px] grid-cols-2 gap-6 px-10 py-11 sm:grid-cols-4">
     {stats.map((st) => (
-      <div data-reveal class="text-center">
+      <div data-reveal class="stats-stat text-center">
         <div
-          class="font-bricolage font-extrabold leading-none text-ink"
+          class="stat-number font-bricolage font-extrabold leading-none text-ink"
           style="font-size:clamp(40px,5.5vw,68px)"
+          data-counter={st.n}
         >
           {st.n}
         </div>
@@ -17,3 +18,45 @@ import { stats } from '../data/content';
     ))}
   </div>
 </section>
+
+<script is:inline>
+  (function () {
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+
+    function easeOutQuart(t) {
+      return 1 - Math.pow(1 - t, 4);
+    }
+
+    document.querySelectorAll('.stat-number[data-counter]').forEach(function (el) {
+      var raw = el.dataset.counter;
+      var match = raw.match(/^(\d+)(.*)/);
+      if (!match) return;
+
+      var target = parseInt(match[1], 10);
+      var suffix = match[2];
+      var duration = 1100;
+      var started = false;
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting || started) return;
+          started = true;
+          observer.disconnect();
+
+          var startTime = null;
+          function tick(now) {
+            if (!startTime) startTime = now;
+            var elapsed = now - startTime;
+            var progress = Math.min(elapsed / duration, 1);
+            el.textContent = Math.round(easeOutQuart(progress) * target) + suffix;
+            if (progress < 1) requestAnimationFrame(tick);
+          }
+          requestAnimationFrame(tick);
+        });
+      }, { threshold: 0.6 });
+
+      observer.observe(el.closest('.stats-stat') || el);
+    });
+  })();
+</script>

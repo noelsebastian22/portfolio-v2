@@ -21,11 +21,11 @@ import { galleryProjects } from '../data/content';
   </p>
 
   <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-    {galleryProjects.map((p) => (
+    {galleryProjects.map((p, i) => (
       <div
         data-reveal
         class="gallery-tile relative cursor-pointer overflow-hidden rounded-[16px] border-[1.5px] border-ink/[0.14] bg-white"
-        style="height:440px;box-shadow:0 10px 30px rgba(22,21,15,.08)"
+        style={`height:440px;box-shadow:0 10px 30px rgba(22,21,15,.08);transition-delay:${i * 80}ms`}
       >
         {/* Screenshot background */}
         <div

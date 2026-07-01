@@ -26,6 +26,7 @@ pnpm-debug.log*
 .agents/
 .commandcode/
 .impeccable/
+.claude/
 
 # editor
 .vscode/extensions.json

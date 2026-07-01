@@ -3,7 +3,7 @@ import { nav } from '../data/content';
 ---
 
 <nav
-  class="sticky top-0 z-50 border-b border-ink/[0.09]"
+  class="nav-anim-entrance sticky top-0 z-50 border-b border-ink/[0.09]"
   style="backdrop-filter:blur(10px);background:rgba(243,240,232,.82)"
 >
   <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-6 px-6 py-4 md:px-10">
@@ -18,7 +18,7 @@ import { nav } from '../data/content';
       {nav.map((l) => (
         <a
           href={l.href}
-          class="font-mono text-[12.5px] uppercase tracking-[1px] text-ink-secondary no-underline transition-colors duration-200 hover:text-accent"
+          class="nav-link font-mono text-[12.5px] uppercase tracking-[1px] text-ink-secondary no-underline transition-colors duration-200 hover:text-accent"
         >
           {l.label}
         </a>
@@ -32,7 +32,7 @@ import { nav } from '../data/content';
       Book a Call →
     </a>
 
-    <!-- Mobile hamburger placeholder -->
+    <!-- Mobile hamburger -->
     <button
       id="mobile-menu-btn"
       class="flex flex-col gap-1.5 p-2 md:hidden"
@@ -45,15 +45,15 @@ import { nav } from '../data/content';
     </button>
   </div>
 
-  <!-- Mobile nav -->
+  <!-- Mobile nav — controlled via is-open class + CSS transition -->
   <div
     id="mobile-nav"
-    class="hidden flex-col gap-4 border-t border-ink/10 bg-cream px-10 py-6 md:hidden"
+    class="gap-4 border-t border-ink/10 bg-cream px-10 py-6 md:hidden"
   >
     {nav.map((l) => (
       <a
         href={l.href}
-        class="font-mono text-[13px] uppercase tracking-[1px] text-ink-secondary no-underline"
+        class="nav-link font-mono text-[13px] uppercase tracking-[1px] text-ink-secondary no-underline"
       >
         {l.label}
       </a>
@@ -68,23 +68,59 @@ import { nav } from '../data/content';
 </nav>
 
 <script is:inline>
+  // ── Mobile nav toggle ──────────────────────────────────────────────────
   var btn = document.getElementById('mobile-menu-btn');
   var menu = document.getElementById('mobile-nav');
   if (btn && menu) {
     btn.addEventListener('click', function () {
-      var open = menu.classList.contains('flex');
-      menu.classList.toggle('hidden');
-      menu.classList.toggle('flex');
+      var open = btn.classList.contains('is-open');
+      btn.classList.toggle('is-open', !open);
+      menu.classList.toggle('is-open', !open);
       btn.setAttribute('aria-expanded', String(!open));
       btn.setAttribute('aria-label', open ? 'Open menu' : 'Close menu');
     });
     menu.querySelectorAll('a').forEach(function (l) {
       l.addEventListener('click', function () {
-        menu.classList.add('hidden');
-        menu.classList.remove('flex');
+        btn.classList.remove('is-open');
+        menu.classList.remove('is-open');
         btn.setAttribute('aria-expanded', 'false');
         btn.setAttribute('aria-label', 'Open menu');
       });
     });
   }
+
+  // ── Active nav section tracker ─────────────────────────────────────────
+  (function () {
+    var sectionIds = ['about', 'work', 'gallery', 'services', 'contact'];
+    var navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+    var currentActive = null;
+
+    function getActiveSection() {
+      var threshold = window.innerHeight * 0.42;
+      var active = null;
+      sectionIds.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var top = el.getBoundingClientRect().top;
+        if (top <= threshold) active = id;
+      });
+      return active;
+    }
+
+    function updateNavActive() {
+      var active = getActiveSection();
+      if (active === currentActive) return;
+      currentActive = active;
+      navLinks.forEach(function (link) {
+        var isActive = link.getAttribute('href') === '#' + active;
+        link.classList.toggle('nav-active', isActive);
+      });
+    }
+
+    window.addEventListener('scroll', function () {
+      requestAnimationFrame(updateNavActive);
+    }, { passive: true });
+
+    updateNavActive();
+  })();
 </script>

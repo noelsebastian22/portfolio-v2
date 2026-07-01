@@ -21,11 +21,11 @@ import { testimonials } from '../data/content';
     </p>
 
     <div class="grid grid-cols-1 gap-[22px] md:grid-cols-3">
-      {testimonials.map((t) => (
+      {testimonials.map((t, i) => (
         <div
           data-reveal
           class="rounded-[18px] border border-dashed border-cream/[0.28] p-7"
-          style="background:rgba(243,240,232,.05)"
+          style={`background:rgba(243,240,232,.05);transition-delay:${i * 80}ms`}
         >
           <div class="mb-3.5 font-bricolage text-[40px] leading-[0.5] text-accent">"</div>
           <p class="text-[15px] italic leading-[1.65] text-sand" style="margin:0 0 24px">{t.quote}</p>
