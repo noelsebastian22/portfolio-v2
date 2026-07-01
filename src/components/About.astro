@@ -21,6 +21,20 @@ import { aboutCols } from '../data/content';
     </h2>
 
     <div>
+      <picture data-reveal class="mb-9 block" style="max-width:360px">
+        <source srcset="/images/portrait/portrait-400w.avif 400w, /images/portrait/portrait-800w.avif 800w" sizes="(max-width: 768px) 100vw, 360px" type="image/avif" />
+        <source srcset="/images/portrait/portrait-400w.webp 400w, /images/portrait/portrait-800w.webp 800w" sizes="(max-width: 768px) 100vw, 360px" type="image/webp" />
+        <img
+          src="/images/portrait/portrait-800w.webp"
+          alt="Noel Sebastian, Senior Web Engineer"
+          width="800"
+          height="800"
+          loading="lazy"
+          class="block h-auto w-full rounded-[18px] border-2 border-ink"
+          style="box-shadow:14px 14px 0 rgba(22,21,15,.9)"
+        />
+      </picture>
+
       <p data-reveal class="text-[17px] leading-[1.7] text-ink-secondary" style="margin:0 0 20px">
         I'm a Senior Web Engineer with 9+ years building high-scale frontend systems across
         Australia, the UK and India. I specialise in the modern Angular ecosystem — v20 signals, Nx

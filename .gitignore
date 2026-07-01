@@ -22,5 +22,10 @@ pnpm-debug.log*
 # macOS
 .DS_Store
 
+# agent skill directories
+.agents/
+.commandcode/
+.impeccable/
+
 # editor
 .vscode/extensions.json
