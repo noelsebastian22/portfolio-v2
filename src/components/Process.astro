@@ -4,10 +4,10 @@ import { processSteps } from '../data/content';
 
 <section class="bg-ink text-cream">
   <div
-    class="mx-auto max-w-[1200px] px-10"
+    class="mx-auto max-w-[1200px] px-5 sm:px-6 md:px-10"
     style="padding-top:clamp(64px,8vw,110px);padding-bottom:clamp(64px,8vw,110px)"
   >
-    <div data-reveal class="mb-14 text-center">
+    <div data-reveal class="mb-10 sm:mb-12 md:mb-14 text-center">
       <div class="mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text-yellow">03 — How I work</div>
       <h2
         class="font-bricolage font-extrabold uppercase leading-[0.95] tracking-[-1px] text-cream"
@@ -21,11 +21,10 @@ import { processSteps } from '../data/content';
       {processSteps.map((p) => (
         <div
           data-reveal
-          class="grid items-center gap-7 border-t border-cream/[0.15] py-[30px]"
-          style="grid-template-columns:70px 1fr 1.3fr"
+          class="grid gap-2 md:gap-7 items-center border-t border-cream/[0.15] py-5 md:py-[30px] md:grid-cols-[70px_1fr_1.3fr]"
         >
-          <div class="font-mono text-[14px] text-muted-2">{p.no}</div>
-          <div class="flex items-center gap-4">
+          <div class="hidden md:block font-mono text-[14px] text-muted-2">{p.no}</div>
+          <div class="flex items-center justify-center md:justify-start gap-4">
             <span class="h-3 w-3 flex-none rounded-full bg-accent"></span>
             <span
               class="font-bricolage font-bold text-cream"
@@ -34,7 +33,7 @@ import { processSteps } from '../data/content';
               {p.title}
             </span>
           </div>
-          <p class="text-[15px] leading-[1.6] text-sand" style="margin:0">{p.body}</p>
+          <p class="text-center md:text-left text-[15px] leading-[1.6] text-sand" style="margin:0">{p.body}</p>
         </div>
       ))}
       <div class="border-t border-cream/[0.15]"></div>

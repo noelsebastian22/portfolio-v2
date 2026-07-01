@@ -106,18 +106,6 @@
   }
 }
 
-/* Process: collapse 3-column step rows on mobile */
-@media (max-width: 767px) {
-  .process-step {
-    grid-template-columns: 40px 1fr !important;
-    grid-template-rows: auto auto !important;
-  }
-  .process-step-body {
-    grid-column: 1 / -1 !important;
-    padding-top: 4px;
-  }
-}
-
 /* Stats: 2-column on mobile */
 @media (max-width: 639px) {
   .stats-grid {
