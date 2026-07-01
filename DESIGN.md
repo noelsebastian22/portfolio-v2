@@ -8,8 +8,9 @@ colors:
   accent: "#FF4B54"
   yellow: "#FFC01E"
   muted-1: "#6B675C"
-  muted-2: "#8A867B"
-  muted-3: "#9A968B"
+  muted-2: "#716B60"
+  muted-3: "#6D675C"
+  accent-dark: "#CC2933"
   sand: "#C9C5BA"
   surface: "#FFFFFF"
 typography:

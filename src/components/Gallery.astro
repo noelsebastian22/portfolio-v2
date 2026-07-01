@@ -8,7 +8,7 @@ import { galleryProjects } from '../data/content';
   style="padding-top:clamp(64px,8vw,120px);padding-bottom:clamp(64px,8vw,120px)"
 >
   <div data-reveal class="mb-3 text-center">
-    <div class="mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text-accent">05 — Gallery</div>
+    <div class="mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text-accent-dark">05 — Gallery</div>
     <h2
       class="font-bricolage font-extrabold uppercase leading-[0.95] tracking-[-1px] text-ink"
       style="font-size:clamp(34px,4.6vw,60px);margin:0"
@@ -29,6 +29,8 @@ import { galleryProjects } from '../data/content';
       >
         {/* Screenshot background */}
         <div
+          role="img"
+          aria-label={`${p.title} — ${p.desc} — ${p.tagline}`}
           class="gallery-img absolute inset-0"
           style={`background-image:url('/images/gallery/${p.slug}.png');background-size:100% auto;background-repeat:no-repeat;background-position:50% 0%;transition:background-position 0.9s ease`}
         >
@@ -70,7 +72,7 @@ import { galleryProjects } from '../data/content';
                 href={p.site}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-accent px-2.5 py-2.5 text-[13.5px] font-bold whitespace-nowrap text-accent no-underline transition-colors duration-200 hover:border-ink hover:bg-ink hover:text-white"
+                class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-accent-dark px-2.5 py-2.5 text-[13.5px] font-bold whitespace-nowrap text-accent-dark no-underline transition-colors duration-200 hover:border-ink hover:bg-ink hover:text-white"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/>

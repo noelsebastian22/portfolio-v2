@@ -48,9 +48,47 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
       rel="stylesheet"
     />
 
+    <!-- JSON-LD: Person -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Noel Sebastian",
+        "jobTitle": "Senior Web Engineer & Angular Specialist",
+        "url": "https://noelsebastian.dev",
+        "sameAs": [
+          "https://www.linkedin.com/in/noel-seban",
+          "https://github.com/noelsebastian22",
+          "https://medium.com/@noelsimc69"
+        ],
+        "email": "noelsimc69@gmail.com",
+        "knowsAbout": ["Angular", "Frontend Engineering", "Web Performance", "Nx Monorepos", "NgRx", "TypeScript"],
+        "workLocation": { "@type": "Place", "address": { "@type": "PostalAddress", "addressLocality": "Sydney", "addressCountry": "AU" } }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": "Noel Sebastian — Portfolio",
+        "description": "Selected case studies and projects by Noel Sebastian, Senior Web Engineer & Angular Specialist.",
+        "url": "https://noelsebastian.dev",
+        "mainEntity": {
+          "@type": "ItemList",
+          "itemListElement": [
+            { "@type": "Article", "name": "Winning Group", "url": "https://noelsebastian.dev", "description": "E-commerce frontend at scale — Angular v20, Nx monorepo migration." },
+            { "@type": "Article", "name": "Direct Line Group", "url": "https://noelsebastian.dev", "description": "State architecture across 5+ apps — NgRx standardization." },
+            { "@type": "Article", "name": "SRT Marine", "url": "https://noelsebastian.dev", "description": "Real-time marine control UI at 60fps." },
+            { "@type": "Article", "name": "QBurst", "url": "https://noelsebastian.dev", "description": "Analytics dashboards with D3.js and sub-second latency." }
+          ]
+        }
+      }
+    </script>
+
     <slot name="head" />
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <slot />
 
     <!-- Scroll-reveal: observe [data-reveal] elements -->

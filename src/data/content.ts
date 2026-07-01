@@ -34,7 +34,7 @@ type Level = 'Expert' | 'Advanced' | 'Intermediate' | 'Freelance';
 export const levelColor: Record<Level, string> = {
   Expert: '#FF4B54',
   Advanced: '#16150F',
-  Intermediate: '#9a968b',
+  Intermediate: '#6d675c',
   Freelance: '#b98700',
 };
 

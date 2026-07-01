@@ -13,9 +13,10 @@ export default {
         yellow: '#FFC01E',
         muted: {
           1: '#6b675c',
-          2: '#8a867b',
-          3: '#9a968b',
+          2: '#716b60',
+          3: '#6d675c',
         },
+        'accent-dark': '#cc2933',
         sand: '#c9c5ba',
       },
       fontFamily: {

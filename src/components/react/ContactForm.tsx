@@ -146,7 +146,7 @@ export default function ContactForm() {
       </div>
 
       {status === 'error' && (
-        <p className="mb-4 text-center text-[14px] text-accent">
+        <p className="mb-4 text-center text-[14px] text-accent-dark">
           Something went wrong — please try emailing me directly at{' '}
           <a href="mailto:noelsimc69@gmail.com" className="font-bold underline">
             noelsimc69@gmail.com

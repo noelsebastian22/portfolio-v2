@@ -7,6 +7,39 @@
     box-sizing: border-box;
   }
 
+  /* Skip-to-content link - visually hidden until focused */
+  .skip-link {
+    position: absolute;
+    z-index: 999;
+    top: -100%;
+    left: 12px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    background: #16150F;
+    color: #F3F0E8;
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: top 0.2s;
+  }
+  .skip-link:focus {
+    top: 12px;
+  }
+
+  /* Custom focus ring */
+  :focus-visible {
+    outline: 2px solid #FF4B54;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible {
+    border-radius: 4px;
+  }
+
   body {
     margin: 0;
     background-color: #F3F0E8;
@@ -27,7 +60,7 @@
 
   input::placeholder,
   textarea::placeholder {
-    color: #9a968b;
+    color: #6d675c;
   }
 }
 

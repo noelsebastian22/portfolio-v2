@@ -37,6 +37,7 @@ import { nav } from '../data/content';
       id="mobile-menu-btn"
       class="flex flex-col gap-1.5 p-2 md:hidden"
       aria-label="Open menu"
+      aria-expanded="false"
     >
       <span class="block h-0.5 w-6 bg-ink"></span>
       <span class="block h-0.5 w-6 bg-ink"></span>
@@ -71,13 +72,18 @@ import { nav } from '../data/content';
   var menu = document.getElementById('mobile-nav');
   if (btn && menu) {
     btn.addEventListener('click', function () {
+      var open = menu.classList.contains('flex');
       menu.classList.toggle('hidden');
       menu.classList.toggle('flex');
+      btn.setAttribute('aria-expanded', String(!open));
+      btn.setAttribute('aria-label', open ? 'Open menu' : 'Close menu');
     });
-    menu.querySelectorAll('a').forEach(function (a) {
-      a.addEventListener('click', function () {
+    menu.querySelectorAll('a').forEach(function (l) {
+      l.addEventListener('click', function () {
         menu.classList.add('hidden');
         menu.classList.remove('flex');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-label', 'Open menu');
       });
     });
   }

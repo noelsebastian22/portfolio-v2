@@ -18,6 +18,7 @@ import ContactForm from '../components/react/ContactForm.tsx';
 <BaseLayout>
   <div id="top" style="overflow-x:hidden">
     <Nav />
+    <main id="main-content">
     <Hero />
     <Marquee />
     <About />
@@ -36,7 +37,7 @@ import ContactForm from '../components/react/ContactForm.tsx';
       style="padding-top:clamp(72px,9vw,130px);padding-bottom:clamp(72px,9vw,130px)"
     >
       <div data-reveal class="mb-4 text-center">
-        <div class="mb-4 font-mono text-[12px] uppercase tracking-[2px] text-accent">08 — Let's talk</div>
+        <div class="mb-4 font-mono text-[12px] uppercase tracking-[2px] text-accent-dark">08 — Let's talk</div>
         <h2
           class="font-bricolage font-extrabold uppercase leading-[0.92] tracking-[-1.5px] text-ink"
           style="font-size:clamp(38px,6vw,80px);margin:0"
@@ -51,7 +52,7 @@ import ContactForm from '../components/react/ContactForm.tsx';
       >
         Hiring for a role or planning a project — tell me which, and I'll get back to you. Or email
         me directly at{' '}
-        <a href="mailto:noelsimc69@gmail.com" class="font-bold text-accent no-underline">
+        <a href="mailto:noelsimc69@gmail.com" class="font-bold text-accent-dark no-underline">
           noelsimc69@gmail.com
         </a>.
       </p>
@@ -61,6 +62,7 @@ import ContactForm from '../components/react/ContactForm.tsx';
       </div>
     </section>
 
+    </main>
     <Footer />
   </div>
 </BaseLayout>

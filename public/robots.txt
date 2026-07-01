@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://noelsebastian.dev/sitemap-index.xml
