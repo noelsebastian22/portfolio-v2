@@ -1,0 +1,54 @@
+---
+import { skillGroups, levelColor } from '../data/content';
+---
+
+<section
+  id="skills"
+  class="mx-auto max-w-[1200px] px-10"
+  style="padding-bottom:clamp(64px,8vw,120px)"
+>
+  <div data-reveal class="mb-10 flex flex-wrap items-end justify-between gap-6">
+    <div>
+      <div class="mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text-accent">02 — Stack</div>
+      <h2
+        class="font-bricolage font-extrabold uppercase leading-[0.95] tracking-[-1px] text-ink"
+        style="font-size:clamp(34px,4.6vw,60px);margin:0"
+      >
+        The tools I reach for
+      </h2>
+    </div>
+    <p class="max-w-[300px] text-[15px] text-muted-1" style="margin:0">
+      Depth in Angular, breadth across the modern web — labelled by real proficiency, not vanity.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 gap-[22px] md:grid-cols-2">
+    {skillGroups.map((g) => (
+      <div
+        data-reveal
+        class="skill-card rounded-[18px] border-[1.5px] border-ink/[0.12] bg-white p-7 transition-all duration-[250ms] hover:-translate-y-[5px] hover:border-accent hover:shadow-[0_16px_34px_rgba(22,21,15,0.09)]"
+      >
+        <div class="mb-5 flex items-center gap-3">
+          <span class="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-ink font-mono text-[12px] font-bold text-white">
+            {g.no}
+          </span>
+          <div class="font-bricolage text-[20px] font-bold">{g.name}</div>
+        </div>
+
+        <div class="flex flex-col gap-[11px]">
+          {g.items.map((s) => (
+            <div class="flex items-center justify-between gap-3 border-b border-ink/[0.08] pb-[11px]">
+              <span class="text-[15px] font-semibold">{s.n}</span>
+              <span
+                class="font-mono text-[11px] font-bold uppercase tracking-[0.5px]"
+                style={`color:${levelColor[s.l]}`}
+              >
+                {s.l}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+</section>

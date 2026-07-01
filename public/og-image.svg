@@ -1,0 +1,7 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F3F0E8"/>
+  <text x="600" y="310" font-family="Georgia,serif" font-weight="900" font-size="280" fill="#16150F" text-anchor="middle" letter-spacing="-10">NS</text>
+  <circle cx="810" cy="310" r="28" fill="#FF4B54"/>
+  <text x="600" y="420" font-family="monospace" font-size="28" fill="#6b675c" text-anchor="middle" letter-spacing="5">SENIOR WEB ENGINEER · SYDNEY, AU</text>
+  <text x="600" y="470" font-family="monospace" font-size="20" fill="#9a968b" text-anchor="middle" letter-spacing="3">ANGULAR SPECIALIST · AVAILABLE FOR FREELANCE</text>
+</svg>

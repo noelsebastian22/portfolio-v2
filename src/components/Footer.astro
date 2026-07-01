@@ -1,0 +1,49 @@
+---
+import { socials } from '../data/content';
+---
+
+<footer class="bg-ink text-cream">
+  <div class="mx-auto max-w-[1200px] px-10" style="padding-top:56px;padding-bottom:40px">
+    <div class="flex flex-wrap items-start justify-between gap-8 border-b border-cream/[0.14] pb-9">
+      <div>
+        <div class="font-bricolage text-[30px] font-extrabold tracking-[-0.5px]">
+          Noel Sebastian<span class="text-accent">.</span>
+        </div>
+        <div class="mt-2 font-mono text-[13px] text-muted-2">
+          Senior Web Engineer &amp; Angular Specialist · Sydney, AU
+        </div>
+      </div>
+      <a
+        href="mailto:noelsimc69@gmail.com"
+        class="border-b-2 border-accent pb-0.5 font-bricolage font-bold text-cream no-underline"
+        style="font-size:clamp(20px,2.4vw,30px)"
+      >
+        noelsimc69@gmail.com
+      </a>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-5 pt-6">
+      <div class="font-mono text-[12px] text-muted-2">
+        © 2026 Noel Sebastian · Available for freelance
+      </div>
+      <div class="flex gap-[22px]">
+        {socials.map((s) => (
+          <a
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-mono text-[12.5px] tracking-[0.5px] text-sand no-underline transition-colors duration-200 hover:text-yellow"
+          >
+            {s.label}
+          </a>
+        ))}
+        <a
+          href="#top"
+          class="font-mono text-[12.5px] text-sand no-underline transition-colors duration-200 hover:text-yellow"
+        >
+          Back to top ↑
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>

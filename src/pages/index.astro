@@ -1,0 +1,66 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import Hero from '../components/Hero.astro';
+import Marquee from '../components/Marquee.astro';
+import About from '../components/About.astro';
+import Skills from '../components/Skills.astro';
+import Process from '../components/Process.astro';
+import Work from '../components/Work.astro';
+import Gallery from '../components/Gallery.astro';
+import Stats from '../components/Stats.astro';
+import Services from '../components/Services.astro';
+import Testimonials from '../components/Testimonials.astro';
+import Footer from '../components/Footer.astro';
+import ContactForm from '../components/react/ContactForm.tsx';
+---
+
+<BaseLayout>
+  <div id="top" style="overflow-x:hidden">
+    <Nav />
+    <Hero />
+    <Marquee />
+    <About />
+    <Skills />
+    <Process />
+    <Work />
+    <Gallery />
+    <Stats />
+    <Services />
+    <Testimonials />
+
+    <!-- CONTACT -->
+    <section
+      id="contact"
+      class="mx-auto max-w-[1200px] px-10"
+      style="padding-top:clamp(72px,9vw,130px);padding-bottom:clamp(72px,9vw,130px)"
+    >
+      <div data-reveal class="mb-4 text-center">
+        <div class="mb-4 font-mono text-[12px] uppercase tracking-[2px] text-accent">08 — Let's talk</div>
+        <h2
+          class="font-bricolage font-extrabold uppercase leading-[0.92] tracking-[-1.5px] text-ink"
+          style="font-size:clamp(38px,6vw,80px);margin:0"
+        >
+          Interested in working together?
+        </h2>
+      </div>
+      <p
+        data-reveal
+        class="mx-auto mb-12 max-w-[560px] text-center text-[17px] text-ink-secondary"
+        style="margin:0 auto 48px"
+      >
+        Hiring for a role or planning a project — tell me which, and I'll get back to you. Or email
+        me directly at{' '}
+        <a href="mailto:noelsimc69@gmail.com" class="font-bold text-accent no-underline">
+          noelsimc69@gmail.com
+        </a>.
+      </p>
+
+      <div data-reveal>
+        <ContactForm client:visible />
+      </div>
+    </section>
+
+    <Footer />
+  </div>
+</BaseLayout>

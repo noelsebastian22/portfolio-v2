@@ -1,0 +1,120 @@
+---
+import { galleryProjects } from '../data/content';
+---
+
+<section
+  id="gallery"
+  class="mx-auto max-w-[1200px] px-10"
+  style="padding-top:clamp(64px,8vw,120px);padding-bottom:clamp(64px,8vw,120px)"
+>
+  <div data-reveal class="mb-3 text-center">
+    <div class="mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text-accent">05 — Gallery</div>
+    <h2
+      class="font-bricolage font-extrabold uppercase leading-[0.95] tracking-[-1px] text-ink"
+      style="font-size:clamp(34px,4.6vw,60px);margin:0"
+    >
+      Recent projects
+    </h2>
+  </div>
+  <p data-reveal class="mx-auto mb-11 max-w-[520px] text-center text-[15px] text-muted-1" style="margin:0 auto 44px">
+    Hover a tile to scroll through the live page and reveal the details.
+  </p>
+
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {galleryProjects.map((p) => (
+      <div
+        data-reveal
+        class="gallery-tile relative cursor-pointer overflow-hidden rounded-[16px] border-[1.5px] border-ink/[0.14] bg-white"
+        style="height:440px;box-shadow:0 10px 30px rgba(22,21,15,.08)"
+      >
+        {/* Screenshot background */}
+        <div
+          class="gallery-img absolute inset-0"
+          style={`background-image:url('/images/gallery/${p.slug}.png');background-size:100% auto;background-repeat:no-repeat;background-position:50% 0%;transition:background-position 0.9s ease`}
+        >
+          {/* Fallback gradient when no screenshot */}
+          <div class="absolute inset-0 bg-gradient-to-br from-cream to-ink/10 opacity-[0.15]"></div>
+        </div>
+
+        {/* Expanding label bar */}
+        <div
+          class="gallery-label absolute bottom-0 left-0 right-0 z-10 overflow-hidden bg-accent"
+          style="height:60px;transition:height 0.5s cubic-bezier(0.2,0.7,0.2,1)"
+        >
+          {/* Collapsed title */}
+          <div
+            class="gallery-collapsed pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-0.5 text-white transition-opacity duration-200"
+          >
+            <span class="font-bricolage text-[18px] font-bold leading-[1.1]">{p.title}</span>
+            <span class="text-[12px] opacity-85">︿</span>
+          </div>
+
+          {/* Expanded detail card */}
+          <div
+            class="gallery-card pointer-events-none absolute bottom-[18px] left-[18px] right-[18px] top-[18px] flex flex-col gap-[13px] overflow-auto rounded-[12px] bg-white p-6 opacity-0 transition-opacity duration-[350ms]"
+            aria-hidden="true"
+          >
+            <h3 class="font-bricolage text-[24px] font-extrabold tracking-[-0.4px] text-accent" style="margin:0">
+              {p.title}
+            </h3>
+            <p class="text-[14.5px] leading-[1.55] text-ink" style="margin:0">{p.desc}</p>
+            <div class="flex items-center gap-2">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF4B54" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/>
+                <circle cx="7" cy="7" r="1.4" fill="#FF4B54"/>
+              </svg>
+              <span class="font-mono text-[12px] text-muted-1">{p.tagline}</span>
+            </div>
+            <div class="mt-auto flex flex-wrap gap-2.5">
+              <a
+                href={p.site}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-accent px-2.5 py-2.5 text-[13.5px] font-bold whitespace-nowrap text-accent no-underline transition-colors duration-200 hover:border-ink hover:bg-ink hover:text-white"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/>
+                  <path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>
+                </svg>
+                Website
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<script is:inline>
+  document.querySelectorAll('.gallery-tile').forEach(function (tile) {
+    var img = tile.querySelector('.gallery-img');
+    var label = tile.querySelector('.gallery-label');
+    var collapsed = tile.querySelector('.gallery-collapsed');
+    var card = tile.querySelector('.gallery-card');
+
+    tile.addEventListener('mouseenter', function () {
+      img.style.backgroundPositionY = '100%';
+      img.style.transitionDuration = '3.6s';
+    });
+    tile.addEventListener('mouseleave', function () {
+      img.style.backgroundPositionY = '0%';
+      img.style.transitionDuration = '0.9s';
+    });
+
+    label.addEventListener('mouseenter', function () {
+      label.style.height = 'calc(100% - 64px)';
+      collapsed.style.opacity = '0';
+      card.style.opacity = '1';
+      card.style.pointerEvents = 'auto';
+      card.setAttribute('aria-hidden', 'false');
+    });
+    label.addEventListener('mouseleave', function () {
+      label.style.height = '60px';
+      collapsed.style.opacity = '1';
+      card.style.opacity = '0';
+      card.style.pointerEvents = 'none';
+      card.setAttribute('aria-hidden', 'true');
+    });
+  });
+</script>

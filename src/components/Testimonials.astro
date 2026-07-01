@@ -1,0 +1,48 @@
+---
+import { testimonials } from '../data/content';
+---
+
+<section class="bg-ink text-cream">
+  <div
+    class="mx-auto max-w-[1200px] px-10"
+    style="padding-top:clamp(64px,8vw,110px);padding-bottom:clamp(64px,8vw,110px)"
+  >
+    <div data-reveal class="mb-5 text-center">
+      <div class="mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text-yellow">07 — Testimonials</div>
+      <h2
+        class="font-bricolage font-extrabold uppercase leading-[0.95] tracking-[-1px] text-cream"
+        style="font-size:clamp(34px,5vw,64px);margin:0"
+      >
+        What clients say
+      </h2>
+    </div>
+    <p data-reveal class="mb-11 text-center font-mono text-[12px] text-muted-2" style="margin:0 0 44px">
+      Placeholder cards — ready for real quotes as freelance work grows.
+    </p>
+
+    <div class="grid grid-cols-1 gap-[22px] md:grid-cols-3">
+      {testimonials.map((t) => (
+        <div
+          data-reveal
+          class="rounded-[18px] border border-dashed border-cream/[0.28] p-7"
+          style="background:rgba(243,240,232,.05)"
+        >
+          <div class="mb-3.5 font-bricolage text-[40px] leading-[0.5] text-accent">"</div>
+          <p class="text-[15px] italic leading-[1.65] text-sand" style="margin:0 0 24px">{t.quote}</p>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-cream/[0.3] font-mono text-[11px] text-muted-2"
+              style="background:rgba(243,240,232,.12)"
+            >
+              ?
+            </div>
+            <div>
+              <div class="text-[15px] font-bold text-cream">{t.name}</div>
+              <div class="font-mono text-[11px] text-muted-2">{t.role}</div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

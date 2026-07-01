@@ -1,0 +1,37 @@
+---
+import { marqueeItems } from '../data/content';
+
+const loop = [...marqueeItems, ...marqueeItems];
+---
+
+<section class="relative overflow-hidden" style="height:172px;margin:12px 0 8px">
+  <!-- Dark strip (reverse scroll) -->
+  <div
+    class="absolute overflow-hidden bg-ink py-3.5"
+    style="top:44px;left:-6%;width:112%;transform:rotate(4deg)"
+  >
+    <div class="inline-flex whitespace-nowrap motion-safe:animate-mqr will-change-transform">
+      {loop.map((m) => (
+        <>
+          <span class="px-[22px] font-bricolage text-2xl font-bold uppercase text-cream">{m}</span>
+          <span class="self-center text-[20px] text-accent">✦</span>
+        </>
+      ))}
+    </div>
+  </div>
+
+  <!-- Accent strip (forward scroll) -->
+  <div
+    class="absolute overflow-hidden border-b-2 border-t-2 border-ink bg-accent py-4"
+    style="top:60px;left:-6%;width:112%;transform:rotate(-3.5deg)"
+  >
+    <div class="inline-flex whitespace-nowrap motion-safe:animate-mq will-change-transform">
+      {loop.map((m) => (
+        <>
+          <span class="px-[22px] font-bricolage text-[26px] font-extrabold uppercase text-ink">{m}</span>
+          <span class="self-center text-[20px] text-ink">✦</span>
+        </>
+      ))}
+    </div>
+  </div>
+</section>

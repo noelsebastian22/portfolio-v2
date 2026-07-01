@@ -1,0 +1,19 @@
+---
+import { stats } from '../data/content';
+---
+
+<section class="border-b-2 border-t-2 border-ink bg-accent">
+  <div class="stats-grid mx-auto grid max-w-[1200px] grid-cols-2 gap-6 px-10 py-11 sm:grid-cols-4">
+    {stats.map((st) => (
+      <div data-reveal class="text-center">
+        <div
+          class="font-bricolage font-extrabold leading-none text-ink"
+          style="font-size:clamp(40px,5.5vw,68px)"
+        >
+          {st.n}
+        </div>
+        <div class="mt-2 font-mono text-[12px] uppercase tracking-[1px] text-ink">{st.l}</div>
+      </div>
+    ))}
+  </div>
+</section>

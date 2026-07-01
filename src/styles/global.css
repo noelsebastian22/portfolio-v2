@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background-color: #F3F0E8;
+    color: #16150F;
+    font-family: 'Manrope', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: #FF4B54;
+    color: #fff;
+  }
+
+  input:focus,
+  textarea:focus {
+    outline: none;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #9a968b;
+  }
+}
+
+@layer utilities {
+  /* Scroll-triggered reveal — JS sets these; CSS defines the transition */
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+                transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ─── Responsive layout overrides ─────────────────────────────────────── */
+
+/* Hero: stack NS panel below text on mobile */
+@media (max-width: 767px) {
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .hero-panel {
+    min-height: 300px !important;
+    aspect-ratio: 1 / 0.85 !important;
+  }
+  .hero-badge {
+    display: none !important;
+  }
+}
+
+/* About: stack right column below heading on mobile */
+@media (max-width: 767px) {
+  .about-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .about-cols {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+  }
+}
+
+/* Process: collapse 3-column step rows on mobile */
+@media (max-width: 767px) {
+  .process-step {
+    grid-template-columns: 40px 1fr !important;
+    grid-template-rows: auto auto !important;
+  }
+  .process-step-body {
+    grid-column: 1 / -1 !important;
+    padding-top: 4px;
+  }
+}
+
+/* Stats: 2-column on mobile */
+@media (max-width: 639px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    row-gap: 32px !important;
+  }
+}
+
+/* Compact padding on mobile */
+@media (max-width: 767px) {
+  .px-section {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+}
+
+/* Respect prefers-reduced-motion for all animations */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
