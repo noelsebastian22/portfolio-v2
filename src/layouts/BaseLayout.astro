@@ -148,6 +148,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
         var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (reduce) return;
 
+        if (window.matchMedia('(max-width: 767px)').matches) return;
+
         var panelInner = document.querySelector('.hero-panel-inner');
         var textCol = document.querySelector('.hero-text-col');
         var heroEl = document.querySelector('header');
