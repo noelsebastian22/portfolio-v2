@@ -32,7 +32,7 @@ import { galleryProjects } from '../data/content';
           role="img"
           aria-label={`${p.title} — ${p.desc} — ${p.tagline}`}
           class="gallery-img absolute inset-0"
-          style={`background-image:url('/images/gallery/${p.slug}.png');background-size:100% auto;background-repeat:no-repeat;background-position:50% 0%;transition:background-position 0.9s ease`}
+          style={`background-image:url('/images/gallery/${p.img ?? `${p.slug}.png`}');background-size:100% auto;background-repeat:no-repeat;background-position:50% 0%;transition:background-position 0.9s ease`}
         >
           {/* Fallback gradient when no screenshot */}
           <div class="absolute inset-0 bg-gradient-to-br from-cream to-ink/10 opacity-[0.15]"></div>

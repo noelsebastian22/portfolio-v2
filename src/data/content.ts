@@ -147,11 +147,12 @@ export const caseStudies = [
 
 export const galleryProjects = [
   {
-    slug: 'winning',
-    title: 'Winning Group',
-    site: 'https://www.winning.com.au',
-    desc: 'High-performance e-commerce frontend in an Nx monorepo — I led the Angular v20 migration and built a custom UI library.',
-    tagline: 'Angular v20 · Nx · Signals · TypeScript',
+    slug: 'ezytrack',
+    img: 'ezytrack.jpg',
+    title: 'Ezytrack',
+    site: 'https://ezytrack-two.vercel.app/',
+    desc: 'Market-leading GPS fleet-tracking business site — real-time vehicle visibility, route history, geofencing and dashcam integration for Australian fleets.',
+    tagline: 'Astro · Tailwind v4 · TypeScript',
   },
   {
     slug: 'directline',

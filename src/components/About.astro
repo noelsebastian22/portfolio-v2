@@ -7,33 +7,21 @@ import { aboutCols } from '../data/content';
   class="mx-auto max-w-[1200px] px-10"
   style="padding-top:clamp(64px,8vw,120px);padding-bottom:clamp(64px,8vw,120px)"
 >
-  <div data-reveal class="mb-4 font-mono text-[12px] uppercase tracking-[2px] text-accent-dark">
-    03 — About
-  </div>
+  <div class="about-grid grid gap-12" style="grid-template-columns:minmax(0,1.2fr) minmax(0,0.8fr);align-items:start">
 
-  <div class="about-grid grid gap-12" style="grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr);align-items:start">
-    <h2
-      data-reveal
-      class="font-bricolage font-extrabold uppercase leading-[0.95] tracking-[-1px] text-ink"
-      style="font-size:clamp(34px,4.6vw,60px);margin:0"
-    >
-      Engineering rigour, for every audience
-    </h2>
-
+    <!-- LEFT: label → headline → bio → skills -->
     <div>
-      <picture data-reveal class="mb-9 block" style="max-width:360px">
-        <source srcset="/images/portrait/portrait-400w.avif 400w, /images/portrait/portrait-800w.avif 800w" sizes="(max-width: 768px) 100vw, 360px" type="image/avif" />
-        <source srcset="/images/portrait/portrait-400w.webp 400w, /images/portrait/portrait-800w.webp 800w" sizes="(max-width: 768px) 100vw, 360px" type="image/webp" />
-        <img
-          src="/images/portrait/portrait-800w.webp"
-          alt="Noel Sebastian, Senior Web Engineer"
-          width="800"
-          height="800"
-          loading="lazy"
-          class="block h-auto w-full rounded-[18px] border-2 border-ink"
-          style="box-shadow:14px 14px 0 rgba(22,21,15,.9)"
-        />
-      </picture>
+      <div data-reveal class="mb-5 font-mono text-[12px] uppercase tracking-[2px] text-accent-dark">
+        03 — About
+      </div>
+
+      <h2
+        data-reveal
+        class="font-bricolage font-extrabold uppercase leading-[0.95] tracking-[-1px] text-ink"
+        style="font-size:clamp(34px,4.6vw,60px);margin:0 0 clamp(28px,3vw,44px)"
+      >
+        Engineering rigour, for every audience
+      </h2>
 
       <p data-reveal class="text-[17px] leading-[1.7] text-ink-secondary" style="margin:0 0 20px">
         I'm a Senior Web Engineer with 9+ years building high-scale frontend systems across
@@ -64,5 +52,23 @@ import { aboutCols } from '../data/content';
         ))}
       </div>
     </div>
+
+    <!-- RIGHT: portrait panel -->
+    <div class="about-portrait">
+      <picture data-reveal class="block">
+        <source srcset="/images/portrait/portrait-400w.avif 400w, /images/portrait/portrait-800w.avif 800w" sizes="(max-width: 768px) 100vw, 45vw" type="image/avif" />
+        <source srcset="/images/portrait/portrait-400w.webp 400w, /images/portrait/portrait-800w.webp 800w" sizes="(max-width: 768px) 100vw, 45vw" type="image/webp" />
+        <img
+          src="/images/portrait/portrait-800w.webp"
+          alt="Noel Sebastian, Senior Web Engineer"
+          width="800"
+          height="800"
+          loading="lazy"
+          class="block h-auto w-full rounded-[18px] border-2 border-ink"
+          style="box-shadow:14px 14px 0 rgba(22,21,15,.9)"
+        />
+      </picture>
+    </div>
+
   </div>
 </section>

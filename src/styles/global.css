@@ -253,10 +253,13 @@
   }
 }
 
-/* About: stack right column below heading on mobile */
+/* About: stack columns on mobile, portrait floats to top */
 @media (max-width: 767px) {
   .about-grid {
     grid-template-columns: 1fr !important;
+  }
+  .about-portrait {
+    order: -1;
   }
   .about-cols {
     grid-template-columns: 1fr !important;
