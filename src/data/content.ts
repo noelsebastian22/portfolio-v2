@@ -1,9 +1,9 @@
 export const nav = [
   { label: 'Home', href: '#top' },
+  { label: 'Services', href: '#services' },
+  { label: 'Gallery', href: '#gallery' },
   { label: 'About', href: '#about' },
   { label: 'Work', href: '#work' },
-  { label: 'Gallery', href: '#gallery' },
-  { label: 'Services', href: '#services' },
   { label: 'Contact', href: '#contact' },
 ];
 
