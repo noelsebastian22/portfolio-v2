@@ -61,7 +61,7 @@ export default function ContactForm() {
     return (
       <div
         style={{ maxWidth: 680, margin: '0 auto' }}
-        className="rounded-[24px] border-[1.5px] border-ink/[0.14] bg-white p-11 text-center shadow-[0_24px_48px_rgba(22,21,15,0.07)]"
+        className="rounded-[24px] border-[1.5px] border-ink/[0.14] bg-white p-7 sm:p-11 text-center shadow-[0_24px_48px_rgba(22,21,15,0.07)]"
       >
         <div className="mb-4 text-[48px]">✓</div>
         <h3 className="font-bricolage text-[28px] font-extrabold text-ink" style={{ margin: '0 0 12px' }}>
@@ -77,8 +77,8 @@ export default function ContactForm() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      style={{ maxWidth: 680, margin: '0 auto', padding: 'clamp(28px,4vw,44px)' }}
-      className="rounded-[24px] border-[1.5px] border-ink/[0.14] bg-white shadow-[0_24px_48px_rgba(22,21,15,0.07)]"
+      style={{ maxWidth: 680, margin: '0 auto' }}
+      className="rounded-[24px] border-[1.5px] border-ink/[0.14] bg-white p-6 sm:p-10 shadow-[0_24px_48px_rgba(22,21,15,0.07)]"
     >
       {/* Role / project toggle */}
       <div className="mb-6">
@@ -96,7 +96,7 @@ export default function ContactForm() {
       </div>
 
       {/* Name + Email */}
-      <div className="mb-4 grid grid-cols-2 gap-4">
+      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="mb-2 block font-mono text-[11px] uppercase tracking-[1px] text-muted-1">
             Name
