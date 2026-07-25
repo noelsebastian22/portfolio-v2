@@ -13,6 +13,10 @@ type FormData = z.infer<typeof schema>;
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
+// Public Formspree endpoint (safe to ship — it's exposed in the client bundle either way).
+// Override per-environment with PUBLIC_FORMSPREE_ENDPOINT if needed.
+const DEFAULT_FORMSPREE_ENDPOINT = 'https://formspree.io/f/xpqgynyw';
+
 export default function ContactForm() {
   const [lookingFor, setLookingFor] = useState<'role' | 'project' | ''>('');
   const [status, setStatus] = useState<Status>('idle');
@@ -25,7 +29,8 @@ export default function ContactForm() {
 
   async function onSubmit(data: FormData) {
     setStatus('submitting');
-    const endpoint = import.meta.env.PUBLIC_FORMSPREE_ENDPOINT;
+    const endpoint =
+      import.meta.env.PUBLIC_FORMSPREE_ENDPOINT || DEFAULT_FORMSPREE_ENDPOINT;
 
     if (!endpoint || endpoint.includes('YOUR_FORM_ID')) {
       // Fallback to mailto if Formspree isn't configured
