@@ -4,7 +4,7 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
-  site: 'https://noelsebastian.dev',
+  site: 'https://www.noel-sebastian.com',
   output: 'static',
   integrations: [
     tailwind({ applyBaseStyles: false }),
