@@ -1,0 +1,417 @@
+---
+/**
+ * /websites — the client-facing page.
+ *
+ * This is the URL that goes on Upwork, in cold email, and on the Google
+ * Business profile. The root domain stays exactly as it is for recruiters.
+ *
+ * House rule for anyone editing this file: if a sentence would only make sense
+ * to another developer, it does not belong here. No framework names, no "9+
+ * years", no Nx, no NgRx. The reader is a plumber deciding whether to spend
+ * $1,500.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import WebsitesNav from '../components/WebsitesNav.astro';
+import Footer from '../components/Footer.astro';
+import ClientQuoteForm from '../components/react/ClientQuoteForm.tsx';
+import {
+  websitesHero as hero,
+  websitesWhat as what,
+  websitesPricing as pricing,
+  websitesProcess as process,
+  websitesFaq as faq,
+  websitesWork as work,
+} from '../data/websites';
+
+const title = 'Websites for small businesses — Noel Sebastian, Blue Mountains NSW';
+const description =
+  'Fast, mobile-first websites for trade and service businesses across Australia. Fixed price from $500, built to load quickly and turn visitors into phone calls.';
+
+/**
+ * ProfessionalService + FAQPage. The FAQ markup is what wins the expandable
+ * results in Google, and the service schema is what a local search actually
+ * matches against — neither is available from the Person schema on the root.
+ */
+const serviceSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfessionalService',
+  name: 'Noel Sebastian — Web Development',
+  description,
+  url: 'https://www.noel-sebastian.com/websites/',
+  email: 'noel@noel-sebastian.com',
+  priceRange: '$$',
+  areaServed: { '@type': 'Country', name: 'Australia' },
+  address: {
+    '@type': 'PostalAddress',
+    addressRegion: 'NSW',
+    addressLocality: 'Blue Mountains',
+    addressCountry: 'AU',
+  },
+  provider: { '@type': 'Person', name: 'Noel Sebastian' },
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'Website packages',
+    itemListElement: pricing.tiers.map((t) => ({
+      '@type': 'Offer',
+      name: t.name,
+      description: t.summary,
+      priceCurrency: 'AUD',
+      priceSpecification: {
+        '@type': 'PriceSpecification',
+        priceCurrency: 'AUD',
+        minPrice: Number(t.price.split('–')[0].replace(/[^0-9]/g, '')),
+        maxPrice: Number(t.price.split('–')[1].replace(/[^0-9]/g, '')),
+      },
+    })),
+  },
+};
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+
+const sectionPad = 'padding-top:clamp(64px,8vw,110px);padding-bottom:clamp(64px,8vw,110px)';
+const h2Class =
+  'font-bricolage font-extrabold uppercase leading-[0.95] tracking-[-1px] text-ink';
+const h2Style = 'font-size:clamp(32px,4.4vw,56px);margin:0';
+const eyebrowClass = 'mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text-accent-dark';
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  collectionSchema={false}
+  personJobTitle="Web Developer"
+  personKnowsAbout={[
+    'Web Design',
+    'Website Development',
+    'Landing Pages',
+    'Local SEO',
+    'Web Performance',
+    'Small Business Websites',
+  ]}
+>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(serviceSchema)} slot="head" />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(faqSchema)} slot="head" />
+
+  <div id="top" style="overflow-x:hidden">
+    <WebsitesNav />
+
+    <main id="main-content">
+      <!-- ── HERO ──────────────────────────────────────────────────────── -->
+      <header class="mx-auto max-w-[1200px] px-6 md:px-10" style="padding-top:clamp(48px,7vw,96px);padding-bottom:clamp(48px,6vw,84px)">
+        <div class="max-w-[840px]">
+          <div data-reveal class="mb-5 font-mono text-[12px] uppercase tracking-[2px] text-accent-dark">
+            {hero.eyebrow}
+          </div>
+          <h1
+            data-reveal
+            class="font-bricolage font-extrabold uppercase leading-[0.92] tracking-[-2px] text-ink"
+            style="font-size:clamp(40px,7vw,86px);margin:0"
+          >
+            {hero.headline}
+          </h1>
+          <p
+            data-reveal
+            class="mt-7 max-w-[620px] text-[17px] leading-[1.6] text-ink-secondary sm:text-[19px]"
+            style="margin-top:28px"
+          >
+            {hero.sub}
+          </p>
+
+          <div data-reveal class="mt-9 flex flex-wrap gap-3.5">
+            <a
+              href={hero.primaryCta.href}
+              class="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-4 text-[16px] font-bold text-white no-underline transition-all duration-200 hover:-translate-y-[3px] hover:bg-ink"
+            >
+              {hero.primaryCta.label} →
+            </a>
+            <a
+              href={hero.secondaryCta.href}
+              class="inline-flex items-center gap-2 rounded-full border-2 border-ink/[0.2] px-7 py-4 text-[16px] font-bold text-ink no-underline transition-all duration-200 hover:-translate-y-[3px] hover:border-ink"
+            >
+              {hero.secondaryCta.label}
+            </a>
+          </div>
+
+          <ul data-reveal class="mt-10 flex list-none flex-wrap gap-x-7 gap-y-3 p-0" style="margin-top:40px">
+            {hero.facts.map((f) => (
+              <li class="flex items-center gap-2 font-mono text-[12.5px] text-muted-1">
+                <span class="text-accent" aria-hidden="true">✓</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </header>
+
+      <div class="mx-auto max-w-[1200px] px-6 md:px-10" aria-hidden="true">
+        <hr class="border-0 border-t border-ink/[0.10]" />
+      </div>
+
+      <!-- ── WHAT YOU GET ──────────────────────────────────────────────── -->
+      <section id="what" class="mx-auto max-w-[1200px] px-6 md:px-10" style={sectionPad}>
+        <div data-reveal class="mb-11 max-w-[620px]">
+          <div class={eyebrowClass}>01 — What you get</div>
+          <h2 class={h2Class} style={h2Style}>{what.title}</h2>
+          <p class="mt-5 text-[16px] leading-[1.6] text-ink-secondary" style="margin-top:20px">
+            {what.intro}
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {what.items.map((item, i) => (
+            <div
+              data-reveal
+              style={`transition-delay:${i * 70}ms`}
+              class="rounded-[20px] border-[1.5px] border-ink/[0.12] bg-white p-7 transition-all duration-[250ms] hover:-translate-y-[5px] hover:border-accent"
+            >
+              <div class="mb-3 font-mono text-[11px] tracking-[1.5px] text-accent">{item.no}</div>
+              <h3 class="font-bricolage text-[21px] font-extrabold text-ink" style="margin:0 0 10px">
+                {item.title}
+              </h3>
+              <p class="text-[14.5px] leading-[1.6] text-ink-secondary" style="margin:0">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- ── RECENT WORK ───────────────────────────────────────────────── -->
+      <section id="work" class="mx-auto max-w-[1200px] px-6 md:px-10" style={sectionPad}>
+        <div data-reveal class="mb-11 max-w-[620px]">
+          <div class={eyebrowClass}>02 — Recent work</div>
+          <h2 class={h2Class} style={h2Style}>Sites I've built</h2>
+          <p class="mt-5 text-[16px] leading-[1.6] text-ink-secondary" style="margin-top:20px">
+            Open any of them on your phone. That is the honest test — how it feels in the hand, and
+            how long it takes to appear.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-7 md:grid-cols-2">
+          {work.map((p, i) => (
+            <article
+              data-reveal
+              style={`transition-delay:${i * 80}ms`}
+              class="flex flex-col overflow-hidden rounded-[20px] border-[1.5px] border-ink/[0.12] bg-white transition-all duration-[250ms] hover:-translate-y-[5px] hover:border-accent hover:shadow-[0_20px_40px_rgba(22,21,15,0.1)]"
+            >
+              <div
+                role="img"
+                aria-label={`Screenshot of the ${p.title} website`}
+                class="h-[220px] w-full border-b border-ink/[0.1] bg-cream"
+                style={`background-image:url('${p.img}');background-size:cover;background-position:50% 0%`}
+              />
+              <div class="flex flex-1 flex-col p-7">
+                <div class="mb-2 flex flex-wrap items-center gap-2.5">
+                  <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-1">
+                    {p.kind}
+                  </span>
+                  {p.concept && (
+                    <span class="rounded-full bg-cream px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[1px] text-muted-1">
+                      Concept
+                    </span>
+                  )}
+                </div>
+                <h3 class="font-bricolage text-[24px] font-extrabold text-ink" style="margin:0 0 10px">
+                  {p.title}
+                </h3>
+                <p class="text-[14.5px] leading-[1.6] text-ink-secondary" style="margin:0 0 20px">
+                  {p.desc}
+                </p>
+                <a
+                  href={p.site}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-auto inline-flex w-fit items-center gap-2 rounded-full border-2 border-accent-dark px-5 py-2.5 text-[14px] font-bold text-accent-dark no-underline transition-colors duration-200 hover:border-ink hover:bg-ink hover:text-white"
+                >
+                  Open the site ↗
+                </a>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <p data-reveal class="mt-8 max-w-[620px] font-mono text-[12.5px] leading-[1.7] text-muted-1">
+          Builds marked <strong class="font-bold text-ink">concept</strong> were made on my own
+          initiative rather than for a paying client — the code and the craft are identical, and
+          I would rather label them than let you assume otherwise.
+        </p>
+      </section>
+
+      <!-- ── PRICING ───────────────────────────────────────────────────── -->
+      <section id="pricing" class="mx-auto max-w-[1200px] px-6 md:px-10" style={sectionPad}>
+        <div data-reveal class="mb-11 max-w-[620px]">
+          <div class={eyebrowClass}>03 — Pricing</div>
+          <h2 class={h2Class} style={h2Style}>{pricing.title}</h2>
+          <p class="mt-5 text-[16px] leading-[1.6] text-ink-secondary" style="margin-top:20px">
+            {pricing.intro}
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {pricing.tiers.map((tier, i) => (
+            <div
+              data-reveal
+              style={`transition-delay:${i * 80}ms`}
+              class={`flex flex-col rounded-[20px] bg-white p-8 transition-all duration-[250ms] hover:-translate-y-[5px] ${
+                tier.featured
+                  ? 'border-2 border-accent shadow-[0_20px_40px_rgba(22,21,15,0.1)]'
+                  : 'border-[1.5px] border-ink/[0.12] hover:border-accent'
+              }`}
+            >
+              {tier.featured && (
+                <div class="mb-3 w-fit rounded-full bg-accent px-3 py-1 font-mono text-[10.5px] uppercase tracking-[1px] text-white">
+                  Most common
+                </div>
+              )}
+              <h3 class="font-bricolage text-[24px] font-extrabold text-ink" style="margin:0 0 6px">
+                {tier.name}
+              </h3>
+              <p class="text-[14.5px] leading-[1.55] text-muted-1" style="margin:0 0 18px">
+                {tier.summary}
+              </p>
+
+              <div class="font-bricolage text-[34px] font-extrabold leading-none tracking-[-1px] text-ink">
+                {tier.price}
+              </div>
+              <div class="mt-2 font-mono text-[12px] uppercase tracking-[1px] text-accent-dark">
+                {tier.timeline}
+              </div>
+
+              <ul class="mt-6 flex list-none flex-col gap-2.5 p-0" style="margin:24px 0 0">
+                {tier.includes.map((inc) => (
+                  <li class="flex gap-2.5 text-[14.5px] leading-[1.5] text-ink-secondary">
+                    <span class="mt-[3px] shrink-0 text-accent" aria-hidden="true">✓</span>
+                    {inc}
+                  </li>
+                ))}
+              </ul>
+
+              <a
+                href="#contact"
+                class={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-[15px] font-bold no-underline transition-all duration-200 hover:-translate-y-[3px] ${
+                  tier.featured
+                    ? 'bg-accent text-white hover:bg-ink'
+                    : 'border-2 border-ink/[0.2] text-ink hover:border-ink'
+                }`}
+                style="margin-top:32px"
+              >
+                Get a quote →
+              </a>
+            </div>
+          ))}
+        </div>
+
+        <div
+          data-reveal
+          class="mt-8 rounded-[20px] border-[1.5px] border-ink/[0.12] bg-white p-7"
+          style="margin-top:32px"
+        >
+          <div class="mb-4 font-mono text-[11px] uppercase tracking-[1.5px] text-muted-1">
+            Add-ons
+          </div>
+          <ul class="flex list-none flex-col gap-3 p-0" style="margin:0">
+            {pricing.addOns.map((a) => (
+              <li class="flex flex-wrap items-baseline justify-between gap-3 border-b border-ink/[0.08] pb-3 last:border-0 last:pb-0">
+                <span class="text-[15px] text-ink-secondary">{a.label}</span>
+                <span class="font-mono text-[14px] font-bold text-ink">{a.price}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="mt-5 text-[14px] leading-[1.6] text-muted-1" style="margin-top:20px">
+            {pricing.note}
+          </p>
+        </div>
+      </section>
+
+      <!-- ── PROCESS ───────────────────────────────────────────────────── -->
+      <section id="process" class="mx-auto max-w-[1200px] px-6 md:px-10" style={sectionPad}>
+        <div data-reveal class="mb-11 max-w-[620px]">
+          <div class={eyebrowClass}>04 — How it works</div>
+          <h2 class={h2Class} style={h2Style}>Four steps, no surprises</h2>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {process.map((s, i) => (
+            <div data-reveal style={`transition-delay:${i * 70}ms`} class="border-t-2 border-ink/[0.14] pt-6">
+              <div class="mb-3 font-mono text-[12px] tracking-[1.5px] text-accent">{s.no}</div>
+              <h3 class="font-bricolage text-[20px] font-extrabold text-ink" style="margin:0 0 10px">
+                {s.title}
+              </h3>
+              <p class="text-[14.5px] leading-[1.6] text-ink-secondary" style="margin:0">{s.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- ── FAQ ───────────────────────────────────────────────────────── -->
+      <section id="faq" class="mx-auto max-w-[1200px] px-6 md:px-10" style={sectionPad}>
+        <div data-reveal class="mb-11 max-w-[620px]">
+          <div class={eyebrowClass}>05 — FAQ</div>
+          <h2 class={h2Class} style={h2Style}>Questions people ask</h2>
+        </div>
+
+        <div class="mx-auto max-w-[820px]">
+          {faq.map((f, i) => (
+            <details
+              data-reveal
+              style={`transition-delay:${i * 50}ms`}
+              class="group border-b border-ink/[0.12] py-5"
+            >
+              <summary
+                class="flex cursor-pointer list-none items-start justify-between gap-6 font-bricolage text-[19px] font-bold text-ink"
+              >
+                {f.q}
+                <span
+                  class="mt-1 shrink-0 font-mono text-[18px] text-accent transition-transform duration-200 group-open:rotate-45"
+                  aria-hidden="true">+</span>
+              </summary>
+              <p class="mt-3.5 max-w-[680px] text-[15.5px] leading-[1.65] text-ink-secondary" style="margin-bottom:0">
+                {f.a}
+              </p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <!-- ── CONTACT ───────────────────────────────────────────────────── -->
+      <section id="contact" class="mx-auto max-w-[1200px] px-6 md:px-10" style={sectionPad}>
+        <div data-reveal class="mb-10 text-center">
+          <div class={eyebrowClass}>06 — Get started</div>
+          <h2 class={h2Class} style="font-size:clamp(34px,5.4vw,68px);margin:0">
+            Tell me about the job
+          </h2>
+          <p
+            class="mx-auto mt-6 max-w-[560px] text-[16.5px] leading-[1.6] text-ink-secondary"
+            style="margin:24px auto 0"
+          >
+            No obligation and no sales call. Send the details and you'll get a price, or an honest
+            answer that you don't need what you think you need. Or email me directly at{' '}
+            <a href="mailto:noel@noel-sebastian.com" class="font-bold text-accent-dark no-underline">
+              noel@noel-sebastian.com
+            </a>.
+          </p>
+        </div>
+
+        <ClientQuoteForm client:visible />
+      </section>
+    </main>
+
+    <Footer
+      tagline="Websites for small businesses · Blue Mountains, NSW"
+      showSocials={false}
+    />
+  </div>
+</BaseLayout>
+
+<style>
+  /* Safari still paints the default disclosure triangle without this. */
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+</style>

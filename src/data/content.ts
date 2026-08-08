@@ -145,6 +145,28 @@ export const caseStudies = [
   },
 ];
 
+/**
+ * The freelance slot in the Work section. This replaced a dashed
+ * "Your project could go here" placeholder, which read as "no freelance
+ * clients yet" to exactly the visitor it was meant to attract.
+ *
+ * Keep the claims verifiable. No invented conversion numbers — the credibility
+ * here comes from it being a real trading business with a real domain, and the
+ * enterprise case studies above already carry the metrics.
+ */
+export const freelanceCaseStudy = {
+  name: 'TopDel Renovation',
+  role: 'Custom joinery business site · Sydney',
+  site: 'https://topdelrenovation.com.au/',
+  tags: ['Astro', 'Sharp pipeline', 'SEO', 'WCAG 2.1 AA'],
+  problem:
+    'A custom joinery maker with genuinely premium work and no site to prove it — homeowners comparing makers had nothing to judge the craft on before ringing.',
+  approach:
+    'Built a photography-led Astro site around the completed-project gallery, with every image run through a Sharp responsive pipeline, LocalBusiness and FAQ schema, and a quote form as the low-friction next step.',
+  result:
+    'Live on the client’s own domain: a two-page static build with inlined critical CSS, responsive WebP throughout, and the gallery — not the copy — doing the selling.',
+};
+
 export const galleryProjects = [
   {
     slug: 'ezytrack',

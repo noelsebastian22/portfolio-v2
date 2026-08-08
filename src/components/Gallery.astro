@@ -1,5 +1,20 @@
 ---
 import { galleryProjects } from '../data/content';
+
+/**
+ * These tiles scroll the full page screenshot on hover, so they need the whole
+ * height — but the masters are 3024px-wide PNGs, 42MB across the three biggest.
+ * Background images bypass Astro's asset pipeline entirely, so while those
+ * masters lived in public/ they shipped at full size to every visitor.
+ *
+ * They now live in gallery-masters/ (outside public/, never deployed), and
+ * `npm run images` writes a 900px-wide WebP of each to public/images/gallery/.
+ * Same pictures, 42MB down to 940kB. Re-run it after replacing a screenshot.
+ */
+const scrollSrc = (p: { img?: string; slug: string }) => {
+  const base = (p.img ?? `${p.slug}.png`).replace(/\.(png|jpe?g|webp)$/i, '');
+  return `/images/gallery/${base}-scroll.webp`;
+};
 ---
 
 <section
@@ -32,7 +47,7 @@ import { galleryProjects } from '../data/content';
           role="img"
           aria-label={`${p.title} — ${p.desc} — ${p.tagline}`}
           class="gallery-img absolute inset-0"
-          style={`background-image:url('/images/gallery/${p.img ?? `${p.slug}.png`}');background-size:100% auto;background-repeat:no-repeat;background-position:50% 0%;transition:background-position 0.9s ease`}
+          style={`background-image:url('${scrollSrc(p)}');background-size:100% auto;background-repeat:no-repeat;background-position:50% 0%;transition:background-position 0.9s ease`}
         >
           {/* Fallback gradient when no screenshot */}
           <div class="absolute inset-0 bg-gradient-to-br from-cream to-ink/10 opacity-[0.15]"></div>

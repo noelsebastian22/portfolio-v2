@@ -36,7 +36,7 @@ export default function ContactForm() {
       // Fallback to mailto if Formspree isn't configured
       const subject = `Portfolio enquiry — ${lookingFor === 'role' ? 'A role (recruiter)' : lookingFor === 'project' ? 'A project (client)' : 'general'}`;
       const body = `Name: ${data.name}\nEmail: ${data.email}\nLooking for: ${lookingFor || 'not specified'}\n\n${data.message}`;
-      window.location.href = `mailto:noelsimc69@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = `mailto:noel@noel-sebastian.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       setStatus('success');
       return;
     }
@@ -153,8 +153,8 @@ export default function ContactForm() {
       {status === 'error' && (
         <p className="mb-4 text-center text-[14px] text-accent-dark">
           Something went wrong — please try emailing me directly at{' '}
-          <a href="mailto:noelsimc69@gmail.com" className="font-bold underline">
-            noelsimc69@gmail.com
+          <a href="mailto:noel@noel-sebastian.com" className="font-bold underline">
+            noel@noel-sebastian.com
           </a>
         </p>
       )}

@@ -1,5 +1,23 @@
 ---
 import { socials } from '../data/content';
+
+interface Props {
+  /**
+   * Overridable because /websites must not describe its author as an "Angular
+   * Specialist" — that is recruiter vocabulary and it undoes the whole point of
+   * having a separate client page if it turns up in the footer.
+   */
+  tagline?: string;
+  /** Hidden on /websites: GitHub and Medium are not signals a tradie is reading for. */
+  showSocials?: boolean;
+}
+
+const {
+  tagline = 'Senior Web Engineer & Angular Specialist · Sydney, AU',
+  showSocials = true,
+} = Astro.props;
+
+const year = new Date().getFullYear();
 ---
 
 <footer class="bg-ink text-cream">
@@ -9,25 +27,23 @@ import { socials } from '../data/content';
         <div class="font-bricolage text-[30px] font-extrabold tracking-[-0.5px]">
           Noel Sebastian<span class="text-accent">.</span>
         </div>
-        <div class="mt-2 font-mono text-[13px] text-muted-2">
-          Senior Web Engineer &amp; Angular Specialist · Sydney, AU
-        </div>
+        <div class="mt-2 font-mono text-[13px] text-muted-2">{tagline}</div>
       </div>
       <a
-        href="mailto:noelsimc69@gmail.com"
+        href="mailto:noel@noel-sebastian.com"
         class="border-b-2 border-accent pb-0.5 font-bricolage font-bold text-cream no-underline"
         style="font-size:clamp(20px,2.4vw,30px)"
       >
-        noelsimc69@gmail.com
+        noel@noel-sebastian.com
       </a>
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-5 pt-6">
       <div class="font-mono text-[12px] text-muted-2">
-        © 2026 Noel Sebastian · Available for freelance
+        © {year} Noel Sebastian · Available for freelance
       </div>
       <div class="flex gap-[22px]">
-        {socials.map((s) => (
+        {showSocials && socials.map((s) => (
           <a
             href={s.href}
             target="_blank"

@@ -5,15 +5,70 @@ interface Props {
   title?: string;
   description?: string;
   ogImage?: string;
+  /**
+   * The CollectionPage JSON-LD below describes the homepage's case-study list.
+   * Emitting it on every page would tell Google that /websites is also that
+   * collection, so secondary pages opt out and supply their own schema through
+   * the `head` slot.
+   */
+  collectionSchema?: boolean;
+  /**
+   * The Person schema is emitted on every page. On /websites the default
+   * "Angular Specialist / Nx / NgRx" version contradicts the page it sits in
+   * and is the wrong thing for Google to associate with a local-web-design
+   * query, so that page overrides both.
+   */
+  personJobTitle?: string;
+  personKnowsAbout?: string[];
 }
 
 const {
   title = 'Noel Sebastian — Senior Web Engineer & Angular Specialist',
   description = 'I build high-scale frontends for companies — and fast, reliable websites for growing businesses. 9+ years, deep in the Angular ecosystem, and available for freelance.',
   ogImage = '/og-image.svg',
+  collectionSchema = true,
+  personJobTitle = 'Senior Web Engineer & Angular Specialist',
+  personKnowsAbout = ['Angular', 'Frontend Engineering', 'Web Performance', 'Nx Monorepos', 'NgRx', 'TypeScript'],
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Noel Sebastian',
+  jobTitle: personJobTitle,
+  url: 'https://www.noel-sebastian.com',
+  sameAs: [
+    'https://www.linkedin.com/in/noel-seban',
+    'https://github.com/noelsebastian22',
+    'https://medium.com/@noelsimc69',
+  ],
+  email: 'noel@noel-sebastian.com',
+  knowsAbout: personKnowsAbout,
+  workLocation: {
+    '@type': 'Place',
+    address: { '@type': 'PostalAddress', addressLocality: 'Sydney', addressCountry: 'AU' },
+  },
+};
+
+const collectionPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Noel Sebastian — Portfolio',
+  description:
+    'Selected case studies and projects by Noel Sebastian, Senior Web Engineer & Angular Specialist.',
+  url: 'https://www.noel-sebastian.com',
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: [
+      { '@type': 'Article', name: 'Winning Group', url: 'https://www.noel-sebastian.com', description: 'E-commerce frontend at scale — Angular v20, Nx monorepo migration.' },
+      { '@type': 'Article', name: 'PLUMBER.', url: 'https://plumber.noel-sebastian.com/', description: 'Single-page marketing site for a New York-based plumbing & handyman company.' },
+      { '@type': 'Article', name: 'SRT Marine', url: 'https://www.noel-sebastian.com', description: 'Real-time marine control UI at 60fps.' },
+      { '@type': 'Article', name: 'QBurst', url: 'https://www.noel-sebastian.com', description: 'Analytics dashboards with D3.js and sub-second latency.' },
+    ],
+  },
+};
 ---
 
 <!doctype html>
@@ -48,42 +103,11 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
       rel="stylesheet"
     />
 
-    <!-- JSON-LD: Person -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Person",
-        "name": "Noel Sebastian",
-        "jobTitle": "Senior Web Engineer & Angular Specialist",
-        "url": "https://www.noel-sebastian.com",
-        "sameAs": [
-          "https://www.linkedin.com/in/noel-seban",
-          "https://github.com/noelsebastian22",
-          "https://medium.com/@noelsimc69"
-        ],
-        "email": "noelsimc69@gmail.com",
-        "knowsAbout": ["Angular", "Frontend Engineering", "Web Performance", "Nx Monorepos", "NgRx", "TypeScript"],
-        "workLocation": { "@type": "Place", "address": { "@type": "PostalAddress", "addressLocality": "Sydney", "addressCountry": "AU" } }
-      }
-    </script>
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "CollectionPage",
-        "name": "Noel Sebastian — Portfolio",
-        "description": "Selected case studies and projects by Noel Sebastian, Senior Web Engineer & Angular Specialist.",
-        "url": "https://www.noel-sebastian.com",
-        "mainEntity": {
-          "@type": "ItemList",
-          "itemListElement": [
-            { "@type": "Article", "name": "Winning Group", "url": "https://www.noel-sebastian.com", "description": "E-commerce frontend at scale — Angular v20, Nx monorepo migration." },
-            { "@type": "Article", "name": "PLUMBER.", "url": "https://plumber.noel-sebastian.com/", "description": "Single-page marketing site for a New York-based plumbing & handyman company." },
-            { "@type": "Article", "name": "SRT Marine", "url": "https://www.noel-sebastian.com", "description": "Real-time marine control UI at 60fps." },
-            { "@type": "Article", "name": "QBurst", "url": "https://www.noel-sebastian.com", "description": "Analytics dashboards with D3.js and sub-second latency." }
-          ]
-        }
-      }
-    </script>
+    <!-- JSON-LD -->
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(personSchema)} />
+    {collectionSchema && (
+      <script type="application/ld+json" is:inline set:html={JSON.stringify(collectionPageSchema)} />
+    )}
 
     <slot name="head" />
   </head>
