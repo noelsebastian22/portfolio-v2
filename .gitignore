@@ -30,3 +30,6 @@ pnpm-debug.log*
 
 # editor
 .vscode/extensions.json
+
+# Upload artifacts for Upwork portfolio entries — not site assets.
+upwork-heroes/

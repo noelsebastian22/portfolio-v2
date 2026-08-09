@@ -199,6 +199,13 @@ export const galleryProjects = [
     desc: 'Calming clinic site for a Blue Mountains remedial massage therapist — service menu, pricing and appointment-only booking built to convert visitors into clients.',
     tagline: 'Astro · Tailwind v4 · TypeScript',
   },
+  {
+    slug: 'laserclinic',
+    title: 'Menzone',
+    site: 'https://laserclinic.noel-sebastian.com/',
+    desc: 'Private male waxing and laser hair removal studio in Chippendale — full published price list, before-and-after comparison sliders and online booking built to get first-timers over the line.',
+    tagline: 'Astro · Tailwind v4 · TypeScript',
+  },
 ];
 
 export const stats = [

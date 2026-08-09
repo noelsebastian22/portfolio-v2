@@ -208,6 +208,14 @@ export const websitesWork = [
     desc: 'A single-page site for a plumbing and handyman business, laid out end to end around one action: booking the job.',
   },
   {
+    title: 'Menzone',
+    kind: 'Concept build · Chippendale',
+    concept: true,
+    site: 'https://laserclinic.noel-sebastian.com/',
+    img: '/images/gallery/laserclinic-card.webp',
+    desc: 'A one-room male waxing and laser studio. Every price published up front, before-and-after sliders you drag to compare, and a booking link on every screen so nobody has to ring and explain what they want.',
+  },
+  {
     title: 'FleetPoint',
     kind: 'Concept build · Fleet telematics',
     concept: true,
