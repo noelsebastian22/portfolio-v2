@@ -287,8 +287,17 @@ hero resolves.
 
 ### 01 — Hero: `of('Noel Sebastian')`
 
-**Content:** status rail (Sydney local time, availability state), H1 "Senior Web Engineer ·
-Angular Specialist", one positioning sentence, two CTAs — *See the work* and *Download CV*.
+**Content:** status rail (Sydney local time, availability state, **Australian Permanent
+Resident**), H1 "Senior Web Engineer · Angular Specialist", one positioning sentence, two
+CTAs — *See the work* and *Download CV*.
+
+Work rights are in the status rail deliberately. Recruiters filter on them early and hard,
+and burying it costs interviews. It is one mono line, and it removes a blocking question.
+
+The positioning sentence must carry the **AI-augmented development** angle — MCP servers
+and Figma Code Connect, shortening design-to-code. `content.ts` does not mention this
+anywhere, and in 2026 it is the single most differentiating thing on the resume. It should
+not be buried in a skills list.
 
 **Visual:** the **particle portrait** plus the signal tube entering from deep Z.
 
@@ -314,8 +323,27 @@ diagram, one per milestone, coloured by the §6 logic.
 **Motion:** scroll-linked horizontal travel. Each statistic counts up as its emission
 crosses the playhead — driven by scroll position, never by a timer.
 
-**Data required:** see §16. The structure is fully specified; the year-by-year milestones
-are a content input.
+**Timeline data** (extracted from `Resume.pdf`, 2026-09-19 — now resolved):
+
+| Period | Role | Company | Location |
+|---|---|---|---|
+| 10/2016 – 05/2020 | Analyst | Ernst & Young | Kakkanad, India |
+| 05/2020 – 02/2022 | Senior Engineer | QBurst | Kakkanad, India |
+| 02/2022 – 12/2023 | Senior Angular Developer | SRT Marine Systems PLC | Cardiff, UK |
+| 12/2023 – 06/2025 | Senior Engineer | Direct Line Group | Leeds, UK |
+| 09/2025 – present | Frontend Developer | Winning Group | Sydney, Australia |
+
+Five emissions, one per engagement. India → UK → Australia substantiates the "3 countries"
+claim geographically, which the timeline should make visible rather than assert.
+
+**Ernst & Young is currently absent from the site entirely** — four years, a recognisable
+brand, Fortune 500 reporting dashboards serving 5,000+ internal users, and three internal
+awards. It belongs here as the origin emission. It does not become a fifth case study
+(§9.03 keeps the four strongest); the timeline is where the full history lives.
+
+**The "9+ years" statistic is now wrong.** 10/2016 to 10/2026 is ten years. The counter
+should read `10` from October 2026, and the copy should say a decade. Derive it from a
+start date constant rather than hard-coding a number that silently rots.
 
 ### 03 — Selected Work: `switchMap()`
 
@@ -337,6 +365,11 @@ Each study gets a diagram generated from the metrics already claimed in `content
 
 This is honest, on-brand, sidesteps the NDA problem entirely, and is considerably more
 persuasive to a technical lead than a screenshot of a login page.
+
+**Seniority signals belong in the prose**, not only the diagrams. The Direct Line study
+must carry "mentored 6 junior and mid-level developers, lifting sprint velocity 20%" — for
+senior roles, evidence of raising a team is weighted at least as heavily as any
+architecture metric, and it is currently nowhere on the site.
 
 **Motion:** the line runs down the left margin and branches right into each card as it
 enters frame.
@@ -366,8 +399,12 @@ cards, same content, same links.
 
 ### 05 — The Stack: `pipe()`
 
-**Content:** the four skill groups from `content.ts`, reframed as an operator chain rather
-than a proficiency grid. The tech marquee folds in here.
+**Content:** the skill groups from `content.ts`, reframed as an operator chain rather than
+a proficiency grid. The tech marquee folds in here.
+
+A fifth node is added for **AI tooling** — MCP, Figma Code Connect, AI-assisted review —
+which exists on the resume but nowhere in `content.ts`. Given the roles being targeted in
+2026, it earns a node of its own rather than a line in "Also".
 
 **Visual:** the line passes through a series of operator nodes that visibly transform it —
 colour shift, thickness change — each activating as the playhead passes.
@@ -541,22 +578,24 @@ from "senior angular engineer", and ensures no page on the site looks abandoned.
 
 ## 16. Required Inputs From Noel
 
-These are content inputs, not open design questions. The design is complete without them;
-the build is not.
+**All three original inputs are resolved as of 2026-09-19.**
 
-1. **Timeline data for §02.** Year-by-year milestones 2016 → 2026: company, location, role.
-   The CV PDF at `public/noel-sebastian.pdf` has this, but it could not be extracted —
-   `poppler` is not installed and no system package was added without permission. Either
-   paste the history, or approve `brew install poppler` and it can be read directly.
-2. **The `ezytrack` screenshot, at 640px, is too small for a ring card.** It needs a
-   re-capture at 2560px+ width. This is the only one that blocks anything: `winning`,
-   `directline`, `qburst`, and `srtmarine` are also 640px, but they are enterprise studies
-   rendered as generated diagrams (§9.03) and never appear on the ring, so their resolution
-   does not matter. If `ezytrack` cannot be re-captured, its card is the weakest on the ring
-   but still usable at reduced size.
-3. **Confirmation the claimed metrics are still accurate** — 35% faster CI/CD, 60% smaller
-   bundle, 400ms FCP improvement, 90%+ coverage, 1M+ rows. These move from body copy into
-   generated diagrams, which makes them far more prominent and therefore more load-bearing.
+1. ~~Timeline data~~ — **resolved.** Extracted from `Resume.pdf` (root, untracked).
+   See the table in §9.02.
+2. ~~`ezytrack` re-capture~~ — **resolved.** `gallery-masters/ezytrack2.jpg` supplied at
+   2704×14756, which comfortably clears the ring-card requirement. It supersedes the 640px
+   `ezytrack.jpg`. Note the file is PNG data despite a `.jpg` extension and is ~15MB; the
+   `sharp` pipeline must handle both facts.
+3. ~~Metric confirmation~~ — **resolved.** Every claim verified against the resume, and the
+   resume carries several stronger ones not currently on the site: $15k/year technical debt
+   eliminated, an order management system handling 10,000+ daily transactions at zero
+   critical downtime, 20% runtime memory improvement, production bugs down 25% YoY, and
+   code review cycles down 15%.
+
+**One housekeeping item.** `Resume.pdf` sits untracked in the repo root while
+`public/noel-sebastian.pdf` is the file the site actually serves, and the two differ. The
+served CV must be reconciled with the current resume before launch, and only one of them
+should survive.
 
 ---
 
