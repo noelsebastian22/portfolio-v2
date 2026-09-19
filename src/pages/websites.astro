@@ -13,7 +13,6 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import WebsitesNav from '../components/WebsitesNav.astro';
 import Footer from '../components/Footer.astro';
-import ClientQuoteForm from '../components/react/ClientQuoteForm.tsx';
 import {
   websitesHero as hero,
   websitesWhat as what,
@@ -398,7 +397,7 @@ const eyebrowClass = 'mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text
           </p>
         </div>
 
-        <ClientQuoteForm client:visible />
+        <!-- Quote form rebuilt in Phase 14 -->
       </section>
     </main>
 
