@@ -33,3 +33,6 @@ pnpm-debug.log*
 
 # Upload artifacts for Upwork portfolio entries — not site assets.
 upwork-heroes/
+
+# SDD scratch — ledger, briefs, review packages
+.superpowers/
