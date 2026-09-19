@@ -1,5 +1,6 @@
 ---
 import { caseStudies } from '../data/content';
+import { yearsElapsed } from '../lib/career';
 ---
 
 <section
@@ -20,7 +21,7 @@ import { caseStudies } from '../data/content';
       </h2>
     </div>
     <p class="max-w-[320px] text-[15px] text-muted-1" style="margin:0">
-      Real engagements from 9 years of shipping. Each one framed as problem → approach → result.
+      Real engagements from {yearsElapsed()} years of shipping. Each one framed as problem → approach → result.
     </p>
   </div>
 

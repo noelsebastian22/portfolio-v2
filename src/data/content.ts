@@ -2,7 +2,6 @@ import { yearsElapsed } from '../lib/career';
 
 export const nav = [
   { label: 'Home', href: '#top' },
-  { label: 'Services', href: '#services' },
   { label: 'Gallery', href: '#gallery' },
   { label: 'About', href: '#about' },
   { label: 'Work', href: '#work' },
@@ -119,9 +118,9 @@ export const caseStudies = [
     tags: ['Angular v20', 'Nx', 'Signals'],
     problem: 'A legacy e-commerce frontend with slow builds and code duplicated across teams.',
     approach:
-      'Architected an Nx monorepo, led the industry-first migration to Angular v20 with signals, and built a custom UI library to replace legacy dependencies.',
+      'Architected an Nx monorepo, led the industry-first migration to Angular v20 with signals, pioneered AI-augmented development with MCP servers and Figma Code Connect, and built a custom UI library to replace legacy dependencies.',
     result:
-      '35% faster CI/CD, 50% more code reuse, 60% smaller bundle, 400ms off First Contentful Paint, and a 10,000+ daily transaction order management system with zero critical downtime.',
+      '35% faster CI/CD, 50% more code reuse, 60% smaller bundle, 400ms off First Contentful Paint, a 20% improvement in runtime memory efficiency, $15k/year in technical debt eliminated, a 25% faster design-to-code workflow with 40% less manual UI boilerplate, and a 10,000+ daily transaction order management system with zero critical downtime.',
   },
   {
     name: 'Direct Line Group',
@@ -131,7 +130,7 @@ export const caseStudies = [
     approach:
       'Standardised NgRx state management across 5+ repos and hardened CI/CD with automated governance and pre-commit checks.',
     result:
-      '30% fewer client-side API calls, deploys cut from 45 to 12 minutes, 100% zero-downtime releases, mentored 6 junior and mid-level developers to lift sprint velocity 20%, cut production bugs 25% year-over-year, and shortened code review cycles by 15%.',
+      '30% fewer client-side API calls, deploys cut from 45 to 12 minutes, 100% zero-downtime releases, mentored 6 junior and mid-level developers to lift sprint velocity 20%, and shortened code review cycles by 15%.',
   },
   {
     name: 'SRT Marine',
@@ -141,7 +140,7 @@ export const caseStudies = [
     approach:
       'Solved complex Unity iframe integration and built a shared module library used across three product lines.',
     result:
-      'Steady 60fps real-time rendering, 40% faster feature delivery, 85% test coverage, a 20% improvement in runtime memory usage, and $15k/year in technical debt eliminated.',
+      'Steady 60fps real-time rendering, 40% faster feature delivery, 85% test coverage, and a 25% year-over-year reduction in production bugs.',
   },
   {
     name: 'QBurst',
@@ -198,7 +197,7 @@ export const galleryProjects = [
 export const stats = [
   { n: `${yearsElapsed()}+`, l: 'Years experience' },
   { n: '3', l: 'Countries delivered' },
-  { n: '85%', l: 'Test coverage' },
+  { n: '90%+', l: 'Test coverage' },
   { n: '35%', l: 'Faster builds' },
 ];
 
