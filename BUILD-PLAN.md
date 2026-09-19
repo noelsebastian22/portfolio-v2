@@ -77,6 +77,22 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
 
+### Measured baseline — 2026-09-19, before Phase 0
+
+The site as it stands today, so Phase 0 can be measured rather than guessed at:
+
+| | Value |
+|---|---|
+| Build | green, 2 pages, 717ms |
+| `dist/` | 5.2 MB |
+| Shipped JS | **73,854 bytes gzip (72 KB)** |
+| — of which React | `client…js` 44,041 + `types…js` 22,965 = **67 KB, 93% of the total** |
+
+The base-path budget is 80 KB gzip. Removing React in Phase 0 therefore frees almost the
+entire budget, and the whole GSAP + Lenis + signal-renderer layer has to fit in roughly
+what React costs today. Re-measure with the same command after Task 0.1 and record the
+delta in `docs/SESSIONS.md`.
+
 **Phase 9 is the milestone that matters.** Everything through it produces a complete,
 fast, accessible site that can go live. Phases 10–15 are enhancement on a working product.
 If time runs out, stopping at 9 leaves something genuinely good rather than half-built.
