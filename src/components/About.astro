@@ -1,5 +1,6 @@
 ---
 import { aboutCols } from '../data/content';
+import { yearsElapsed } from '../lib/career';
 ---
 
 <section
@@ -24,7 +25,7 @@ import { aboutCols } from '../data/content';
       </h2>
 
       <p data-reveal class="text-[17px] leading-[1.7] text-ink-secondary" style="margin:0 0 20px">
-        I'm a Senior Web Engineer with 9+ years building high-scale frontend systems across
+        I'm a Senior Web Engineer with {yearsElapsed()}+ years building high-scale frontend systems across
         Australia, the UK and India. I specialise in the modern Angular ecosystem — v20 signals, Nx
         monorepos and NgRx — and I obsess over the things users never see: performance budgets,
         accessibility, and test coverage that actually holds.

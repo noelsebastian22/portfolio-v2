@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { yearsElapsed } from '../lib/career';
 
 interface Props {
   title?: string;
@@ -24,7 +25,7 @@ interface Props {
 
 const {
   title = 'Noel Sebastian — Senior Web Engineer & Angular Specialist',
-  description = 'I build high-scale frontends for companies — and fast, reliable websites for growing businesses. 9+ years, deep in the Angular ecosystem, and available for freelance.',
+  description = `I build high-scale frontends for companies — and fast, reliable websites for growing businesses. ${yearsElapsed()}+ years, deep in the Angular ecosystem, and available for freelance.`,
   ogImage = '/og-image.svg',
   collectionSchema = true,
   personJobTitle = 'Senior Web Engineer & Angular Specialist',

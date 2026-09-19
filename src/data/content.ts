@@ -1,3 +1,5 @@
+import { yearsElapsed } from '../lib/career';
+
 export const nav = [
   { label: 'Home', href: '#top' },
   { label: 'Services', href: '#services' },
@@ -7,7 +9,34 @@ export const nav = [
   { label: 'Contact', href: '#contact' },
 ];
 
-export const heroChips = ['9+ years', 'Angular v20', 'Nx · NgRx', 'Available for freelance'];
+export type EmissionState = 'live' | 'shipped' | 'historical';
+
+export interface TimelineEntry {
+  from: string;          // 'YYYY-MM'
+  to: string | null;     // null = present
+  role: string;
+  company: string;
+  city: string;
+  country: string;
+  state: EmissionState;
+}
+
+export const timeline: TimelineEntry[] = [
+  { from: '2016-10', to: '2020-05', role: 'Analyst',                   company: 'Ernst & Young',           city: 'Kakkanad', country: 'India',     state: 'historical' },
+  { from: '2020-05', to: '2022-02', role: 'Senior Engineer',           company: 'QBurst',                  city: 'Kakkanad', country: 'India',     state: 'historical' },
+  { from: '2022-02', to: '2023-12', role: 'Senior Angular Developer',  company: 'SRT Marine Systems PLC',  city: 'Cardiff',  country: 'UK',        state: 'historical' },
+  { from: '2023-12', to: '2025-06', role: 'Senior Engineer',           company: 'Direct Line Group',       city: 'Leeds',    country: 'UK',        state: 'historical' },
+  { from: '2025-09', to: null,      role: 'Frontend Developer',        company: 'Winning Group',           city: 'Sydney',   country: 'Australia', state: 'live' },
+];
+
+export const status = {
+  city: 'Sydney',
+  timezone: 'Australia/Sydney',
+  workRights: 'Australian Permanent Resident',
+  availability: 'Open to senior frontend roles',
+} as const;
+
+export const heroChips = [`${yearsElapsed()}+ years`, 'Angular v20', 'Nx · NgRx', 'Available for freelance'];
 
 export const marqueeItems = [
   'Angular v20', 'TypeScript', 'NgRx', 'Nx Monorepos', 'RxJS',
@@ -30,13 +59,6 @@ export const aboutCols = [
 ];
 
 type Level = 'Expert' | 'Advanced' | 'Intermediate' | 'Freelance';
-
-export const levelColor: Record<Level, string> = {
-  Expert: '#FF4B54',
-  Advanced: '#16150F',
-  Intermediate: '#6d675c',
-  Freelance: '#b98700',
-};
 
 export const skillGroups = [
   {
@@ -79,28 +101,14 @@ export const skillGroups = [
       { n: 'NestJS · Node', l: 'Intermediate' as Level },
     ],
   },
-];
-
-export const processSteps = [
   {
-    no: '01',
-    title: 'Discover',
-    body: 'I start with your brief, users and goals — mapping requirements before a line of code.',
-  },
-  {
-    no: '02',
-    title: 'Architect',
-    body: 'I plan structure, state and performance budgets so the build scales instead of buckling.',
-  },
-  {
-    no: '03',
-    title: 'Build',
-    body: 'Clean, tested, accessible components shipped in small, reviewable increments.',
-  },
-  {
-    no: '04',
-    title: 'Ship',
-    body: 'CI/CD, zero-downtime releases and monitoring so it stays fast long after launch.',
+    no: '05',
+    name: 'AI Tooling',
+    items: [
+      { n: 'MCP servers' },
+      { n: 'Figma Code Connect' },
+      { n: 'AI-assisted review' },
+    ],
   },
 ];
 
@@ -113,7 +121,7 @@ export const caseStudies = [
     approach:
       'Architected an Nx monorepo, led the industry-first migration to Angular v20 with signals, and built a custom UI library to replace legacy dependencies.',
     result:
-      '35% faster CI/CD, 50% more code reuse, 60% smaller bundle and 400ms off First Contentful Paint.',
+      '35% faster CI/CD, 50% more code reuse, 60% smaller bundle, 400ms off First Contentful Paint, and a 10,000+ daily transaction order management system with zero critical downtime.',
   },
   {
     name: 'Direct Line Group',
@@ -123,7 +131,7 @@ export const caseStudies = [
     approach:
       'Standardised NgRx state management across 5+ repos and hardened CI/CD with automated governance and pre-commit checks.',
     result:
-      '30% fewer client-side API calls, deploys cut from 45 to 12 minutes, and 100% zero-downtime releases.',
+      '30% fewer client-side API calls, deploys cut from 45 to 12 minutes, 100% zero-downtime releases, mentored 6 junior and mid-level developers to lift sprint velocity 20%, cut production bugs 25% year-over-year, and shortened code review cycles by 15%.',
   },
   {
     name: 'SRT Marine',
@@ -132,7 +140,8 @@ export const caseStudies = [
     problem: 'Marine control systems needed real-time data rendering without dropping frames.',
     approach:
       'Solved complex Unity iframe integration and built a shared module library used across three product lines.',
-    result: 'Steady 60fps real-time rendering, 40% faster feature delivery and 85% test coverage.',
+    result:
+      'Steady 60fps real-time rendering, 40% faster feature delivery, 85% test coverage, a 20% improvement in runtime memory usage, and $15k/year in technical debt eliminated.',
   },
   {
     name: 'QBurst',
@@ -145,28 +154,6 @@ export const caseStudies = [
   },
 ];
 
-/**
- * The freelance slot in the Work section. This replaced a dashed
- * "Your project could go here" placeholder, which read as "no freelance
- * clients yet" to exactly the visitor it was meant to attract.
- *
- * Keep the claims verifiable. No invented conversion numbers — the credibility
- * here comes from it being a real trading business with a real domain, and the
- * enterprise case studies above already carry the metrics.
- */
-export const freelanceCaseStudy = {
-  name: 'TopDel Renovation',
-  role: 'Custom joinery business site · Sydney',
-  site: 'https://topdelrenovation.com.au/',
-  tags: ['Astro', 'Sharp pipeline', 'SEO', 'WCAG 2.1 AA'],
-  problem:
-    'A custom joinery maker with genuinely premium work and no site to prove it — homeowners comparing makers had nothing to judge the craft on before ringing.',
-  approach:
-    'Built a photography-led Astro site around the completed-project gallery, with every image run through a Sharp responsive pipeline, LocalBusiness and FAQ schema, and a quote form as the low-friction next step.',
-  result:
-    'Live on the client’s own domain: a two-page static build with inlined critical CSS, responsive WebP throughout, and the gallery — not the copy — doing the selling.',
-};
-
 export const galleryProjects = [
   {
     slug: 'daybook',
@@ -178,7 +165,7 @@ export const galleryProjects = [
   },
   {
     slug: 'ezytrack',
-    img: 'ezytrack.jpg',
+    img: 'ezytrack.png',
     title: 'Ezytrack',
     site: 'https://ezytrack.noel-sebastian.com/',
     desc: 'Market-leading GPS fleet-tracking business site — real-time vehicle visibility, route history, geofencing and dashcam integration for Australian fleets.',
@@ -209,54 +196,10 @@ export const galleryProjects = [
 ];
 
 export const stats = [
-  { n: '9+', l: 'Years experience' },
+  { n: `${yearsElapsed()}+`, l: 'Years experience' },
   { n: '3', l: 'Countries delivered' },
-  { n: '90%+', l: 'Test coverage' },
+  { n: '85%', l: 'Test coverage' },
   { n: '35%', l: 'Faster builds' },
-];
-
-export const services = [
-  {
-    no: '01',
-    title: 'Business Websites',
-    body: 'Fast, SEO-ready sites that make small businesses and tradies look established — and bring in enquiries.',
-  },
-  {
-    no: '02',
-    title: 'Landing Pages',
-    body: 'High-converting single pages for campaigns, launches and lead generation.',
-  },
-  {
-    no: '03',
-    title: 'Web Apps & SPAs',
-    body: 'Angular and React single-page apps and dashboards with real logic behind them.',
-  },
-  {
-    no: '04',
-    title: 'Component & Angular Work',
-    body: 'Design-system components, Angular consulting, migrations and performance rescues.',
-  },
-];
-
-export const testimonials = [
-  {
-    quote:
-      'Add a real client testimonial here — this card is ready to fill in as freelance work grows.',
-    name: 'Your client',
-    role: 'Add title · company',
-  },
-  {
-    quote:
-      'A short quote about reliability, communication or results works best in this spot.',
-    name: 'Your client',
-    role: 'Add title · company',
-  },
-  {
-    quote:
-      'Two to three sentences from a happy client — replace this placeholder when you have it.',
-    name: 'Your client',
-    role: 'Add title · company',
-  },
 ];
 
 export const socials = [
