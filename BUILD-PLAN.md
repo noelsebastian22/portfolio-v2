@@ -813,3 +813,7 @@ decision was made; this section records *what it is*.
 - Testimonials remain absent until real client quotes exist (spec §3).
 - The site has no automated performance regression check. Phase 9 establishes the numbers
   manually; consider a Lighthouse CI step afterwards.
+- `src/pages/dev/signal.astro` (Task 2.2) is a `noindex` dev harness for the SVG signal
+  renderer — there is no real page to mount a section on until Phase 4 builds the shell.
+  It accepts `?t=0..1` to set progress directly for screenshotting, and falls back to a
+  raw scroll listener otherwise. Scaffolding: delete it before the Phase 9 ship.
