@@ -169,6 +169,14 @@ export const freelanceCaseStudy = {
 
 export const galleryProjects = [
   {
+    slug: 'daybook',
+    title: 'Daybook',
+    site: 'https://daybook.noel-sebastian.com/',
+    repo: 'https://github.com/noelsebastian22/daybook',
+    desc: 'My own product — a task app built on one page a day: anything left unfinished moves to tomorrow wearing a badge that counts the days it has followed you. Typing a task in plain English sets its date, time and category.',
+    tagline: 'Angular 22 · Supabase · PWA',
+  },
+  {
     slug: 'ezytrack',
     img: 'ezytrack.jpg',
     title: 'Ezytrack',
@@ -190,14 +198,6 @@ export const galleryProjects = [
     site: 'https://topdelrenovation.com.au/',
     desc: 'Business site for an Australian renovation & construction company — project galleries and service pages built to convert homeowners into qualified leads.',
     tagline: 'Renovations · Construction · Australia',
-  },
-  {
-    slug: 'massage',
-    img: 'massage.png',
-    title: 'Cloud 3 Massage Therapy',
-    site: 'https://massage.noel-sebastian.com/',
-    desc: 'Calming clinic site for a Blue Mountains remedial massage therapist — service menu, pricing and appointment-only booking built to convert visitors into clients.',
-    tagline: 'Astro · Tailwind v4 · TypeScript',
   },
   {
     slug: 'laserclinic',

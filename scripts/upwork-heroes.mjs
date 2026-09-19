@@ -54,7 +54,6 @@ const WANTED = new Set([
   'ezytrack', //           Entry 2 — currently 640px, will warn until re-captured
   'plumping', //           Entry 3
   'menzone', //            Entry 5 — add the master once the site is deployed
-  'massage', //            Entry 6 — hold until Gerhard replies
 ]);
 
 async function run() {

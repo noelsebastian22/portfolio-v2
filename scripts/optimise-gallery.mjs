@@ -3,7 +3,7 @@
  * public/images/gallery/.
  *
  * The masters are 3024px-wide PNGs straight out of a device screenshot —
- * massage.png alone is 15.4MB, and the three biggest together are 42MB. They
+ * plumping.png alone is 14.4MB, and the three biggest together are 36MB. They
  * are used as CSS background images, so Astro's asset pipeline never touches
  * them: previously they sat in public/ and shipped byte-for-byte to every
  * visitor. On /websites, a page whose whole pitch is "loads in about a second",

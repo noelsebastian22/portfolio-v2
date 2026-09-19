@@ -192,14 +192,6 @@ export const websitesWork = [
     desc: 'Custom joinery and renovations. A photography-led site where the completed-project gallery does the selling, and the quote form is one tap from anywhere on the page.',
   },
   {
-    title: 'Cloud 3 Massage Therapy',
-    kind: 'Concept build · Blackheath',
-    concept: true,
-    site: 'https://massage.noel-sebastian.com/',
-    img: '/images/gallery/massage-card.webp',
-    desc: 'A calm, appointment-only clinic site — treatment menu, pricing, and a therapist you feel you have already met before you ring.',
-  },
-  {
     title: 'PLUMBER.',
     kind: 'Concept build · Trades',
     concept: true,
