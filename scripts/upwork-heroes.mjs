@@ -51,7 +51,7 @@ const MASTER_EXT = /\.(png|jpe?g)$/i;
  */
 const WANTED = new Set([
   'topdel-renovations', // Entry 1
-  'ezytrack', //           Entry 2 — currently 640px, will warn until re-captured
+  'ezytrack', // Entry 2
   'plumping', //           Entry 3
   'menzone', //            Entry 5 — add the master once the site is deployed
 ]);
