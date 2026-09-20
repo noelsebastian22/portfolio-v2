@@ -60,12 +60,12 @@ Update this table at the end of every session. It is the first thing a cold sess
 
 | # | Phase | State | Notes |
 |---|---|---|---|
-| 0 | Foundation & teardown | not started | |
-| 1 | Content model rewrite | not started | |
-| 2 | Signal path core (2D) | not started | |
+| 0 | Foundation & teardown | **complete** | React+Tailwind out, tokens + self-hosted fonts in |
+| 1 | Content model rewrite | **complete** | Rebuilt from `docs/resume-transcript.md`; year derived in 7 places |
+| 2 | Signal path core (2D) | **complete** | 51-point curve + SVG renderer. **2.2's task review is owed** |
 | 3 | Motion infrastructure | not started | |
-| 4 | Shell — layout, nav, footer | not started | |
-| 5 | Sections 01–02 — Hero, Nine Years | not started | |
+| 4 | Shell — layout, nav, footer | not started | Expanded to tasks 4.1–4.4 below |
+| 5 | Sections 01–02 — Hero, Nine Years | not started | Expanded to tasks 5.1–5.3 below |
 | 6 | Section 03 — Selected Work + diagrams | not started | |
 | 7 | Section 04 — The Ring (2D rail) | not started | |
 | 8 | Sections 05–06 — Stack, Contact | not started | |
@@ -87,6 +87,20 @@ The site as it stands today, so Phase 0 can be measured rather than guessed at:
 | `dist/` | 5.2 MB |
 | Shipped JS | **73,854 bytes gzip (72 KB)** |
 | — of which React | `client…js` 44,041 + `types…js` 22,965 = **67 KB, 93% of the total** |
+
+### Measured after Phases 0–2 — 2026-09-20
+
+| | Value |
+|---|---|
+| Build | green, 3 pages (the third is the `/dev/signal` harness) |
+| Shipped JS | **0 bytes. No `_astro/*.js` chunks are emitted at all.** |
+| Tests | 11 passing across 2 files |
+| Fonts on the critical path | 130,508 bytes (Archivo 90,104 + JetBrains Mono 40,404) |
+
+Removing React did not reduce the bundle, it eliminated it: no `client:*` islands remain and every
+`<script>` is `is:inline`, so Vite emits no chunks. The full 80 KB base-path budget is unspent
+going into Phase 3, which will claim ~54.6 KB of it (gsap 28,356 + ScrollTrigger 17,988 + lenis
+8,254), leaving ~25 KB for the signal renderer and every section island in Phases 4–9.
 
 The base-path budget is 80 KB gzip. Removing React in Phase 0 therefore frees almost the
 entire budget, and the whole GSAP + Lenis + signal-renderer layer has to fit in roughly
@@ -627,6 +641,68 @@ an absence of light.
 **Verification:** `npm run build` passes. Lighthouse on the shell alone ≥ 98. Focus ring
 visible on `--ground` at every interactive element. Tab order is linear.
 
+**Task-level expansion (added 2026-09-20).** The plan requires each phase be expanded before
+implementing it. Briefs for these are already written in `.superpowers/sdd/BUILD-PLAN/`, including
+batched forms (`task-P4-brief.md`, `task-P5-brief.md`) that carry standing constraints.
+
+### Task 4.1 — `global.css` reset + page grain
+
+- [ ] **Step 1: Rewrite `src/styles/global.css`.** It currently opens with three `@tailwind`
+  directives removed in Task 0.1 and still styles the retired cream direction. Replace with:
+  `@import './tokens.css';` first, then a minimal reset, `body { background: var(--ground);
+  color: var(--type); font-family: var(--font-body); }`, and the `.skip-link` rule (keep it —
+  it is a real accessibility affordance already present).
+- [ ] **Step 2: Retire the dead font families.** `Manrope`, `Bricolage Grotesque` and
+  `Space Mono` are referenced throughout. Every one becomes `var(--font-body)`,
+  `var(--font-display)` or `var(--font-mono)`. After this step no typeface is named as a
+  literal string anywhere in `src/`.
+- [ ] **Step 3: The procedural page grain** (spec §10, unassigned until now). A tiled SVG
+  `feTurbulence` as a data-URI background, or a small canvas-generated noise texture, applied
+  as a low-opacity overlay on `--ground`. Warm black reads flat and digital without it.
+  Must be CSS-only and cost zero JS — a `body::after` with `pointer-events: none`.
+  Keep it under 2 KB. Respect `prefers-reduced-motion` only if it animates; a static grain
+  needs no guard.
+- [ ] **Step 4:** `npm run build` green; screenshot the built page headless and confirm the
+  ground is warm black, not blue-black, and that text is legible on it.
+
+### Task 4.2 — The signal mark, favicon and OG image
+
+- [ ] **Step 1: Author the signal mark.** A hand-authored SVG reducing the curve to a single
+  glyph (spec §10). Source its shape from `sampleSignalRange` output so the mark and the
+  page draw the same line — do not draw a different squiggle.
+- [ ] **Step 2:** It becomes `public/favicon.svg` and the nav wordmark. One file, two uses.
+- [ ] **Step 3:** Regenerate `public/og-image.svg` on the dark palette. The existing one is
+  cream and contradicts the new direction.
+- [ ] **Step 4:** Confirm the favicon renders legibly at 16px — a curve with too much detail
+  turns to mush. Screenshot to check rather than assuming.
+
+### Task 4.3 — `BaseLayout.astro` rewritten dark
+
+- [ ] **Step 1: Preserve the SEO and JSON-LD exactly.** The existing schema, canonical URLs,
+  OG and Twitter tags are correct and hard-won. Carry them across verbatim; only the
+  `description` default changes (Task 1.2 already derived its year count).
+- [ ] **Step 2:** Import `global.css`. This is the first time `tokens.css` reaches the page —
+  Task 0.3 deliberately left it unwired.
+- [ ] **Step 3:** The two font preloads are already in place from Task 0.2. Verify they
+  survive the rewrite, `crossorigin` intact.
+- [ ] **Step 4:** Call `initScroll()` from `src/lib/motion/scroll.ts` in an inline module
+  script. This is the first JS the site ships since Phase 0 — **record the gzip delta**.
+- [ ] **Step 5:** `grep -rn "fonts.googleapis\|fonts.gstatic" src/` must return clean. This is
+  the Phase 0 carry-forward and Phase 4 is where it is formally closed.
+
+### Task 4.4 — Nav and Footer
+
+- [ ] **Step 1: Nav.** CV download **always visible**, not hidden in a menu — spec §9 is
+  explicit, recruiters look for it first. Sound toggle present but inert until Phase 13
+  (render it `aria-pressed="false"` and `disabled`, or omit the handler; do not fake it).
+  Wordmark uses the Task 4.2 signal mark.
+- [ ] **Step 2: Footer.** Carries the `|` completion bar — the RxJS completion notation that
+  terminates the signal (spec §6). It is a graphical element, so `--signal` is permitted.
+- [ ] **Step 3: Accessibility gate.** Focus ring visible against `--ground` on every
+  interactive element, tab order linear, skip-link still first in the tab order.
+  This is the phase's stated verification and it is not optional.
+
+
 ## PHASE 5 — Sections 01–02: Hero and Nine Years
 
 **Deliverable:** hero with the status rail (Sydney time, work rights, availability),
@@ -640,6 +716,50 @@ emissions from `timeline`, with statistics counting up on scroll position.
 **Verification:** the year counter reads the value `yearsElapsed()` returns, not a literal.
 Counting stats expose their final value to assistive tech immediately (spec §13). Local
 time updates without a layout shift.
+
+**Task-level expansion (added 2026-09-20).** The plan requires each phase be expanded before
+implementing it. Briefs for these are already written in `.superpowers/sdd/BUILD-PLAN/`, including
+batched forms (`task-P4-brief.md`, `task-P5-brief.md`) that carry standing constraints.
+
+### Task 5.1 — `scripts/portrait.mjs`: the duotone still
+
+- [ ] **Step 1:** Bake a duotone portrait at build time with `sharp`, using `--ground` and
+  `--signal` as the two tones. This is the Phase 11 fallback and the mobile/reduced-motion
+  path, so it ships to most visitors and must look deliberate, not degraded.
+- [ ] **Step 2:** Emit AVIF + WebP + a JPEG fallback at 1x and 2x. Wire into `npm run images`.
+- [ ] **Step 3:** The source portrait is 3960×3960 (spec §9.01). Confirm it exists before
+  building the pipeline; if it is absent, report NEEDS_CONTEXT — do not substitute a
+  placeholder face.
+
+### Task 5.2 — Section 01: Hero
+
+- [ ] **Step 1: The status rail.** Sydney local time (live, updating without layout shift —
+  reserve the width), availability state, and **Australian Permanent Resident**. One mono
+  line. Work rights are here deliberately: recruiters filter on them early and hard.
+- [ ] **Step 2: H1** — "Senior Web Engineer · Angular Specialist".
+- [ ] **Step 3: The positioning sentence must carry the AI-augmented angle** — MCP servers
+  and Figma Code Connect, shortening design-to-code. Spec §9.01 calls this "the single most
+  differentiating thing on the resume". Task 1.2 added it to the stack data; this is where
+  it earns its place in prose.
+- [ ] **Step 4:** Two CTAs — *See the work* and *Download CV*.
+- [ ] **Step 5:** Mount the duotone portrait. Particles are Phase 11; the still is the
+  deliverable here and must stand on its own.
+- [ ] **Step 6:** `src/islands/hero.ts` — the clock only. Everything else is server-rendered.
+
+### Task 5.3 — Section 02: Nine Years
+
+- [ ] **Step 1:** Render five emissions from `timeline`, coloured by the §6 state logic
+  (`--signal` live, `--shipped` shipped, `--type-dim` historical).
+- [ ] **Step 2:** India → UK → Australia must be *visible* in the layout, not asserted —
+  it is what substantiates the "3 countries" claim.
+- [ ] **Step 3: Statistics count up on scroll position, never on a timer.** Register via
+  `onSection('years', el, fn)` from Phase 3. No component creates its own ScrollTrigger.
+- [ ] **Step 4: Accessibility (spec §13).** Counting stats must expose their **final** value
+  to assistive tech immediately — the animation is decorative. `aria-hidden` the animating
+  digits and carry the real value in the accessible name, or render the final value and
+  animate a visual-only layer.
+- [ ] **Step 5:** The year counter reads `yearsElapsed()`. Verify it renders 9 today and
+  would render 10 on 2026-10-01 — this is the phase's stated verification.
 
 ## PHASE 6 — Section 03: Selected Work + Generated Diagrams
 
@@ -805,6 +925,22 @@ decision was made; this section records *what it is*.
 - **2026-09-19** — Tailwind removed alongside React. Flagged reversible; revisit if the
   token-only approach fights back during Phases 4–8.
 
+- **2026-09-20** — The build stays green on every commit. The plan intended the tree to be red
+  from Task 0.1 until Phase 8; the real breakage was 7 lines, and `AGENTS.md` makes a green build
+  the gate before any commit.
+- **2026-09-20** — Both PDFs stay (Noel's call). Task 1.2 Step 6 is dropped, not deferred.
+- **2026-09-20** — `docs/resume-transcript.md` is now the source of truth for every metric.
+  `Resume.pdf` defeats text extraction but the Read tool renders PDFs as images, so it was always
+  reachable. A task misattributed three metrics by inferring employer from "domain fit" before
+  this existed.
+- **2026-09-20** — The 90%+ and 85% test-coverage figures are NOT in conflict: 90%+ is Winning
+  Group's monorepo, 85% is SRT Marine. An earlier instruction to "reconcile" them was wrong and
+  cost a true stat until it was caught.
+- **2026-09-20** — Commit attribution is normalised by the controller after the fact, never
+  mandated in a task brief. Subagents override brief text by citing their own session instructions.
+- **2026-09-20** — The signal curve's speed limit is structural: `speed ≈ gap × (N−1)`, so keep
+  `max_gap × (N−1) ≤ 15`. The lever for dramatic geometry is subdivision, not tamer motion.
+
 ## Known Gaps
 
 - No test framework existed before Phase 0. Vitest covers pure modules only —
@@ -817,3 +953,18 @@ decision was made; this section records *what it is*.
   renderer — there is no real page to mount a section on until Phase 4 builds the shell.
   It accepts `?t=0..1` to set progress directly for screenshotting, and falls back to a
   raw scroll listener otherwise. Scaffolding: delete it before the Phase 9 ship.
+- **Task 2.2 never received its task review.** The implementer committed `805a57e` and was then
+  cut off by a session limit before writing its report. The controller verified the work directly
+  — build green, 11/11 tests, and headless screenshots at `?t=0/0.5/1` confirming the line draws
+  monotonically in `--signal` on `--ground` with correct `work`-section geometry — but the formal
+  spec+quality gate is owed.
+- **The `/dev/signal` harness (`src/pages/dev/signal.astro`) must be deleted before the Phase 9
+  ship.** It is `noindex` but it is scaffolding, and it is why the build now reports 3 pages.
+- **The signal renderer's viewBox framing is unreviewed.** At `?t=1` the `work` span occupies the
+  upper-left of a large mostly-empty box. That may be correct once Phase 4 mounts it in the
+  reserved `--signal-gutter` column, or it may need the section's own bounding box. Decide it when
+  the shell exists, not before.
+- **Archivo's `wdth` axis is confirmed only circumstantially** — Fontsource metadata declares
+  wdth 62–125, and `-wdth-` (90,104 bytes) is 2.6× the weight-only `-wght-` (34,928). No font
+  tooling on this machine. The decisive check is visual: the first display heading rendered with
+  `font-stretch` expanded, in Phase 4/5. If Expanded never appears, that file is the first suspect.
