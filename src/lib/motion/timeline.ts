@@ -31,6 +31,22 @@ function ensurePluginRegistered(): void {
 }
 
 /**
+ * Registrations seen per section, so multiple elements sharing a `SectionId` (the Ring's
+ * five cards, all `id: 'ring'`) get distinct trigger ids instead of colliding. GSAP's
+ * registry is last-write-wins on a duplicate id, and `kill()` deletes its registry entry
+ * unconditionally — with a shared id, killing one trigger silently unregisters a sibling
+ * that is still alive. The suffix keeps the label readable in devtools while making each
+ * one unique.
+ */
+const registrationsPerSection = new Map<SectionId, number>();
+
+function nextTriggerId(id: SectionId): string {
+  const count = (registrationsPerSection.get(id) ?? 0) + 1;
+  registrationsPerSection.set(id, count);
+  return `${id}-${count}`;
+}
+
+/**
  * Registers `fn` to receive a section's local scroll progress (0..1 across `el`'s own
  * span, from entering the viewport at the bottom to leaving it at the top) as the page
  * scrolls. Returns an unsubscribe that kills the underlying trigger.
@@ -48,7 +64,7 @@ export function onSection(
   ensurePluginRegistered();
 
   const trigger = ScrollTrigger.create({
-    id,
+    id: nextTriggerId(id),
     trigger: el,
     start: 'top bottom',
     end: 'bottom top',
