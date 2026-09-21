@@ -62,7 +62,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 |---|---|---|---|
 | 0 | Foundation & teardown | **complete** | React+Tailwind out, tokens + self-hosted fonts in |
 | 1 | Content model rewrite | **complete** | Rebuilt from `docs/resume-transcript.md`; year derived in 7 places |
-| 2 | Signal path core (2D) | **complete** | 51-point curve + SVG renderer. **2.2's task review is owed** |
+| 2 | Signal path core (2D) | **complete** | 51-point curve + SVG renderer. Both tasks reviewed clean |
 | 3 | Motion infrastructure | not started | |
 | 4 | Shell — layout, nav, footer | not started | Expanded to tasks 4.1–4.4 below |
 | 5 | Sections 01–02 — Hero, Nine Years | not started | Expanded to tasks 5.1–5.3 below |
@@ -93,12 +93,15 @@ The site as it stands today, so Phase 0 can be measured rather than guessed at:
 | | Value |
 |---|---|
 | Build | green, 3 pages (the third is the `/dev/signal` harness) |
-| Shipped JS | **0 bytes. No `_astro/*.js` chunks are emitted at all.** |
+| Shipped JS — the two public pages (`/`, `/websites`) | **0 bytes. Neither references an `_astro/*.js` chunk at all.** |
+| Shipped JS — total emitted | 4,139 raw / **2,039 gzip**, one chunk, referenced only by `/dev/signal` |
 | Tests | 11 passing across 2 files |
 | Fonts on the critical path | 130,508 bytes (Archivo 90,104 + JetBrains Mono 40,404) |
 
-Removing React did not reduce the bundle, it eliminated it: no `client:*` islands remain and every
-`<script>` is `is:inline`, so Vite emits no chunks. The full 80 KB base-path budget is unspent
+Removing React did not reduce the bundle, it eliminated it: no `client:*` islands remain, so
+neither public page loads a script. The one chunk Vite does emit belongs to the `/dev/signal`
+harness, whose `<script>` imports a module and is therefore bundled rather than inlined; it goes
+when the harness goes. The full 80 KB base-path budget is unspent
 going into Phase 3, which will claim ~54.6 KB of it (gsap 28,356 + ScrollTrigger 17,988 + lenis
 8,254), leaving ~25 KB for the signal renderer and every section island in Phases 4–9.
 
@@ -953,17 +956,31 @@ decision was made; this section records *what it is*.
   renderer — there is no real page to mount a section on until Phase 4 builds the shell.
   It accepts `?t=0..1` to set progress directly for screenshotting, and falls back to a
   raw scroll listener otherwise. Scaffolding: delete it before the Phase 9 ship.
-- **Task 2.2 never received its task review.** The implementer committed `805a57e` and was then
-  cut off by a session limit before writing its report. The controller verified the work directly
-  — build green, 11/11 tests, and headless screenshots at `?t=0/0.5/1` confirming the line draws
-  monotonically in `--signal` on `--ground` with correct `work`-section geometry — but the formal
-  spec+quality gate is owed.
 - **The `/dev/signal` harness (`src/pages/dev/signal.astro`) must be deleted before the Phase 9
   ship.** It is `noindex` but it is scaffolding, and it is why the build now reports 3 pages.
-- **The signal renderer's viewBox framing is unreviewed.** At `?t=1` the `work` span occupies the
-  upper-left of a large mostly-empty box. That may be correct once Phase 4 mounts it in the
-  reserved `--signal-gutter` column, or it may need the section's own bounding box. Decide it when
-  the shell exists, not before.
+- **DECISION OWED BEFORE PHASE 4: `createSvgSignal`'s per-section API and `toSvgPath`'s global
+  coordinate space are incompatible.** `toSvgPath` maps the normalised curve over the *whole*
+  box it is given (`x` → `((x+1)/2)·width`, `y` → `y·height`), but `createSvgSignal(mount, section)`
+  hands it only one section's points and the mount's full box. Each section therefore draws its
+  global slice into a page-sized space and leaves the rest empty. Measured at a 1000×480 mount:
+
+  | section | drawn width | drawn height | box area filled |
+  |---|---|---|---|
+  | hero | 28% | 14% | 3.9% |
+  | years | 65% | 12% | 7.8% |
+  | work | 70% | 28% | 19.5% |
+  | ring | 35% | 24% | 8.4% |
+  | stack | 27% | 14% | 3.8% |
+  | contact | 8% | 8% | **0.7%** |
+
+  Two coherent resolutions, and Phase 4 must pick one: **(a)** one renderer for the whole curve on
+  a single page-height layer — the global mapping is then exactly right and the `section` parameter
+  should go; or **(b)** keep per-section mounts and pass the section's own bounding box so each span
+  is normalised into its own element. Note that the line traverses the page horizontally (§6: the
+  Nine Years run "travels the width of the page"), so it cannot be confined to the 48–96px
+  `--signal-gutter` — the gutter is where the line's *left margin* sits, not its full extent.
+  Nothing is blocked before Phase 4: Task 3.1's `onSection(id, fn)` passes a local 0..1 and is
+  indifferent to how the renderer maps coordinates.
 - **Archivo's `wdth` axis is confirmed only circumstantially** — Fontsource metadata declares
   wdth 62–125, and `-wdth-` (90,104 bytes) is 2.6× the weight-only `-wght-` (34,928). No font
   tooling on this machine. The decisive check is visual: the first display heading rendered with
