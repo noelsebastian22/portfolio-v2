@@ -63,7 +63,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 0 | Foundation & teardown | **complete** | React+Tailwind out, tokens + self-hosted fonts in |
 | 1 | Content model rewrite | **complete** | Rebuilt from `docs/resume-transcript.md`; year derived in 7 places |
 | 2 | Signal path core (2D) | **complete** | 51-point curve + SVG renderer. Both tasks reviewed clean |
-| 3 | Motion infrastructure | not started | |
+| 3 | Motion infrastructure | **complete** | Lenis + one GSAP ticker; `onSection()` owns every ScrollTrigger |
 | 4 | Shell — layout, nav, footer | not started | Expanded to tasks 4.1–4.4 below |
 | 5 | Sections 01–02 — Hero, Nine Years | not started | Expanded to tasks 5.1–5.3 below |
 | 6 | Section 03 — Selected Work + diagrams | not started | |
@@ -97,6 +97,19 @@ The site as it stands today, so Phase 0 can be measured rather than guessed at:
 | Shipped JS — total emitted | 4,139 raw / **2,039 gzip**, one chunk, referenced only by `/dev/signal` |
 | Tests | 11 passing across 2 files |
 | Fonts on the critical path | 130,508 bytes (Archivo 90,104 + JetBrains Mono 40,404) |
+
+### Measured after Phase 3 — 2026-09-22
+
+| | Value |
+|---|---|
+| Build | green, 3 pages |
+| Shipped JS | **unchanged — 4,139 raw / 2,039 gzip, still only `/dev/signal`** |
+| Tests | 18 passing across 3 files |
+
+Phase 3 added GSAP, ScrollTrigger and Lenis to `src/lib/motion/` but **nothing imports them yet**,
+so they are not in any bundle and the delta is genuinely 0. The ~54.6 KB gzip motion bill lands in
+**Phase 4**, the moment the shell calls `initScroll()`. Re-measure there and expect the first real
+movement against the 80 KB budget since Phase 0 emptied it.
 
 Removing React did not reduce the bundle, it eliminated it: no `client:*` islands remain, so
 neither public page loads a script. The one chunk Vite does emit belongs to the `/dev/signal`
@@ -981,6 +994,14 @@ decision was made; this section records *what it is*.
   `--signal-gutter` — the gutter is where the line's *left margin* sits, not its full extent.
   Nothing is blocked before Phase 4: Task 3.1's `onSection(id, fn)` passes a local 0..1 and is
   indifferent to how the renderer maps coordinates.
+- **`onSection`'s first callback arrives on the next refresh/rAF pass, not synchronously inside the
+  `onSection()` call.** A section already on screen at page load *does* receive its initial progress
+  — traced through `ScrollTrigger.refresh()`'s `isFirstRefresh && !_refreshingAll && self.update()`,
+  and through the batched case where `_refreshAll` calls `_updateAll(2)` whose gate passes on
+  `force === 2` regardless of `_refreshingAll`. So this is a timing expectation, not a bug: do not
+  write Phase 5 code that assumes the renderer has been given a progress value by the time
+  `onSection()` returns. Give renderers a sane value at construction instead — `SvgSignal` already
+  defaults to 0.
 - **Archivo's `wdth` axis is confirmed only circumstantially** — Fontsource metadata declares
   wdth 62–125, and `-wdth-` (90,104 bytes) is 2.6× the weight-only `-wght-` (34,928). No font
   tooling on this machine. The decisive check is visual: the first display heading rendered with
