@@ -46,7 +46,15 @@ export function initScroll(): void {
 
   gsap.registerPlugin(ScrollTrigger);
 
-  lenis = new Lenis();
+  // `anchors` defaults to false, and Lenis only attaches its click handler when it is
+  // set (lenis.mjs: `if (this.options.anchors || this.options.stopInertiaOnNavigate)`).
+  // Without it every in-page nav link jumps instantly — and Task 4.1 removed
+  // `scroll-behavior: smooth` deliberately, because it fights Lenis. On a site whose
+  // premise is that the scroll is the transport, the nav must travel along it.
+  //
+  // No reduced-motion guard is owed: this branch is unreachable under reduced motion, so
+  // anchors stay native and instant there, which is the correct behaviour.
+  lenis = new Lenis({ anchors: true });
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add((time) => {
     lenis?.raf(time * 1000); // gsap.ticker's time is seconds; Lenis wants milliseconds.

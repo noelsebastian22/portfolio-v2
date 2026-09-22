@@ -77,6 +77,17 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
   svg.style.display = 'block';
   svg.style.width = '100%';
   svg.style.height = '100%';
+  // `toSvgPath` maps y 0..1 onto 0..height, so the curve's first and last points land
+  // exactly on this box's top and bottom edges — and a round cap is a disc centred on
+  // the point, so the UA stylesheet's `svg:root { overflow: hidden }` slices both of
+  // them in half. Verified by pixel: without this, paint starts abruptly at the box's
+  // first row and stops abruptly at its last.
+  //
+  // Safe because the mount is inset by half the stroke (see #signal-layer in
+  // global.css): the 2px that now overflows paints inside the document rather than past
+  // its last pixel, so it cannot grow scrollHeight. The curve's horizontal extremes are
+  // interior (11.5%–81.0% of the box), so nothing overflows sideways.
+  svg.style.overflow = 'visible';
   svg.setAttribute('aria-hidden', 'true'); // decorative — a marble diagram, not content
 
   const path = document.createElementNS(SVG_NS, 'path');

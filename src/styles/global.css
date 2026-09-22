@@ -74,10 +74,15 @@ body::after {
  * height, which feeds straight back into its own measurement and into `onPageProgress`.
  * Decorative throughout — `aria-hidden` in the markup, `pointer-events: none` here.
  *
- * Inset top and bottom by half the stroke so the round caps at the curve's two
- * endpoints (y 0 and y 1) are not sliced in half by the `<svg>`'s own clip. Letting the
- * stroke overflow instead would put 2px of paint below the document's last pixel, which
- * is the one kind of overflow that grows the scroll height.
+ * Inset top and bottom by half the stroke. This is not what stops the curve's endpoint
+ * caps being clipped — the renderer does that, by setting `overflow: visible` on its
+ * own `<svg>`, because the caps at y 0 and y 1 sit centred on that box's edges and the
+ * UA stylesheet clips them there no matter where the box is placed.
+ *
+ * The inset is what makes that safe. With it, the half-stroke the renderer now lets
+ * overflow paints *inside* the document — y 0..2 at the top, and the last 2px at the
+ * bottom — instead of past the document's last pixel. Bottom overflow is the one kind
+ * that grows scrollHeight, which would feed straight back into `onPageProgress`.
  */
 #signal-layer {
   position: absolute;
@@ -146,8 +151,13 @@ body::after {
   *,
   *::before,
   *::after {
+    /* Delays matter as much as durations here. `animation: … 0.5s 0.6s both` with only
+       the duration collapsed still holds its `from` state for 600ms — degraded
+       choreography, which is exactly what this block exists to prevent. */
+    animation-delay: 0s !important;
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
+    transition-delay: 0s !important;
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
   }
