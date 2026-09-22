@@ -64,7 +64,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 1 | Content model rewrite | **complete** | Rebuilt from `docs/resume-transcript.md`; year derived in 7 places |
 | 2 | Signal path core (2D) | **complete** | 51-point curve + SVG renderer. Both tasks reviewed clean |
 | 3 | Motion infrastructure | **complete** | Lenis + one GSAP ticker; `onSection()` owns every ScrollTrigger |
-| 4 | Shell — layout, nav, footer | not started | Tasks 4.1–4.5 below; 4.5 added 2026-09-22 with the framing decision |
+| 4 | Shell — layout, nav, footer | **complete** | Tasks 4.1–4.5, reviewed clean after 1 fix round. First JS since Phase 0 |
 | 5 | Sections 01–02 — Hero, Nine Years | not started | Expanded to tasks 5.1–5.3 below |
 | 6 | Section 03 — Selected Work + diagrams | not started | |
 | 7 | Section 04 — The Ring (2D rail) | not started | |
@@ -105,6 +105,28 @@ The site as it stands today, so Phase 0 can be measured rather than guessed at:
 | Build | green, 3 pages |
 | Shipped JS | **unchanged — 4,139 raw / 2,039 gzip, still only `/dev/signal`** |
 | Tests | 18 passing across 3 files |
+
+### Measured after Phase 4 — 2026-09-23
+
+The first real movement against the budget since Phase 0 emptied it.
+
+| | Value |
+|---|---|
+| Build | green, 3 pages, 490ms |
+| `dist/` | 5.2 MB |
+| **Shipped JS on `/`** | **52,332 bytes gzip** — `BaseLayout` chunk 50,719 + `svg-signal` 1,613 |
+| Against the 80 KB budget | **63.9% spent, 29,588 bytes gzip left** for Phases 5–9 |
+| Delta from Phase 3 | **+50,293** (2,039 → 52,332) |
+| Tests | 18 passing across 3 files — none added; motion stays hand-verified |
+| Lighthouse desktop `/` | Perf **100** · A11y 96 · BP **100** · SEO **100** · LCP 0.6s · CLS **0** · TBT **0ms** |
+| Lighthouse mobile `/` | Perf 94 · A11y 96 · BP **100** · SEO **100** · LCP 3.0s · CLS **0** · TBT **0ms** |
+
+The motion bill landed almost exactly where Phase 3 predicted — ~54.6 KB forecast, 50.3 KB actual.
+Both Lighthouse deductions trace to components Phase 4 was told not to touch: accessibility 96 is
+a single `aria-hidden-focus` audit whose five offending nodes are all `div.gallery-card` in
+`Gallery.astro`, and mobile Perf 94 / LCP 3.0s has the **old** hero's `<h1 class="font-bricolage">`
+as its LCP element. CLS and TBT are the two budget lines Phase 4 could actually move; both are
+clean. Phase 9 re-measures on the finished site.
 
 Phase 3 added GSAP, ScrollTrigger and Lenis to `src/lib/motion/` but **nothing imports them yet**,
 so they are not in any bundle and the delta is genuinely 0. The ~54.6 KB gzip motion bill lands in
@@ -1008,6 +1030,25 @@ decision was made; this section records *what it is*.
   independently-scaled spans must meet at the same pixel, and cannot produce §6's *continuous*
   line. Noel's call; implementation lands as Task 4.5 (see `Addendum A` in
   `.superpowers/sdd/BUILD-PLAN/task-P4-brief.md`).
+- **2026-09-23** — `/websites` keeps the signal layer. Spec §14 lists what the freelance page
+  inherits from the new system and "the drawn line in 2D only" is on it by name; what it does not
+  get is the particle portrait, the 3D ring, WebGL and audio. The layer lives in `BaseLayout` and
+  needs no opt-out prop.
+- **2026-09-23** — `CURVE_SAMPLE_DENSITY` is **480**, not 240. Measured, not guessed: on the real
+  1440×9163 page the polyline deviates 2.70px from the true curve at 240 — over half the 4px
+  stroke — and 0.69px at 480 (1.22px even at 2560 wide). Faceting scales with box size, so the
+  page-height layer needed roughly double what a section-sized mount did.
+- **2026-09-23** — **Do not import `lenis/dist/lenis.css`.** All five of its rules are inert in this
+  shell: no percentage height on `html`/`body`, nothing calls `lenis.stop()`, `[data-lenis-prevent]`
+  is unused, there are no iframes, and `autoToggle` defaults false. Importing it adds a
+  render-blocking stylesheet request to buy nothing. **Phase 15 must revisit** — its preloader locks
+  scroll, and `lenis.stop()` is what makes the `.lenis-stopped { overflow: clip }` rule live.
+- **2026-09-23** — In-page anchors are smoothed by Lenis (`new Lenis({ anchors: true })`), not by
+  `scroll-behavior: smooth`, which Task 4.1 deliberately removed. Lenis defaults `anchors = false`
+  and only attaches its click listener when the option is set, so without it every nav link jumped
+  instantly on a site whose premise is that the scroll is the transport. Under reduced motion Lenis
+  is never constructed, so anchors stay native and instant — which is the correct behaviour there
+  and needs no extra guard.
 
 ## Known Gaps
 
@@ -1064,3 +1105,33 @@ decision was made; this section records *what it is*.
   wdth 62–125, and `-wdth-` (90,104 bytes) is 2.6× the weight-only `-wght-` (34,928). No font
   tooling on this machine. The decisive check is visual: the first display heading rendered with
   `font-stretch` expanded, in Phase 4/5. If Expanded never appears, that file is the first suspect.
+
+### Opened by Phase 4 — 2026-09-23
+
+- **`--virtual-time-budget` freezes `requestAnimationFrame` after a single frame.** Proved with a
+  recursive frame tracer: 1 frame over 3s, top-level and inside an iframe. Anything rAF-driven —
+  Lenis, ScrollTrigger, the `stroke-dashoffset` draw — is therefore **invisible** under it, and a
+  screenshot taken that way silently shows frame 1 rather than the settled state. This supersedes
+  the 2026-09-20 note recommending `--virtual-time-budget=5000` for screenshots: it is fine for
+  static paint, wrong for anything animated. Motion must be verified over real-time CDP. Every
+  Phase 4 check except the anchor trace was rAF-independent, so they stand.
+- **Seven Phase 4 review minors, deferred to the final whole-branch review:**
+  (1) the inert sound toggle explains itself only via `title` on a `disabled` button, which is
+  neither focusable nor reliably announced; (2) `role="list"` missing on the nav and footer `ul`s
+  (Safari/VoiceOver drops list semantics under `list-style: none`); (3) the "Back to top" link was
+  dropped without a decision record, on a 9,163px document; (4) the desktop signal layer is
+  full-opacity and the footer is the one place Phase 4 lays text across the curve's path — latent,
+  since the centre column is mostly empty; (5) `og-image.svg` duplicates the generated `d` with no
+  regeneration command of its own, so it can go stale silently; (6) **24 lowercase
+  `font-bricolage` class strings survive in `src/`** — the Phase 4 ruling's grep was
+  case-sensitive and missed exactly the hole it was written to close, though they are inert
+  Tailwind names on components Phases 5–8 rewrite; (7) `BaseLayout.astro`'s `if (layer)` silently
+  no-ops on an element `BaseLayout` itself renders eleven lines above.
+- **Three critical-path items for the Phase 9 performance pass, to be fixed together, not
+  piecemeal:** `unused-javascript` reports 29 KiB (the motion chunk ships whole while no section
+  registers a trigger yet — expected to amortise across Phases 5–8, but verify rather than assume);
+  a render-blocking 1.9 KB `_astro/index.css` link worth ~150ms; and no `modulepreload` for the
+  1.6 KB `svg-signal` chunk, which `BaseLayout`'s chunk statically imports — one extra round trip.
+- **The OG image is still an SVG**, which Twitter/X, Facebook, LinkedIn and Slack do not render, so
+  the share card currently shows nowhere. Pre-existing; spec §10 already schedules a build-time
+  `sharp` raster. Phase 9 at the latest.

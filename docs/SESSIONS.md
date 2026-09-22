@@ -7,6 +7,41 @@ This is not a changelog; git does that. It records intent, dead ends, and open t
 
 <!-- newest first -->
 
+## 2026-09-23 · claude-code · Phase 4 shell complete
+
+**Did**
+- Settled the owed framing decision and wrote it into `BUILD-PLAN.md` + `Addendum A` of `task-P4-brief.md`, which added Task 4.5.
+- Ran Phase 4 subagent-driven: one batched implementer (4.1–4.5), spec+quality review, one fix round, scoped re-review clean.
+- Shell landed: `global.css` dark reset + 0.42 KB `feTurbulence` grain, generated `favicon.svg` doubling as the nav wordmark, dark `BaseLayout`, Nav with CV always visible, Footer with the `|` completion bar, and the signal on a page-height layer.
+- Ran Lighthouse myself (none in the repo) to close the implementer's own "not verified" concern: desktop **100 / 96 / 100 / 100**, mobile **94 / 96 / 100 / 100**, CLS 0 and TBT 0 on both.
+- **Shipped JS on `/`: 2,039 → 52,332 gzip (+50,293).** 63.9% of the 80 KB budget; 29,588 left for Phases 5–9. Forecast was ~54.6 KB, so it came in 4.3 KB under. Build green, 18/18.
+
+**Decided**
+- **One whole-curve renderer on a page-height layer**, not per-section mounts (Noel's call). `createSvgSignal` loses its `section` argument; `toSvgPath`'s global mapping is then right by construction. `onPageProgress(fn)` joins `onSection` in `timeline.ts` as the only other place a ScrollTrigger is created.
+- **`CURVE_SAMPLE_DENSITY` is 480, measured not guessed** — 240 deviates 2.70px from the true curve against a 4px stroke on the real 1440×9163 page.
+- **`/websites` keeps the signal layer** — spec §14 already lists "the drawn line in 2D only" among what it inherits.
+- **Do not import `lenis/dist/lenis.css`** — all five rules verified inert here; it would add a render-blocking request for nothing. Phase 15 revisits, because its preloader calls `lenis.stop()`.
+- **Anchors are smoothed by `new Lenis({ anchors: true })`**, not `scroll-behavior: smooth`, which Task 4.1 removed.
+
+**Didn't work**
+- **`--virtual-time-budget` freezes rAF after one frame.** Proved with a recursive tracer: 1 frame over 3s, top-level and in-iframe. Lenis, ScrollTrigger and the dashoffset draw are all invisible under it — a screenshot shows frame 1, not the settled state. **Supersedes the 2026-09-20 note recommending it.** Motion needs real-time CDP; the anchor fix was unverifiable until that was built.
+- **The implementer's first clipping check proved nothing and passed anyway.** It sampled the document's bottom row at x=712 — where the completion bar paints the same `--signal` in the same pixels. Caught by the reviewer. Re-taken on `/dev/signal/?t=1`, which has neither nav nor bar.
+- **Insetting the layer by half the stroke does not un-clip the endpoint caps.** The root `<svg>` is `overflow: hidden` under the UA stylesheet; the inset just moves the clipped cap 2px inward. `overflow: visible` is the fix, and the inset is what makes it safe. The wrong reasoning had already been committed as a comment.
+- **My own ruling-1 grep was case-sensitive** and missed 24 lowercase `font-bricolage` strings — the exact hole the ruling was written to close. Inert, on components Phases 5–8 rewrite, but the ruling was weaker than intended.
+- **My "three z-index values" ruling was impossible.** Three cannot order grain/signal/content *and* nav/skip-link; the implementer used four and was right to.
+
+**Open**
+- Seven review minors deferred to the final whole-branch review, and three critical-path perf items (29 KiB unused JS, render-blocking 1.9 KB CSS, no `modulepreload` on the renderer chunk) held for **one** Phase 9 pass rather than piecemeal fixes. All listed in `BUILD-PLAN.md` → Known Gaps.
+- `--signal-gutter` is 86.4px against the curve's measured 163.8px left extreme. Phase 6 owns it; derive the gutter from the curve, not the reverse.
+- Archivo's `wdth` axis is still unconfirmed — Phase 5's first display heading is the decisive check.
+- The OG image is still SVG, so the share card renders nowhere. `src/pages/dev/signal.astro` still to be deleted before Phase 9.
+- Branch `feat/signal-path-rebuild` is unmerged, unpushed, no upstream.
+
+**Next**
+Phase 5 (Tasks 5.1–5.3) from `.superpowers/sdd/BUILD-PLAN/task-P5-brief.md`, starting with 5.1's `scripts/portrait.mjs` — it reports NEEDS_CONTEXT if the 3960×3960 source portrait is absent, so check that exists first. Read Known Gaps before dispatching: the reduced-motion delay net, the rAF/screenshot trap and the counting-stats a11y requirement all land directly in Phase 5's path.
+
+**Touched** — `BUILD-PLAN.md`, `src/styles/global.css`, `src/styles/tokens.css`, `src/layouts/BaseLayout.astro`, `src/components/Nav.astro`, `src/components/Footer.astro`, `src/lib/signal/svg-signal.ts`, `src/lib/motion/scroll.ts`, `src/lib/motion/timeline.ts`, `src/pages/dev/signal.astro`, `public/favicon.svg`, `public/og-image.svg`
+
 ## 2026-09-22 · claude-code · Task 2.2 review and Phase 3
 
 **Did**
