@@ -1,126 +1,197 @@
 ---
+/**
+ * The site nav — minimal, persistent, and zero JavaScript.
+ *
+ * Spec §9: the CV download is always visible. It is the primary conversion for a
+ * hiring manager, so it never goes behind a menu and never collapses at phone width;
+ * at narrow widths the section links wrap onto their own row instead. That wrap is
+ * also why there is no hamburger: a disclosure menu is a behaviour, and behaviour here
+ * would be an island rendering navigation that the server can render outright.
+ *
+ * The sound toggle is present but inert until Phase 13 builds the audio graph. It is
+ * rendered `disabled` with `aria-pressed="false"` rather than wired to a handler that
+ * does nothing — a control that responds but changes nothing is worse than one that
+ * plainly is not ready yet.
+ */
 import { nav } from '../data/content';
 ---
 
-<nav
-  class="nav-anim-entrance sticky top-0 z-50 border-b border-ink/[0.09]"
-  style="backdrop-filter:blur(10px);background:rgba(243,240,232,.82)"
->
-  <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-6 px-6 py-4 md:px-10">
-    <a
-      href="#top"
-      class="font-bricolage text-[22px] font-extrabold leading-none tracking-[-0.5px] text-ink no-underline"
-    >
-      NOEL S<span class="text-accent">.</span>
+<nav class="site-nav" aria-label="Primary">
+  <div class="site-nav__inner">
+    <a class="site-nav__brand" href="#top">
+      <img class="site-nav__mark" src="/favicon.svg" width="26" height="26" alt="" />
+      <span class="site-nav__name">Noel Sebastian</span>
     </a>
 
-    <div class="hidden items-center gap-[30px] md:flex">
-      {nav.map((l) => (
-        <a
-          href={l.href}
-          class="nav-link font-mono text-[12.5px] uppercase tracking-[1px] text-ink-secondary no-underline transition-colors duration-200 hover:text-accent"
-        >
-          {l.label}
-        </a>
+    <ul class="site-nav__links">
+      {nav.map((link) => (
+        <li>
+          <a class="site-nav__link" href={link.href}>{link.label}</a>
+        </li>
       ))}
-    </div>
+    </ul>
 
-    <a
-      href="#contact"
-      class="hidden items-center gap-2 rounded-full bg-accent px-[22px] py-3 text-sm font-bold text-white no-underline transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink md:inline-flex"
-    >
-      Book a Call →
-    </a>
-
-    <!-- Mobile hamburger -->
-    <button
-      id="mobile-menu-btn"
-      class="flex flex-col gap-1.5 p-2 md:hidden"
-      aria-label="Open menu"
-      aria-expanded="false"
-    >
-      <span class="block h-0.5 w-6 bg-ink"></span>
-      <span class="block h-0.5 w-6 bg-ink"></span>
-      <span class="block h-0.5 w-6 bg-ink"></span>
-    </button>
-  </div>
-
-  <!-- Mobile nav — controlled via is-open class + CSS transition -->
-  <div
-    id="mobile-nav"
-    class="gap-4 border-t border-ink/10 bg-cream px-[1.8rem] py-6 md:hidden"
-  >
-    {nav.map((l) => (
-      <a
-        href={l.href}
-        class="nav-link font-mono text-[13px] uppercase tracking-[1px] text-ink-secondary no-underline"
+    <div class="site-nav__actions">
+      <button
+        class="site-nav__sound"
+        type="button"
+        aria-pressed="false"
+        disabled
+        title="Sound design arrives in a later build"
       >
-        {l.label}
+        Sound off
+      </button>
+      <a class="site-nav__cv" href="/noel-sebastian.pdf" download>
+        Download CV
       </a>
-    ))}
-    <a
-      href="#contact"
-      class="mt-2 inline-flex w-fit items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-white no-underline"
-    >
-      Book a Call →
-    </a>
+    </div>
   </div>
 </nav>
 
-<script is:inline>
-  // ── Mobile nav toggle ──────────────────────────────────────────────────
-  var btn = document.getElementById('mobile-menu-btn');
-  var menu = document.getElementById('mobile-nav');
-  if (btn && menu) {
-    btn.addEventListener('click', function () {
-      var open = btn.classList.contains('is-open');
-      btn.classList.toggle('is-open', !open);
-      menu.classList.toggle('is-open', !open);
-      btn.setAttribute('aria-expanded', String(!open));
-      btn.setAttribute('aria-label', open ? 'Open menu' : 'Close menu');
-    });
-    menu.querySelectorAll('a').forEach(function (l) {
-      l.addEventListener('click', function () {
-        btn.classList.remove('is-open');
-        menu.classList.remove('is-open');
-        btn.setAttribute('aria-expanded', 'false');
-        btn.setAttribute('aria-label', 'Open menu');
-      });
-    });
+<style>
+  .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    border-bottom: 1px solid color-mix(in srgb, var(--type) 10%, transparent);
+    /* Fallback first: color-mix is well supported, but a nav with no background at all
+       would let the signal line run through the links. */
+    background: var(--ground);
+    background: color-mix(in srgb, var(--ground) 84%, transparent);
+    backdrop-filter: blur(10px);
   }
 
-  // ── Active nav section tracker ─────────────────────────────────────────
-  (function () {
-    var sectionIds = ['about', 'work', 'gallery', 'contact'];
-    var navLinks = document.querySelectorAll('.nav-link[href^="#"]');
-    var currentActive = null;
+  .site-nav__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4) var(--s-5);
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: var(--s-4) var(--s-5);
+  }
 
-    function getActiveSection() {
-      var threshold = window.innerHeight * 0.42;
-      var active = null;
-      sectionIds.forEach(function (id) {
-        var el = document.getElementById(id);
-        if (!el) return;
-        var top = el.getBoundingClientRect().top;
-        if (top <= threshold) active = id;
-      });
-      return active;
+  .site-nav__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-3);
+    color: var(--type);
+    text-decoration: none;
+  }
+
+  .site-nav__name {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+
+  .site-nav__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-nav__link {
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .site-nav__link:hover {
+    color: var(--type);
+  }
+
+  .site-nav__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+  }
+
+  .site-nav__sound,
+  .site-nav__cv {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .site-nav__sound {
+    padding: var(--s-2) var(--s-3);
+    border: 1px solid color-mix(in srgb, var(--type) 16%, transparent);
+    border-radius: var(--radius);
+    background: none;
+    color: var(--type-dim);
+  }
+
+  .site-nav__sound[disabled] {
+    /* Reads as not-yet rather than broken: still legible, plainly not operable. */
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* --signal on a CTA is exactly what §7.1 reserves it for. --ground on it rather than
+     white, so the label keeps the 6.05:1 the palette was measured at. */
+  .site-nav__cv {
+    padding: var(--s-2) var(--s-4);
+    border-radius: var(--radius);
+    background: var(--signal);
+    color: var(--ground);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .site-nav__cv:hover {
+    background: var(--type);
+  }
+
+  /* The global focus ring is --signal, which on a --signal CTA leaves only the 2px
+     offset gap to read. Cream separates from both the button and the ground. */
+  .site-nav__cv:focus-visible {
+    outline-color: var(--type);
+  }
+
+  @media (max-width: 768px) {
+    /* The links take their own row so the brand and the CV keep the first one. Order
+       matters more than space here — the CV never moves and never collapses. */
+    .site-nav__links {
+      order: 3;
+      flex-basis: 100%;
+      gap: var(--s-4);
+      font-size: 11px;
     }
 
-    function updateNavActive() {
-      var active = getActiveSection();
-      if (active === currentActive) return;
-      currentActive = active;
-      navLinks.forEach(function (link) {
-        var isActive = link.getAttribute('href') === '#' + active;
-        link.classList.toggle('nav-active', isActive);
-      });
+    .site-nav__inner {
+      padding: var(--s-3) var(--s-4);
+    }
+  }
+
+  @media (max-width: 560px) {
+    /* Measured: brand name, sound toggle and CV together overrun 390px and the CV was
+       the half that got clipped. The name goes to assistive tech only — the mark still
+       carries it, and the hero says it in 80px type a moment later. Clipped, not
+       display:none, so the brand link keeps an accessible name. */
+    .site-nav__name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
-    window.addEventListener('scroll', function () {
-      requestAnimationFrame(updateNavActive);
-    }, { passive: true });
-
-    updateNavActive();
-  })();
-</script>
+    .site-nav__actions {
+      gap: var(--s-2);
+    }
+  }
+</style>
