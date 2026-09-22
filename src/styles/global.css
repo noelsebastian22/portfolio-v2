@@ -1,315 +1,117 @@
-@layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
+/**
+ * The page frame — everything every page has, and nothing a section owns.
+ *
+ * Load order matters: tokens first, so every rule below (and every scoped component
+ * style Astro emits after it) can read `var(--ground)` and friends. This file is the
+ * only stylesheet `BaseLayout.astro` imports.
+ */
 
-  /* Skip-to-content link - visually hidden until focused */
-  .skip-link {
-    position: absolute;
-    z-index: 999;
-    top: -100%;
-    left: 12px;
-    padding: 12px 20px;
-    border-radius: 8px;
-    background: #16150F;
-    color: #F3F0E8;
-    font-family: 'Manrope', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: top 0.2s;
-  }
-  .skip-link:focus {
-    top: 12px;
-  }
+@import './tokens.css';
 
-  /* Custom focus ring */
-  :focus-visible {
-    outline: 2px solid #FF4B54;
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  textarea:focus-visible {
-    border-radius: 4px;
-  }
+/* ── Reset ──────────────────────────────────────────────────────────────────────── */
 
-  html {
-    scroll-behavior: smooth;
-    scroll-padding-top: 80px;
-  }
-
-  body {
-    margin: 0;
-    background-color: #F3F0E8;
-    color: #16150F;
-    font-family: 'Manrope', sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  ::selection {
-    background-color: #FF4B54;
-    color: #fff;
-  }
-
-  input:focus,
-  textarea:focus {
-    outline: none;
-  }
-
-  input::placeholder,
-  textarea::placeholder {
-    color: #6d675c;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-@layer utilities {
-  /* Scroll-triggered reveal — JS sets these; CSS defines the transition */
-  [data-reveal] {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
-                transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
-  }
-
-  [data-reveal].is-visible {
-    opacity: 1;
-    transform: none;
-  }
+html {
+  /* Sticky nav clearance for anchor jumps. Not motion — Lenis owns the smoothing and
+     `scroll-behavior: smooth` fights it, so it is deliberately absent. */
+  scroll-padding-top: var(--s-9);
+  -webkit-text-size-adjust: 100%;
 }
 
-/* ─── Hero entrance animations ─────────────────────────────────────────── */
-
-@keyframes hero-fade-up {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--type);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
 }
 
-@keyframes hero-slide-right {
-  from { opacity: 0; transform: translateX(-20px); }
-  to   { opacity: 1; transform: translateX(0); }
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
 }
 
-@keyframes hero-clip-reveal {
-  from {
-    clip-path: inset(0 0 100% 0);
-    transform: translateY(10px);
-  }
-  to {
-    clip-path: inset(0 0 0% 0);
-    transform: translateY(0);
-  }
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
 }
 
-@keyframes hero-panel-in {
-  from { opacity: 0; transform: translateX(28px) scale(0.97); }
-  to   { opacity: 1; transform: translateX(0) scale(1); }
-}
+/* ── The page grain — spec §10, procedural ──────────────────────────────────────── */
 
-@keyframes nav-slide-down {
-  from { transform: translateY(-100%); opacity: 0; }
-  to   { transform: translateY(0);     opacity: 1; }
-}
-
-.hero-anim-status {
-  animation: hero-slide-right 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
-}
-
-.hero-anim-headline {
-  animation: hero-clip-reveal 0.82s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both;
-}
-
-.hero-anim-body {
-  animation: hero-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.48s both;
-}
-
-.hero-anim-cta {
-  animation: hero-fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.62s both;
-}
-
-.hero-anim-chip {
-  animation: hero-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.hero-anim-panel {
-  animation: hero-panel-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
-}
-
-.nav-anim-entrance {
-  animation: nav-slide-down 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
-}
-
-/* ─── Active nav link ──────────────────────────────────────────────────── */
-
-.nav-link.nav-active {
-  color: #FF4B54 !important;
-}
-
-/* ─── Mobile nav slide ─────────────────────────────────────────────────── */
-
-#mobile-nav {
-  display: flex;
-  flex-direction: column;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  transition: max-height 0.38s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              padding 0.38s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-#mobile-nav.is-open {
-  max-height: 500px;
-  opacity: 1;
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  #mobile-nav {
-    display: none !important;
-  }
-}
-
-/* ─── Hamburger → X ────────────────────────────────────────────────────── */
-
-#mobile-menu-btn span {
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.2s ease;
-  transform-origin: center;
-}
-
-#mobile-menu-btn.is-open span:nth-child(1) {
-  transform: translateY(8px) rotate(45deg);
-}
-
-#mobile-menu-btn.is-open span:nth-child(2) {
-  opacity: 0;
-  transform: scaleX(0);
-}
-
-#mobile-menu-btn.is-open span:nth-child(3) {
-  transform: translateY(-8px) rotate(-45deg);
-}
-
-/* ─── Scroll progress bar ───────────────────────────────────────────────── */
-
-#scroll-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #FF4B54;
-  transform: scaleX(0);
-  transform-origin: left;
-  z-index: 200;
-  will-change: transform;
-  pointer-events: none;
-}
-
-/* ─── Process row border draw ──────────────────────────────────────────── */
-
-.process-row {
-  position: relative;
-}
-
-.process-row::before {
+/**
+ * Warm black reads flat and digital without it. A tiled `feTurbulence` as a data-URI:
+ * CSS-only, zero JS, ~0.4 KB, and desaturated inside the filter so the speckle cannot
+ * pull the ground cool. Static — nothing animates, so no `prefers-reduced-motion` guard
+ * is owed. Fixed rather than absolute: it costs one viewport of compositing instead of a
+ * document-height one, and it adds nothing to the document's height.
+ */
+body::after {
   content: '';
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grain);
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+/* ── Focus, selection, skip link ────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+::selection {
+  background: var(--signal);
+  color: var(--ground);
+}
+
+/* Visually hidden until focused, and first in the tab order on every page. */
+.skip-link {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: rgba(243, 240, 232, 0.15);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.12s;
+  top: calc(-1 * var(--s-10));
+  left: var(--s-3);
+  z-index: var(--z-skip);
+  padding: var(--s-3) var(--s-5);
+  border-radius: var(--radius);
+  background: var(--ground-lift);
+  color: var(--type);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-decoration: none;
+  transition: top 0.2s;
 }
 
-.process-row.is-visible::before {
-  transform: scaleX(1);
+.skip-link:focus {
+  top: var(--s-3);
 }
 
-/* ─── Responsive layout overrides ─────────────────────────────────────── */
+/* ── Reduced motion ─────────────────────────────────────────────────────────────── */
 
-/* Hero: stack NS panel below text on mobile */
-@media (max-width: 767px) {
-  .hero-grid {
-    grid-template-columns: 1fr !important;
-    gap: 20px !important;
-  }
-  .hero-panel {
-    min-height: 0 !important;
-    aspect-ratio: 1 / 0.6 !important;
-  }
-}
-
-/* About: stack columns on mobile, portrait floats to top */
-@media (max-width: 767px) {
-  .about-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .about-portrait {
-    order: -1;
-  }
-  .about-cols {
-    grid-template-columns: 1fr !important;
-    gap: 28px !important;
-  }
-}
-
-/* Stats: 2-column on mobile */
-@media (max-width: 639px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    row-gap: 32px !important;
-  }
-}
-
-/* Compact padding on mobile */
-@media (max-width: 767px) {
-  .px-section,
-  .px-10 {
-    padding-left: 1.8rem !important;
-    padding-right: 1.8rem !important;
-  }
-}
-
-/* ─── Respect prefers-reduced-motion ───────────────────────────────────── */
-
+/**
+ * Choreography becomes an instant state change, not a slower one. The motion layer
+ * handles its own half of this (`reducedMotion()` in scroll.ts); this is the CSS half,
+ * and it is a frame-level net so no section has to remember.
+ */
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
-  [data-reveal] {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-
-  /* Collapse all keyframe animations and transitions instantly */
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-delay: 0s !important;
+    animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  /* Ensure process row borders are visible without animation */
-  .process-row::before {
-    transform: scaleX(1) !important;
-  }
-
-  /* Hide scroll progress bar — it's decoration */
-  #scroll-progress {
-    display: none;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
   }
 }

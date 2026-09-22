@@ -26,6 +26,13 @@
   --font-body:    'Archivo', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
+  /* The signal's own stroke weight. A stroke is not spacing: --s-1 happens to be 4px
+     too, but reading a spacing token off a stroke-width line misleads the next editor. */
+  --signal-stroke: 4px;
+
+  /* One corner radius for the whole shell, so radii are not re-guessed per component. */
+  --radius: 4px;
+
   /* Spacing ramp — spec §7.3 */
   --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
   --s-5: 24px;  --s-6: 32px;  --s-7: 48px;  --s-8: 64px;
@@ -36,6 +43,16 @@
 
   /* The signal's reserved left column — spec §7.3 */
   --signal-gutter: clamp(48px, 6vw, 96px);
+
+  /* Stacking — spec §10's layers, bottom to top: the ground, the grain, the signal,
+     then content. The two decorative layers sit at negative indices so ordinary in-flow
+     content paints above them without every section having to opt into a z-index; the
+     ground survives beneath them because body's background paints on the canvas.
+     --z-nav and --z-skip are the only things that sit above content, in that order. */
+  --z-grain:  -2;
+  --z-signal: -1;
+  --z-nav:     10;
+  --z-skip:    20;
 }
 
 @media (max-width: 768px) {
