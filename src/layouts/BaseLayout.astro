@@ -1,4 +1,14 @@
 ---
+/**
+ * The page frame, on the Signal Path palette.
+ *
+ * Two slots and nothing else: `head` for per-page schema, and the default slot for the
+ * page body. Nav and Footer are composed by the pages themselves, because /websites
+ * needs a different nav and a trimmed footer.
+ *
+ * The SEO block below is carried over unchanged from the cream direction — the schema,
+ * canonical URLs and OG/Twitter tags were correct and are not part of the rebuild.
+ */
 import '../styles/global.css';
 import { yearsElapsed } from '../lib/career';
 
@@ -109,93 +119,21 @@ const collectionPageSchema = {
     <slot name="head" />
   </head>
   <body>
-    <div id="scroll-progress" aria-hidden="true"></div>
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <slot />
 
-    <!-- Scroll-reveal: IntersectionObserver-based, zero scroll-event overhead -->
-    <script is:inline>
-      (function () {
-        var reduce =
-          window.matchMedia &&
-          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    <!--
+      The first JavaScript the site has shipped since Phase 0 removed React. Lenis and
+      GSAP's ticker come in here, and every later phase hangs off the driver this starts.
 
-        if (reduce) {
-          document.querySelectorAll('[data-reveal]').forEach(function (el) {
-            el.classList.add('is-visible');
-          });
-          return;
-        }
+      The three inline scripts this replaces — an IntersectionObserver reveal, a scroll
+      progress bar, and a hero parallax — were each their own scroll pathway. The scroll
+      is the transport now, and it has exactly one.
+    -->
+    <script>
+      import { initScroll } from '../lib/motion/scroll';
 
-        var io = new IntersectionObserver(function (entries) {
-          entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('is-visible');
-              io.unobserve(entry.target);
-            }
-          });
-        }, { threshold: 0, rootMargin: '0px 0px -48px 0px' });
-
-        document.addEventListener('DOMContentLoaded', function () {
-          document.querySelectorAll('[data-reveal]').forEach(function (el) {
-            io.observe(el);
-          });
-        });
-      })();
+      initScroll();
     </script>
-
-    <script is:inline>
-      // ── Scroll progress bar ────────────────────────────────────────────────
-      (function () {
-        var bar = document.getElementById('scroll-progress');
-        if (!bar) return;
-
-        function updateProgress() {
-          var scrollTop = window.scrollY;
-          var docHeight = document.documentElement.scrollHeight - window.innerHeight;
-          var progress = docHeight > 0 ? scrollTop / docHeight : 0;
-          bar.style.transform = 'scaleX(' + Math.min(progress, 1) + ')';
-        }
-
-        window.addEventListener('scroll', function () {
-          requestAnimationFrame(updateProgress);
-        }, { passive: true });
-
-        updateProgress();
-      })();
-
-      // ── Hero parallax ──────────────────────────────────────────────────────
-      (function () {
-        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (reduce) return;
-
-        if (window.matchMedia('(max-width: 767px)').matches) return;
-
-        var panelInner = document.querySelector('.hero-panel-inner');
-        var textCol = document.querySelector('.hero-text-col');
-        var heroEl = document.querySelector('header');
-
-        if (!panelInner && !textCol) return;
-
-        function updateParallax() {
-          var scrollY = window.scrollY;
-          var heroHeight = heroEl ? heroEl.offsetHeight : 0;
-
-          if (scrollY >= heroHeight + 80) {
-            if (panelInner) panelInner.style.transform = '';
-            if (textCol) textCol.style.transform = '';
-            return;
-          }
-
-          if (panelInner) panelInner.style.transform = 'translateY(' + (-scrollY * 0.22) + 'px)';
-          if (textCol) textCol.style.transform = 'translateY(' + (-scrollY * 0.1) + 'px)';
-        }
-
-        window.addEventListener('scroll', function () {
-          requestAnimationFrame(updateParallax);
-        }, { passive: true });
-      })();
-    </script>
-
   </body>
 </html>
