@@ -1,29 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
-  <rect width="1200" height="630" fill="#F3F0E8"/>
-  <!-- Decorative ring -->
-  <circle cx="920" cy="315" r="220" fill="none" stroke="#16150F" stroke-width="2" opacity="0.08"/>
-  <circle cx="920" cy="315" r="180" fill="none" stroke="#16150F" stroke-width="2" opacity="0.06"/>
-  <!-- Accent mark -->
-  <rect x="80" y="80" width="16" height="16" rx="8" fill="#FF4B54"/>
-  <!-- Name -->
-  <text x="80" y="220" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-size="72" font-weight="800" fill="#16150F" letter-spacing="-3">
+  <!--
+    Share card on the Signal Path palette (spec §7.1). Replaces the cream
+    "Technical Letterpress" card, which contradicted the direction.
+
+    The line is the same generated geometry as public/favicon.svg — the `years` and
+    `work` spans of the canonical curve — scaled up, not redrawn. Colours are the
+    token values; a static asset in public/ cannot read tokens.css.
+
+    No year count anywhere: this file cannot call yearsElapsed(), and a hard-coded one
+    would be wrong within twelve months. The old card said "9+ YEARS".
+  -->
+  <rect width="1200" height="630" fill="#0A0908"/>
+
+  <!-- The signal, arriving from the right. Same glyph as the favicon, stroke lightened
+       for the larger size. -->
+  <g transform="translate(792 132) scale(11)" opacity="0.92">
+    <path
+      d="M10.70 4.00 L7.59 5.11 L5.51 6.03 L7.55 6.80 L11.21 7.50 L14.69 8.17 L18.16 8.85 L21.64 9.53 L25.13 10.26 L28.00 11.04 L25.41 11.90 L21.36 12.85 L17.42 13.89 L13.47 15.03 L9.62 16.25 L6.42 17.57 L4.91 18.92 L4.17 20.28 L4.36 21.64 L4.18 23.00 L4.00 24.33 L4.39 25.62 L4.91 26.86 L5.84 28.00"
+      fill="none"
+      stroke="#FF4B54"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+
+  <text x="80" y="268" font-family="Archivo, 'Helvetica Neue', Arial, sans-serif" font-size="78" font-weight="800" fill="#F2EFE7" letter-spacing="-3">
     NOEL SEBASTIAN
   </text>
-  <!-- Tagline -->
-  <text x="80" y="280" font-family="Manrope,Arial,sans-serif" font-size="28" fill="#413D34">
+
+  <text x="80" y="326" font-family="Archivo, 'Helvetica Neue', Arial, sans-serif" font-size="30" fill="#8A857C">
     Senior Web Engineer &amp; Angular Specialist
   </text>
-  <!-- Meta -->
-  <text x="80" y="340" font-family="'Space Mono',monospace" font-size="18" fill="#716B60" letter-spacing="3">
-    9+ YEARS · SYDNEY, AU · AVAILABLE FOR FREELANCE
+
+  <text x="80" y="392" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="19" fill="#8A857C" letter-spacing="3">
+    SYDNEY, AU · OPEN TO SENIOR FRONTEND ROLES
   </text>
-  <!-- NS monogram -->
-  <text x="790" y="360" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-size="160" font-weight="800" fill="#16150F" letter-spacing="-8" opacity="0.12">
-    NS
-  </text>
-  <!-- Bottom accent line -->
-  <rect x="80" y="490" width="1040" height="3" fill="#FF4B54"/>
-  <text x="80" y="540" font-family="Manrope,Arial,sans-serif" font-size="20" fill="#716B60">
-    noelsebastian.dev
+
+  <!-- The completion bar, as it terminates the signal in the footer (spec §6). -->
+  <rect x="80" y="500" width="4" height="44" fill="#FF4B54"/>
+  <text x="104" y="533" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="20" fill="#F2EFE7">
+    www.noel-sebastian.com
   </text>
 </svg>

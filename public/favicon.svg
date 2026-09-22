@@ -1,5 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#F3F0E8"/>
-  <text x="16" y="22" font-family="Georgia,serif" font-weight="900" font-size="18" fill="#16150F" text-anchor="middle" letter-spacing="-0.5">NS</text>
-  <circle cx="24" cy="22" r="3.5" fill="#FF4B54"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Noel Sebastian">
+  <!--
+    The signal mark (spec §10) — favicon and nav wordmark, one file, two uses.
+
+    Not hand-drawn. The `d` below is generated output from the canonical curve in
+    src/lib/signal/path.ts, taken over t 0.14 to 0.54: the `years` and `work` spans,
+    seam to seam, which is the Nine Years horizontal run and the sweep back to the left
+    margin — the curve's two most characteristic gestures. The whole curve was tried
+    first and turns to mush below about 48px; this span stays legible at 16.
+
+    Fitted to the 32x32 box (4px padding, aspect deliberately not preserved) because a
+    favicon is square and the curve is not. A static asset in public/ cannot import
+    TypeScript, so the coordinates and the two hex values are duplicated here. The
+    regenerating command lives in <metadata> below rather than in this comment because
+    XML forbids a double hyphen inside a comment and the command has flags.
+
+    To regenerate: run that command from the repo root and paste its output over the
+    `d` attribute. Never tune these numbers by hand — one canonical curve.
+  -->
+  <metadata>node --input-type=module -e "import {sampleSignalRange as s} from './src/lib/signal/path.ts';const W=1000,H=1000,K=24,O=4,P=s(0.14,0.54,24),X=P.map(p=>((p.x+1)/2)*W),Y=P.map(p=>p.y*H),x0=Math.min(...X),x1=Math.max(...X),y0=Math.min(...Y),y1=Math.max(...Y);console.log(P.map((p,i)=>(i?' L':'M')+((X[i]-x0)/(x1-x0)*K+O).toFixed(2)+' '+((Y[i]-y0)/(y1-y0)*K+O).toFixed(2)).join(''))"</metadata>
+  <path
+    d="M10.70 4.00 L7.59 5.11 L5.51 6.03 L7.55 6.80 L11.21 7.50 L14.69 8.17 L18.16 8.85 L21.64 9.53 L25.13 10.26 L28.00 11.04 L25.41 11.90 L21.36 12.85 L17.42 13.89 L13.47 15.03 L9.62 16.25 L6.42 17.57 L4.91 18.92 L4.17 20.28 L4.36 21.64 L4.18 23.00 L4.00 24.33 L4.39 25.62 L4.91 26.86 L5.84 28.00"
+    fill="none"
+    stroke="#FF4B54"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 </svg>
