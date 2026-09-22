@@ -1135,3 +1135,24 @@ decision was made; this section records *what it is*.
 - **The OG image is still an SVG**, which Twitter/X, Facebook, LinkedIn and Slack do not render, so
   the share card currently shows nowhere. Pre-existing; spec §10 already schedules a build-time
   `sharp` raster. Phase 9 at the latest.
+
+### Opened by Task 5.1 — 2026-09-23
+
+- **`scripts/optimise-gallery.mjs` encodes every gallery asset twice, and the second pass throws
+  the settings away.** It builds a buffer with `.webp({ quality: 72 })` / `.webp({ quality: 76 })`
+  and then writes it with `sharp(buffer).toFile(...)` — re-opening an already-encoded buffer, which
+  re-encodes it at sharp's *default* WebP quality and discards the quality the line above asked
+  for. So the committed gallery files are double-encoded (generation loss) at a quality nobody
+  chose. Found while writing `scripts/portrait.mjs`, which avoids it by writing the encoded buffer
+  with `writeFile` and says why in a comment.
+- **Consequence: `npm run images` dirties the tree.** Re-running it rewrites committed gallery
+  assets to different bytes (`ezytrack-scroll.webp` 192,436 → 279,384), which means the committed
+  gallery assets were not produced by the current script against the current libvips. Task 5.1
+  reverted the churn rather than fixing it. **Phase 6 owns this** — it rewrites the gallery anyway,
+  so the re-encode and the byte change land there rather than as a drive-by now.
+  Workaround meanwhile: run `node scripts/portrait.mjs` directly to re-bake the portrait. Verified
+  deterministic — a re-run leaves the tree clean.
+- **`About.astro`'s portrait mount still carries dead Tailwind-era styling** (`border-2 border-ink`,
+  an inline box-shadow). Inert since Phase 0, but the new portrait is engineered to dissolve into
+  `--ground` with no edges, so a border around it is the wrong mount. Whichever phase rebuilds
+  that section drops it.
