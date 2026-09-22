@@ -8,7 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "images": "node scripts/optimise-gallery.mjs"
+    "images": "node scripts/optimise-gallery.mjs && node scripts/portrait.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.0.0",
