@@ -24,6 +24,8 @@ html {
 }
 
 body {
+  /* Anchors #signal-layer, which spans the whole document. */
+  position: relative;
   margin: 0;
   background: var(--ground);
   color: var(--type);
@@ -63,6 +65,41 @@ body::after {
   pointer-events: none;
   opacity: 0.05;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+/* ── The signal layer — spec §6, mounted by BaseLayout ──────────────────────────── */
+
+/**
+ * Out of flow on purpose: an in-flow page-height element would add to the document
+ * height, which feeds straight back into its own measurement and into `onPageProgress`.
+ * Decorative throughout — `aria-hidden` in the markup, `pointer-events: none` here.
+ *
+ * Inset top and bottom by half the stroke so the round caps at the curve's two
+ * endpoints (y 0 and y 1) are not sliced in half by the `<svg>`'s own clip. Letting the
+ * stroke overflow instead would put 2px of paint below the document's last pixel, which
+ * is the one kind of overflow that grows the scroll height.
+ */
+#signal-layer {
+  position: absolute;
+  inset: calc(var(--signal-stroke) / 2) 0;
+  z-index: var(--z-signal);
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  /**
+   * Spec §7.3: no room for a reserved column at phone width — the same breakpoint that
+   * zeroes --signal-gutter — so the line runs behind the copy at low opacity instead.
+   *
+   * 0.15 is set by contrast, not by taste. Text sitting directly on one of the line's
+   * horizontal runs reads against the blend of --signal into --ground, and at the 0.3
+   * that first looked right, --type-dim falls to 3.66:1 — below AA. Measured over the
+   * blended background: --type 14.96:1, --type-dim 4.69:1. Both clear AA, and --type
+   * clears AAA, so body copy is comfortably readable and not merely passing.
+   */
+  #signal-layer {
+    opacity: 0.15;
+  }
 }
 
 /* ── Focus, selection, skip link ────────────────────────────────────────────────── */

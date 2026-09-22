@@ -120,6 +120,12 @@ const collectionPageSchema = {
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <!-- The signal (spec §6): one whole-curve layer behind everything, spanning the
+         document. Decorative, so it is out of the accessibility tree entirely — every
+         word it illustrates is in the content it sits behind. -->
+    <div id="signal-layer" aria-hidden="true"></div>
+
     <slot />
 
     <!--
@@ -132,8 +138,17 @@ const collectionPageSchema = {
     -->
     <script>
       import { initScroll } from '../lib/motion/scroll';
+      import { onPageProgress } from '../lib/motion/timeline';
+      import { createSvgSignal } from '../lib/signal/svg-signal';
 
+      // Order matters: initScroll() starts the shared ticker the trigger runs on.
       initScroll();
+
+      const layer = document.getElementById('signal-layer');
+      if (layer) {
+        const signal = createSvgSignal(layer);
+        onPageProgress((t) => signal.setProgress(t));
+      }
     </script>
   </body>
 </html>

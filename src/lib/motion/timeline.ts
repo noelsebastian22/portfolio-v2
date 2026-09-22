@@ -1,19 +1,22 @@
 /**
- * Section registration on top of the shared scroll driver (`scroll.ts`).
+ * Scroll registration on top of the shared scroll driver (`scroll.ts`).
  *
- * `onSection` is the only place in the codebase allowed to create a `ScrollTrigger` —
- * sections describe *what* moves, this module owns *how* it is wired to scroll. One
- * trigger per registered element is correct and is not a violation of "no section uses
- * its own ScrollTrigger": the rule is about ownership, not count. A caller never imports
+ * This module is the only place in the codebase allowed to create a `ScrollTrigger` —
+ * callers describe *what* moves, this module owns *how* it is wired to scroll. One
+ * trigger per registration is correct and is not a violation of "no section uses its own
+ * ScrollTrigger": the rule is about ownership, not count. A caller never imports
  * `ScrollTrigger` itself.
  *
+ * Two registrations, one contract. `onSection` reports progress across one element's own
+ * span; `onPageProgress` reports it across the whole document. Everything else about them
+ * is identical, including the reduced-motion behaviour below.
+ *
  * Under `prefers-reduced-motion`, no trigger is created at all: `fn` fires once,
- * synchronously, at its end state (local progress 1), and the returned unsubscribe is a
+ * synchronously, at its end state (progress 1), and the returned unsubscribe is a
  * no-op — there is nothing to tear down.
  *
- * SSR safety: `onSection` only ever runs from a browser-side call site (a section mounts
- * and calls it with a real element), but it still touches no DOM/BOM state at module
- * scope, matching every other module in this layer.
+ * SSR safety: both only ever run from a browser-side call site, but the module still
+ * touches no DOM/BOM state at module scope, matching every other module in this layer.
  */
 
 import { gsap } from 'gsap';
@@ -31,19 +34,24 @@ function ensurePluginRegistered(): void {
 }
 
 /**
- * Registrations seen per section, so multiple elements sharing a `SectionId` (the Ring's
+ * Registrations seen per scope, so multiple elements sharing a `SectionId` (the Ring's
  * five cards, all `id: 'ring'`) get distinct trigger ids instead of colliding. GSAP's
  * registry is last-write-wins on a duplicate id, and `kill()` deletes its registry entry
  * unconditionally — with a shared id, killing one trigger silently unregisters a sibling
  * that is still alive. The suffix keeps the label readable in devtools while making each
  * one unique.
+ *
+ * `'page'` shares the counter for exactly the same reason: a second page-progress
+ * registration after a view transition must not be able to kill the first one's entry.
  */
-const registrationsPerSection = new Map<SectionId, number>();
+type TriggerScope = SectionId | 'page';
 
-function nextTriggerId(id: SectionId): string {
-  const count = (registrationsPerSection.get(id) ?? 0) + 1;
-  registrationsPerSection.set(id, count);
-  return `${id}-${count}`;
+const registrationsPerScope = new Map<TriggerScope, number>();
+
+function nextTriggerId(scope: TriggerScope): string {
+  const count = (registrationsPerScope.get(scope) ?? 0) + 1;
+  registrationsPerScope.set(scope, count);
+  return `${scope}-${count}`;
 }
 
 /**
@@ -74,5 +82,35 @@ export function onSection(
   // Kills the trigger rather than merely dropping the callback — six sections
   // registering and unregistering across view transitions would otherwise leak one
   // ScrollTrigger apiece every time the page navigates.
+  return () => trigger.kill();
+}
+
+/**
+ * Registers `fn` to receive progress across the whole document (0..1, from the page at
+ * the top of the scroll to the page at the bottom of it) as the page scrolls. Returns an
+ * unsubscribe that kills the underlying trigger.
+ *
+ * The sibling of `onSection` for anything spanning the page rather than one section —
+ * the signal layer, above all. Driven by a `ScrollTrigger` rather than by polling
+ * `globalProgress()` on the ticker: that reads `window.scrollY`, which is accurate under
+ * Lenis, but it is a second scroll pathway running alongside `ScrollTrigger` and it would
+ * drift from anything a later phase pins.
+ */
+export function onPageProgress(fn: (t: number) => void): () => void {
+  if (reducedMotion()) {
+    fn(1); // End state immediately: no animation, no trigger to leak.
+    return () => {};
+  }
+
+  ensurePluginRegistered();
+
+  const trigger = ScrollTrigger.create({
+    id: nextTriggerId('page'),
+    trigger: document.body,
+    start: 'top top',
+    end: 'bottom bottom',
+    onUpdate: (self) => fn(self.progress),
+  });
+
   return () => trigger.kill();
 }

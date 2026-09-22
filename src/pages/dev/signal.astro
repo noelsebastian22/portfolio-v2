@@ -2,11 +2,14 @@
 /**
  * Dev-only harness for the 2D SVG signal renderer (Task 2.2).
  *
- * Scaffolding, not product: there is no real page to mount the signal on until Phase 4
- * builds the shell. This page exists so the renderer can be driven and screenshotted in
- * isolation, and so Phase 3 has something standalone to debug motion against before the
- * real sections exist. Delete before the Phase 9 ship (tracked in BUILD-PLAN.md → Known
- * Gaps — do not remove that note when this page goes).
+ * Scaffolding, not product. It exists so the renderer can be driven and screenshotted
+ * in isolation of the page, and so motion can be debugged without the rest of the site
+ * in the way. Delete before the Phase 9 ship (tracked in BUILD-PLAN.md → Known Gaps —
+ * do not remove that note when this page goes).
+ *
+ * Task 4.5 made the renderer draw the whole curve and dropped its `section` argument.
+ * This harness always drove it from *global* scroll progress, so that change made it
+ * mean what it already looked like it meant rather than breaking it.
  *
  * Deliberately no Lenis or GSAP: both arrive in Phase 3. A raw scroll listener is correct
  * here, and is what lets this page debug Phase 3 itself rather than depending on it.
@@ -78,11 +81,6 @@ import '../../styles/tokens.css';
     <script>
       import { createSvgSignal } from '../../lib/signal/svg-signal';
 
-      // One representative section is enough to verify the renderer; picking between
-      // sections is not what this harness is for. `work` sweeps nearly the full -1..1
-      // width, which makes drawn-vs-undrawn obvious in a screenshot.
-      const SECTION = 'work' as const;
-
       const mount = document.getElementById('signal-mount');
       const readout = document.getElementById('signal-readout');
 
@@ -90,10 +88,10 @@ import '../../styles/tokens.css';
         throw new Error('dev/signal: #signal-mount not found');
       }
 
-      const signal = createSvgSignal(mount, SECTION);
+      const signal = createSvgSignal(mount);
 
       function report(t: number, mode: 'query' | 'scroll'): void {
-        if (readout) readout.textContent = `t = ${t.toFixed(3)}  ·  section = ${SECTION}  ·  mode = ${mode}`;
+        if (readout) readout.textContent = `t = ${t.toFixed(3)}  ·  mode = ${mode}`;
       }
 
       const requestedT = new URLSearchParams(window.location.search).get('t');

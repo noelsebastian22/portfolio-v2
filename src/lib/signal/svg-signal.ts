@@ -1,10 +1,17 @@
 /**
  * The 2D SVG renderer for the signal.
  *
- * Draws one section's span of the canonical curve (`path.ts`) as a single `<path>` and
- * reveals it by animating `stroke-dashoffset` against `setProgress`. This is the fast,
- * always-available path — the Phase 10 Three.js tube samples the same curve so the two
- * are identically choreographed rather than one approximating the other.
+ * Draws the whole canonical curve (`path.ts`) as a single `<path>` into one page-height
+ * layer, and reveals it by animating `stroke-dashoffset` against global page progress.
+ * This is the fast, always-available path — the Phase 10 Three.js tube samples the same
+ * curve so the two are identically choreographed rather than one approximating the other.
+ *
+ * One renderer, one layer, one `<path>`. It draws the whole curve because `toSvgPath`
+ * maps whatever points it is given across the whole box it is given: hand it the whole
+ * curve and the whole page and the mapping is right by construction. Splitting the line
+ * across per-section mounts would mean six independently scaled spans meeting at six
+ * seams, which is six lines that look like one until a seam disagrees — and §6 asks for
+ * a continuous line.
  *
  * No framework: the `<svg>` and `<path>` are built with `document.createElementNS` and
  * torn down explicitly in `destroy()`. Geometry is sampled once from `path.ts` at
@@ -12,9 +19,14 @@
  * rendered length; it never re-samples the curve.
  */
 
-import { SECTION_SPANS, sampleSignalRange, toSvgPath, type SectionId } from './path';
+import { sampleSignalRange, toSvgPath } from './path';
 
 export interface SvgSignal {
+  /**
+   * Reveals the curve up to `t`, where `t` is progress across the **whole document**,
+   * 0..1 — the value `onPageProgress` reports, not a section-local one. Passing a
+   * section's own progress here draws the wrong fraction of the line.
+   */
   setProgress(t: number): void;
   destroy(): void;
 }
@@ -25,13 +37,24 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const RESIZE_DEBOUNCE_MS = 150;
 
 /**
- * Points sampled per unit of global `t`. A section gets a share of this proportional to
- * its own span width (`sectionWidth * CURVE_SAMPLE_DENSITY`), so point density — and
- * therefore visual smoothness — stays consistent whether a section owns 8% or 24% of the
- * curve. `MIN_SAMPLES` is a floor for the very short sections.
+ * How many points the whole curve is sampled at. The path is a plain polyline, so this
+ * is what smoothness costs: the drawn chords deviate from the true curve by an amount
+ * that grows with the box the curve is stretched into.
+ *
+ * Measured deviation against a 4px stroke, worst case over the whole curve (it peaks at
+ * t ≈ 0.30, the corner where `years` hands over to `work`):
+ *
+ *   box            n=240    n=320    n=480
+ *   1440 x 9163    2.70px   1.54px   0.69px   ← a 1440 viewport, the real page
+ *   2560 x 14000   4.81px   2.73px   1.22px   ← a wide desktop, a longer page
+ *   375 x 14000    0.71px   0.40px   0.18px   ← phone; the narrow box dominates
+ *
+ * 240 was set in Task 2.2 against a 1000x480 mount and no longer holds: at the page
+ * scale it is two thirds of the stroke width. 480 keeps the worst case under half the
+ * stroke out past a 2560px-wide window, and doubles the `d` string rather than tripling
+ * it. Deviation falls roughly as 1/n², so raising this further buys very little.
  */
-const CURVE_SAMPLE_DENSITY = 240;
-const MIN_SAMPLES = 16;
+const CURVE_SAMPLE_DENSITY = 480;
 
 function clamp01(value: number): number {
   if (!(value > 0)) return 0; // also catches NaN
@@ -39,21 +62,16 @@ function clamp01(value: number): number {
   return value;
 }
 
-export function createSvgSignal(mount: HTMLElement, section: SectionId): SvgSignal {
-  const span = SECTION_SPANS.find((s) => s.id === section);
-  if (!span) {
-    throw new Error(`signal/svg-signal: unknown section "${section}"`);
-  }
-
+export function createSvgSignal(mount: HTMLElement): SvgSignal {
+  // Deliberately not `reducedMotion()` from ../motion/scroll: that module imports gsap
+  // and lenis at module scope, so importing it here would pull ~50 KB gzip into the 2D
+  // fallback's own graph and couple it to the motion layer. A local matchMedia is the
+  // whole of what is needed.
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Sampled once: this is geometry from path.ts and does not depend on pixel size, so a
   // resize never re-samples the curve — only `toSvgPath` re-scales these same points.
-  const sampleCount = Math.max(
-    MIN_SAMPLES,
-    Math.round((span.tEnd - span.tStart) * CURVE_SAMPLE_DENSITY),
-  );
-  const points = sampleSignalRange(span.tStart, span.tEnd, sampleCount);
+  const points = sampleSignalRange(0, 1, CURVE_SAMPLE_DENSITY);
 
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.style.display = 'block';
@@ -64,7 +82,7 @@ export function createSvgSignal(mount: HTMLElement, section: SectionId): SvgSign
   const path = document.createElementNS(SVG_NS, 'path');
   path.setAttribute('fill', 'none');
   path.style.stroke = 'var(--signal)';
-  path.style.strokeWidth = 'var(--s-1)';
+  path.style.strokeWidth = 'var(--signal-stroke)';
   path.style.strokeLinecap = 'round';
   path.style.strokeLinejoin = 'round';
 
@@ -82,13 +100,17 @@ export function createSvgSignal(mount: HTMLElement, section: SectionId): SvgSign
   }
 
   /**
-   * Re-scales the cached points into the mount's current pixel box, sets the viewBox to
-   * match, and re-measures `getTotalLength()` — the length changes with the box even
+   * Re-scales the cached points into the `<svg>`'s current pixel box, sets the viewBox
+   * to match, and re-measures `getTotalLength()` — the length changes with the box even
    * though the underlying curve did not.
+   *
+   * The `<svg>`'s box, not the mount's: the `<svg>` is `width: 100%`, so any padding on
+   * the mount would make `mount.clientWidth` larger than the space the curve actually
+   * has and silently scale it down.
    */
   function measureAndDraw(): void {
-    const width = mount.clientWidth;
-    const height = mount.clientHeight;
+    const width = svg.clientWidth;
+    const height = svg.clientHeight;
     // Not laid out yet (zero-size mount). The next resize/observer tick retries; there is
     // nothing honest to draw into a box with no area.
     if (width <= 0 || height <= 0) return;
@@ -118,10 +140,11 @@ export function createSvgSignal(mount: HTMLElement, section: SectionId): SvgSign
     }, RESIZE_DEBOUNCE_MS);
   }
 
-  // ResizeObserver over a window resize listener: it also catches the mount's own box
-  // changing size for reasons unrelated to the viewport (layout shifts, sidebar toggles).
+  // Observes the `<svg>` for the same reason it is measured rather than the mount, and
+  // over a window resize listener because a page-height layer also changes size when the
+  // document does — images loading, fonts swapping, a section expanding.
   const resizeObserver = new ResizeObserver(scheduleRemeasure);
-  resizeObserver.observe(mount);
+  resizeObserver.observe(svg);
 
   // Draw synchronously on creation rather than waiting for the observer's first
   // (asynchronous) callback, so a caller that calls setProgress() immediately after
