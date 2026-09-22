@@ -64,7 +64,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 1 | Content model rewrite | **complete** | Rebuilt from `docs/resume-transcript.md`; year derived in 7 places |
 | 2 | Signal path core (2D) | **complete** | 51-point curve + SVG renderer. Both tasks reviewed clean |
 | 3 | Motion infrastructure | **complete** | Lenis + one GSAP ticker; `onSection()` owns every ScrollTrigger |
-| 4 | Shell — layout, nav, footer | not started | Expanded to tasks 4.1–4.4 below |
+| 4 | Shell — layout, nav, footer | not started | Tasks 4.1–4.5 below; 4.5 added 2026-09-22 with the framing decision |
 | 5 | Sections 01–02 — Hero, Nine Years | not started | Expanded to tasks 5.1–5.3 below |
 | 6 | Section 03 — Selected Work + diagrams | not started | |
 | 7 | Section 04 — The Ring (2D rail) | not started | |
@@ -718,6 +718,34 @@ batched forms (`task-P4-brief.md`, `task-P5-brief.md`) that carry standing const
   interactive element, tab order linear, skip-link still first in the tab order.
   This is the phase's stated verification and it is not optional.
 
+### Task 4.5 — Mount the signal layer (added 2026-09-22)
+
+Carries the whole-curve framing decision (see Decisions, 2026-09-22). Full step list lives in
+`Addendum A` of `.superpowers/sdd/BUILD-PLAN/task-P4-brief.md`; the substance, so a cold session
+is not dependent on a gitignored brief:
+
+- [ ] **Step 1:** `createSvgSignal(mount)` — drop the `section` argument, sample
+  `sampleSignalRange(0, 1, CURVE_SAMPLE_DENSITY)`, and re-measure polyline faceting against the
+  much larger box before trusting `CURVE_SAMPLE_DENSITY = 240`. `setProgress` now means *global*
+  page progress. Measure the `<svg>`'s own box, not the mount's, or padding on the mount silently
+  scales the curve down.
+- [ ] **Step 2:** Add `onPageProgress(fn)` to `src/lib/motion/timeline.ts` — a sibling of
+  `onSection` reporting 0..1 across the document, same reduced-motion contract, still the only
+  place a `ScrollTrigger` is created. Do not poll `globalProgress()` on the ticker instead; that is
+  a second scroll pathway and it will drift from anything a later phase pins.
+- [ ] **Step 3:** One `<div id="signal-layer" aria-hidden="true">` in `BaseLayout.astro`,
+  absolutely positioned and `pointer-events: none`, so it cannot add to document height and feed
+  back into its own measurement. Stacking: ground, grain, signal, content.
+- [ ] **Step 4:** Below 768px, drop the layer's opacity — spec §7.3, no reserved column at phone
+  width so the line goes behind the content.
+- [ ] **Step 5:** The curve terminates at `x: 0, y: 1`, inside the footer. Meet it with the Task
+  4.4 `|` completion bar, or record why not.
+- [ ] **Step 6:** Report shipped JS gzip and the delta from **2,039 bytes**. This commit is where
+  the deferred ~54.6 KB motion bill lands.
+- [ ] **Step 7:** Do NOT import `reducedMotion()` from `motion/scroll.ts` into `svg-signal.ts` —
+  `scroll.ts` imports gsap and lenis at module scope, so it would drag the whole motion layer into
+  the renderer's import graph. The renderer's local `matchMedia` check stays.
+
 
 ## PHASE 5 — Sections 01–02: Hero and Nine Years
 
@@ -957,6 +985,30 @@ decision was made; this section records *what it is*.
 - **2026-09-20** — The signal curve's speed limit is structural: `speed ≈ gap × (N−1)`, so keep
   `max_gap × (N−1) ≤ 15`. The lever for dramatic geometry is subdivision, not tamer motion.
 
+- **2026-09-22** — `reducedMotion()` guards `typeof matchMedia === 'undefined'`, **not**
+  `typeof window`. `vitest.config.ts` sets no `environment`, so tests run in plain Node where
+  `window` is undefined even after `globalThis.matchMedia` is stubbed; a window guard would pin
+  `reducedMotion()` to false and make its own required test unsatisfiable. It is also strictly more
+  defensive. The Task 3.1 brief specified the window guard and was wrong. **Do not revert this.**
+- **2026-09-22** — Every `ScrollTrigger` id carries a per-section counter suffix (`ring-1`,
+  `ring-2`), because GSAP's registry is last-write-wins on a duplicate id and `kill()` deletes the
+  entry unconditionally — a shared id means killing one trigger silently unregisters a live
+  sibling. The counter never decrements; reuse after a `kill()` would recreate the collision.
+- **2026-09-22** — A review dispatch must state that the commit range has already been
+  attribution-normalised. Reviewers have flagged the controller's own trailer as an implementer
+  violation, and in the other direction flagged a trailer they could not see. Third finding on
+  this project; it has cost real time each time.
+- **2026-09-22** — **The signal is one whole-curve renderer on a single page-height layer behind
+  all content, not a per-section mount.** `createSvgSignal(mount, section)` loses its `section`
+  argument and draws `sampleSignalRange(0, 1, ...)`; `toSvgPath`'s global mapping is then correct
+  by construction. `setProgress` takes global page progress, driven by a new
+  `onPageProgress(fn)` in `src/lib/motion/timeline.ts` — a sibling of `onSection` with the same
+  contract, and still the only place a `ScrollTrigger` is created. Rejected the per-section
+  alternative: it needs a second coordinate space, makes every section seam a place two
+  independently-scaled spans must meet at the same pixel, and cannot produce §6's *continuous*
+  line. Noel's call; implementation lands as Task 4.5 (see `Addendum A` in
+  `.superpowers/sdd/BUILD-PLAN/task-P4-brief.md`).
+
 ## Known Gaps
 
 - No test framework existed before Phase 0. Vitest covers pure modules only —
@@ -971,11 +1023,13 @@ decision was made; this section records *what it is*.
   raw scroll listener otherwise. Scaffolding: delete it before the Phase 9 ship.
 - **The `/dev/signal` harness (`src/pages/dev/signal.astro`) must be deleted before the Phase 9
   ship.** It is `noindex` but it is scaffolding, and it is why the build now reports 3 pages.
-- **DECISION OWED BEFORE PHASE 4: `createSvgSignal`'s per-section API and `toSvgPath`'s global
-  coordinate space are incompatible.** `toSvgPath` maps the normalised curve over the *whole*
-  box it is given (`x` → `((x+1)/2)·width`, `y` → `y·height`), but `createSvgSignal(mount, section)`
-  hands it only one section's points and the mount's full box. Each section therefore draws its
-  global slice into a page-sized space and leaves the rest empty. Measured at a 1000×480 mount:
+- **RESOLVED 2026-09-22 (was: decision owed before Phase 4) — the signal is one whole-curve,
+  page-height layer.** `createSvgSignal`'s per-section API and `toSvgPath`'s global coordinate
+  space were incompatible: `toSvgPath` maps the normalised curve over the *whole* box it is given
+  (`x` → `((x+1)/2)·width`, `y` → `y·height`), but `createSvgSignal(mount, section)` handed it one
+  section's points and the mount's full box, so each section drew its global slice into a
+  page-sized space. Measured box-fill at a 1000×480 mount — kept because it is the evidence the
+  decision rests on:
 
   | section | drawn width | drawn height | box area filled |
   |---|---|---|---|
@@ -986,14 +1040,18 @@ decision was made; this section records *what it is*.
   | stack | 27% | 14% | 3.8% |
   | contact | 8% | 8% | **0.7%** |
 
-  Two coherent resolutions, and Phase 4 must pick one: **(a)** one renderer for the whole curve on
-  a single page-height layer — the global mapping is then exactly right and the `section` parameter
-  should go; or **(b)** keep per-section mounts and pass the section's own bounding box so each span
-  is normalised into its own element. Note that the line traverses the page horizontally (§6: the
-  Nine Years run "travels the width of the page"), so it cannot be confined to the 48–96px
-  `--signal-gutter` — the gutter is where the line's *left margin* sits, not its full extent.
-  Nothing is blocked before Phase 4: Task 3.1's `onSection(id, fn)` passes a local 0..1 and is
-  indifferent to how the renderer maps coordinates.
+  The resolution is one renderer for the whole curve on a single page-height layer; the `section`
+  parameter goes and the global mapping becomes correct by construction. See Decisions
+  (2026-09-22) for the full statement and `Addendum A` in
+  `.superpowers/sdd/BUILD-PLAN/task-P4-brief.md` for the Task 4.5 implementation.
+- **OPEN, Phase 6 owns it: `--signal-gutter` is about half the width the line actually occupies.**
+  From `work` onward the curve parks at `x ≈ −0.76`, which maps to ~12% of the layer's width — about
+  173px at a 1440px viewport. `--signal-gutter` is `clamp(48px, 6vw, 96px)`, about 86px there. Spec
+  §7.3 reserves that column for the line and says content never encroaches, so content laid out
+  against the current token would sit on top of the line from section 03 onward. Nothing before
+  Phase 6 lays out a section, so nothing is blocked. Settle it by deriving the gutter from the
+  curve's measured minimum `x`, not by moving the curve — the geometry is the design and the token
+  was a guess.
 - **`onSection`'s first callback arrives on the next refresh/rAF pass, not synchronously inside the
   `onSection()` call.** A section already on screen at page load *does* receive its initial progress
   — traced through `ScrollTrigger.refresh()`'s `isFirstRefresh && !_refreshingAll && self.update()`,
