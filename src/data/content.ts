@@ -35,8 +35,6 @@ export const status = {
   availability: 'Open to senior frontend roles',
 } as const;
 
-export const heroChips = [`${yearsElapsed()}+ years`, 'Angular v20', 'Nx · NgRx', 'Available for freelance'];
-
 export const marqueeItems = [
   'Angular v20', 'TypeScript', 'NgRx', 'Nx Monorepos', 'RxJS',
   'SCSS', 'NestJS', 'Astro', 'Nuxt', 'Next.js', 'Signals', 'Jest',
