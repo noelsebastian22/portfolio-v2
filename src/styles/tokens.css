@@ -44,15 +44,23 @@
   /* The signal's reserved left column — spec §7.3 */
   --signal-gutter: clamp(48px, 6vw, 96px);
 
-  /* Stacking — spec §10's layers, bottom to top: the ground, the grain, the signal,
-     then content. The two decorative layers sit at negative indices so ordinary in-flow
-     content paints above them without every section having to opt into a z-index; the
-     ground survives beneath them because body's background paints on the canvas.
-     --z-nav and --z-skip are the only things that sit above content, in that order. */
-  --z-grain:  -2;
+  /* Stacking — spec §10's layers, bottom to top: the ground, the signal, content,
+     the nav, the skip link, and the grain over all of it. The signal sits at a negative
+     index so ordinary in-flow content paints above it without every section having to
+     opt into a z-index; the ground survives beneath it because body's background paints
+     on the canvas.
+
+     The grain is deliberately LAST, not first. Behind content it was covered by every
+     opaque element, which punched a grain-free rectangle out of the page wherever an
+     image sat — measured on the portrait at 10,9,7 against the grained ground's
+     15,14,13. Film grain belongs over the whole frame, and at 0.05 opacity with
+     pointer-events: none it veils nothing: the alternative was a bespoke mask on every
+     image the site will ever add, which §9.03's case-study screenshots cannot use
+     anyway, because a screenshot has to read as a rectangle. */
   --z-signal: -1;
   --z-nav:     10;
   --z-skip:    20;
+  --z-grain:   30;
 }
 
 @media (max-width: 768px) {

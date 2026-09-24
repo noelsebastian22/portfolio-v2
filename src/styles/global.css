@@ -56,6 +56,10 @@ textarea {
  * pull the ground cool. Static — nothing animates, so no `prefers-reduced-motion` guard
  * is owed. Fixed rather than absolute: it costs one viewport of compositing instead of a
  * document-height one, and it adds nothing to the document's height.
+ *
+ * It paints ABOVE content (--z-grain, see tokens.css) rather than behind it. Behind, every
+ * opaque element covered it and read as a rectangle against a grained ground. Raising it
+ * changes only the paint order — the layer is already fixed and one viewport either way.
  */
 body::after {
   content: '';

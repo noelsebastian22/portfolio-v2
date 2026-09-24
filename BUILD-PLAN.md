@@ -1073,6 +1073,24 @@ decision was made; this section records *what it is*.
   is never constructed, so anchors stay native and instant — which is the correct behaviour there
   and needs no extra guard.
 
+- **2026-09-24 (Noel)** — **The page grain paints above content, not behind it.** `--z-grain`
+  moves from `-2` to `30`, over the nav and the skip link. Behind content it was covered by every
+  opaque element, punching a grain-free rectangle out of the page wherever an image sat (portrait
+  corners 10,9,7 against the grained ground's 15,14,13). The layer is `position: fixed` either way,
+  so this changes paint order and nothing else — no extra compositing area. Measured after the
+  change: open ground unchanged at mean 14.69 / stddev 1.254, grain now present over the portrait,
+  and body copy at 2x magnification is indistinguishable from before. The alternative — a bespoke
+  mask per image — cannot work for §9.03's case-study screenshots, which have to read as rectangles.
+  Task 5.2's radial mask on the portrait stays: it is now an aesthetic choice rather than a fix.
+- **2026-09-24 (Noel)** — **The gutter is derived from the curve, and the line dims where it still
+  crosses content.** Phase 6 derives `--signal-gutter` from the curve's measured minimum `x`
+  (~163.8px at 1440) rather than the guessed `clamp(48px, 6vw, 96px)`, and reserves that column for
+  sections 03–06 per §7.3. Sections 01–02, which §7.3 grants no gutter, instead dim the signal
+  behind content — an extension of the phone-width behaviour §7.3 already specifies, not a new rule.
+  Forced by section 02 being the first section whose centre column is not empty: `--type` on
+  `--signal` is ~2.9:1, so every glyph the 4px stroke crosses is under-contrasted, and it currently
+  threads the gaps by luck. **Phase 6 implements both halves.**
+
 ## Known Gaps
 
 - No test framework existed before Phase 0. Vitest covers pure modules only —
@@ -1186,7 +1204,8 @@ decision was made; this section records *what it is*.
 
 ### Opened by Phase 5 — 2026-09-24
 
-- **DECISION OWED BEFORE PHASE 6: the page grain punches a hole around every opaque element.**
+- **RESOLVED 2026-09-24 — the grain now paints above content (see Decisions). Original finding:**
+  **the page grain punches a hole around every opaque element.**
   `body::after` carries the grain at `z-index: -2`, behind all content, so any opaque in-flow
   element covers it and reads as a rectangle against a grained ground. Measured on the real page:
   ground **15,14,13** with grain against the portrait's corners at **10,9,7**. This is not a
@@ -1200,7 +1219,8 @@ decision was made; this section records *what it is*.
   adds a ground to a ground. The general alternatives are to raise the grain above content (costs a
   compositing layer over the whole document) or to accept masks per image. **Phase 6 needs a
   standing answer before it places its first case-study image.**
-- **DECISION OWED BEFORE PHASE 6: text now crosses the signal, and the overlap is under-contrasted.**
+- **DECIDED 2026-09-24, Phase 6 implements (see Decisions) — text now crosses the signal, and the
+  overlap is under-contrasted.**
   Phase 4's deferred minor (4) is no longer latent. Section 02 is the first section whose centre
   column is not empty, and the curve runs through it — visibly across "since 2016" in the lede and
   straight through the "90%+" statistic. `--type` on `--signal` is about **2.9:1**, below AA, so
