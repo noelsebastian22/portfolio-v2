@@ -65,7 +65,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 2 | Signal path core (2D) | **complete** | 51-point curve + SVG renderer. Both tasks reviewed clean |
 | 3 | Motion infrastructure | **complete** | Lenis + one GSAP ticker; `onSection()` owns every ScrollTrigger |
 | 4 | Shell — layout, nav, footer | **complete** | Tasks 4.1–4.5, reviewed clean after 1 fix round. First JS since Phase 0 |
-| 5 | Sections 01–02 — Hero, Nine Years | not started | Expanded to tasks 5.1–5.3 below |
+| 5 | Sections 01–02 — Hero, Nine Years | **complete** | Tasks 5.1–5.3. First two islands; Stats.astro retired into NineYears |
 | 6 | Section 03 — Selected Work + diagrams | not started | |
 | 7 | Section 04 — The Ring (2D rail) | not started | |
 | 8 | Sections 05–06 — Stack, Contact | not started | |
@@ -150,6 +150,29 @@ fast, accessible site that can go live. Phases 10–15 are enhancement on a work
 If time runs out, stopping at 9 leaves something genuinely good rather than half-built.
 
 ---
+
+### Measured after Phase 5 — 2026-09-24
+
+The first two islands, and the first sections built on the dark system.
+
+| | Value |
+|---|---|
+| Build | green, 3 pages |
+| **Shipped JS on `/`** | **53,241 bytes gzip** — `timeline` chunk 50,657 + `svg-signal` 1,613 + two entry chunks 737 + the hero island, inlined into the HTML |
+| Against the 80 KB budget | **65.0% spent, 28,679 bytes gzip left** for Phases 6–9 |
+| Delta from Phase 4 | **+909** (52,332 → 53,241) — the hero +244, section 02 the rest |
+| Tests | 18 passing across 3 files — none added |
+
+Two islands cost under a kilobyte because Vite hoisted gsap and Lenis into a shared
+`timeline.*.js` chunk the moment a second entry imported the motion layer. The library
+bill was already paid by Phase 4; sections now draw against it rather than adding to it,
+which is the shape the budget was forecast on.
+
+**Measurement methodology, so Phase 9 reproduces these.** `gzip -c <path>` — by name, so the
+filename header is included. Reading the same bytes from stdin measures ~60 bytes smaller and
+`zlib.gzipSync` ~130 larger. Chunk-summing alone also understates: the hero island is small
+enough that Astro inlines it into `index.html` rather than emitting a chunk, so it appears in
+no `_astro/*.js` listing while still shipping.
 
 ## File Structure
 
@@ -1101,7 +1124,11 @@ decision was made; this section records *what it is*.
   write Phase 5 code that assumes the renderer has been given a progress value by the time
   `onSection()` returns. Give renderers a sane value at construction instead — `SvgSignal` already
   defaults to 0.
-- **Archivo's `wdth` axis is confirmed only circumstantially** — Fontsource metadata declares
+- **RESOLVED 2026-09-24 by Task 5.2 — Archivo's `wdth` axis is live.** `SENIOR WEB ENGINEER` at
+  64px/800 measures condensed **521.16px**, normal **787.83px**, expanded **984.58px** (+24.97% over
+  normal); `font-stretch` keywords and raw `font-variation-settings` agree to the hundredth of a
+  pixel. `public/fonts/archivo-var.woff2` is the right file. Original entry, for the record:
+  **Archivo's `wdth` axis is confirmed only circumstantially** — Fontsource metadata declares
   wdth 62–125, and `-wdth-` (90,104 bytes) is 2.6× the weight-only `-wght-` (34,928). No font
   tooling on this machine. The decisive check is visual: the first display heading rendered with
   `font-stretch` expanded, in Phase 4/5. If Expanded never appears, that file is the first suspect.
@@ -1156,3 +1183,47 @@ decision was made; this section records *what it is*.
   an inline box-shadow). Inert since Phase 0, but the new portrait is engineered to dissolve into
   `--ground` with no edges, so a border around it is the wrong mount. Whichever phase rebuilds
   that section drops it.
+
+### Opened by Phase 5 — 2026-09-24
+
+- **DECISION OWED BEFORE PHASE 6: the page grain punches a hole around every opaque element.**
+  `body::after` carries the grain at `z-index: -2`, behind all content, so any opaque in-flow
+  element covers it and reads as a rectangle against a grained ground. Measured on the real page:
+  ground **15,14,13** with grain against the portrait's corners at **10,9,7**. This is not a
+  portrait problem — Task 5.1's "dissolves to exactly `--ground`, no visible boundary" is true of
+  the *asset* and false of the *page*, and it generalises to every full-bleed image the site adds
+  (§9.03's case-study shots, §9.04's ring cards). Task 5.2 fixed its own instance with a
+  `radial-gradient(farthest-side …)` mask — `farthest-side` puts the radii on the mid-edges so the
+  corners, where a rectangle reads loudest, fall outside the mask — and verified at 9× contrast
+  boost that the grain runs continuously across the area. **`mix-blend-mode: screen` was tried
+  first and measured worse** (22,21,18): the asset dissolves to `--ground`, not to black, so screen
+  adds a ground to a ground. The general alternatives are to raise the grain above content (costs a
+  compositing layer over the whole document) or to accept masks per image. **Phase 6 needs a
+  standing answer before it places its first case-study image.**
+- **DECISION OWED BEFORE PHASE 6: text now crosses the signal, and the overlap is under-contrasted.**
+  Phase 4's deferred minor (4) is no longer latent. Section 02 is the first section whose centre
+  column is not empty, and the curve runs through it — visibly across "since 2016" in the lede and
+  straight through the "90%+" statistic. `--type` on `--signal` is about **2.9:1**, below AA, so
+  wherever a 4px stroke crosses a glyph that glyph is under-contrasted. It currently threads the
+  gaps by luck rather than by design. This is the same question as `--signal-gutter` being half the
+  curve's real extent, and Phase 6 already owns that — settle both together: derive the gutter from
+  the curve's measured minimum `x`, and decide whether the line dims behind content (§7.3 already
+  does this at phone width) or content routes around it.
+- **The JS budget has been measured with two blind spots all along.** The hero island is inlined
+  into `index.html` rather than emitted as a chunk, so a chunk-only sum misses it; and
+  `Gallery.astro`'s `is:inline` script (~1.1 KB raw) has never been counted in any phase figure.
+  Deltas between phases are still sound because the omission is consistent, but the **absolute**
+  number understates what ships. Phase 9 must measure every script the page actually loads —
+  external chunks, module-inlined scripts and `is:inline` blocks — not just `_astro/*.js`.
+- **`mountHeroClock()` is not idempotent.** Each call adds a `visibilitychange` listener and starts
+  a `setTimeout` chain nothing cancels. Nothing re-mounts it today, but `scroll.ts` is deliberately
+  written to survive an Astro view transition re-mounting it, so the codebase anticipates them. If
+  view transitions land (Phase 15 is the likely place), that is a leaked timer and listener per
+  navigation. Minor; fold into the final whole-branch review.
+- **Archivo's middot is a square, and nothing chose that.** The H1's `·` separator renders as a
+  filled square block at display size. Verified it is genuinely Archivo's U+00B7 — the glyph is in
+  the font (`document.fonts.check` true, 35.95px advance at 86px) and differs from both serif's and
+  system-ui's round dots, while Archivo's own U+2022 bullet is round. So it is not a tofu and not a
+  fallback. On the dark palette in `--signal` it happens to read as an emission mark, which is
+  on-concept, but it was inherited rather than decided, and the same `·` renders round in the mono
+  voice (the status rail, the `01 · of('Noel Sebastian')` caption). Noel's call.
