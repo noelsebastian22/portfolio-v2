@@ -1,0 +1,501 @@
+---
+/**
+ * Section 02 — the career as a marble diagram. Spec §9.02.
+ *
+ * Five emissions, one per engagement, coloured by the §6 state logic, plus the four
+ * accumulating statistics. It absorbs the retired `Stats.astro`: those four numbers are
+ * §9.02's "accumulating statistics" and belong to this section, and that component's
+ * counter was a second scroll pathway — its own IntersectionObserver plus a fixed 1100ms
+ * `requestAnimationFrame` loop, which is the timer-driven animation §7.4 forbids and
+ * exactly what `onSection()` exists to replace.
+ *
+ * Geography is structure, not a claim. The emissions are grouped by country, each group
+ * sized to the number of engagements it holds, so India → UK → Australia is something
+ * the layout shows rather than something the copy asserts — which is what substantiates
+ * the "3 countries" statistic standing a few hundred pixels below it.
+ *
+ * Nothing here is written as a literal. The heading reads its cities out of `timeline`,
+ * the year count comes from `yearsElapsed()` through `stats`, and the statistics are
+ * split into digits and suffix at build time so the island never has to parse content.
+ */
+import { stats, timeline } from '../data/content';
+import type { EmissionState, TimelineEntry } from '../data/content';
+
+/**
+ * The non-colour carrier for emission state, required by spec §13 — colour is never the
+ * only thing saying which engagement is live. One word per state, rendered for every
+ * emission so the five columns keep the same number of lines.
+ */
+const STATE_WORD: Record<EmissionState, string> = {
+  live: 'Current',
+  shipped: 'Shipped',
+  historical: 'Complete',
+};
+
+/**
+ * en-US, not en-AU or en-GB, for one reason: month abbreviations. Both of those
+ * abbreviate September as "Sept" (en-AU spells June and July in full as well), so the
+ * rows read "Dec 2023 — June 2025" and "Sept 2025 — Present" beside "Feb 2022 — Dec
+ * 2023" and the column of dates stops lining up. en-US is the one that abbreviates all
+ * twelve to three letters. Nothing else here is locale-sensitive — the order is
+ * month-then-year either way.
+ */
+const MONTH_YEAR = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** 'YYYY-MM' → 'Oct 2016'. UTC throughout, so the label cannot slip a month westward. */
+function monthYear(yearMonth: string): string {
+  const [year, month] = yearMonth.split('-').map(Number);
+  return MONTH_YEAR.format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+function period(entry: TimelineEntry): string {
+  return `${monthYear(entry.from)} — ${entry.to ? monthYear(entry.to) : 'Present'}`;
+}
+
+/**
+ * Consecutive entries sharing a country, in page order. Consecutive rather than grouped
+ * by name on purpose: a return to a country later in a career is a second span on the
+ * diagram, not a retrospective merge with the first.
+ */
+interface CountryRun {
+  country: string;
+  entries: TimelineEntry[];
+}
+
+const countryRuns = timeline.reduce<CountryRun[]>((runs, entry) => {
+  const current = runs.at(-1);
+  if (current && current.country === entry.country) current.entries.push(entry);
+  else runs.push({ country: entry.country, entries: [entry] });
+  return runs;
+}, []);
+
+const firstCity = timeline[0].city;
+const latestCity = timeline.at(-1)!.city;
+const firstYear = timeline[0].from.slice(0, 4);
+
+/**
+ * Each statistic split into the part that can count and the part that cannot, so the
+ * island interpolates a number and never parses a string of content. A value that is
+ * not digits-then-suffix simply ships as itself and does not animate.
+ */
+const countingStats = stats.map((stat) => {
+  const parsed = /^(\d+)(.*)$/.exec(stat.n);
+  return {
+    label: stat.l,
+    value: stat.n,
+    digits: parsed?.[1] ?? null,
+    suffix: parsed?.[2] ?? '',
+  };
+});
+---
+
+<section class="years" id="years" data-years>
+  <div class="years__inner">
+    <header class="years__head">
+      <p class="years__marker">02 — scan()</p>
+      <h2 class="years__title">From {firstCity} to {latestCity}</h2>
+      <p class="years__lede">
+        Every engagement since {firstYear}, in order — the live emission is the role I
+        hold now.
+      </p>
+    </header>
+
+    <ol class="years__run" role="list">
+      {countryRuns.map((run) => (
+        <li class="years__country" style={`--span:${run.entries.length}`}>
+          <h3 class="years__country-name">{run.country}</h3>
+          <ol class="years__emissions" role="list">
+            {run.entries.map((entry) => (
+              <li class="emission" data-emission data-state={entry.state}>
+                <span class="emission__rail" aria-hidden="true"></span>
+                <span class="emission__mark" aria-hidden="true"></span>
+                <div class="emission__body">
+                  <p class="emission__state">{STATE_WORD[entry.state]}</p>
+                  <p class="emission__period">{period(entry)}</p>
+                  <p class="emission__role">{entry.role}</p>
+                  <p class="emission__company">{entry.company}</p>
+                  <p class="emission__place">{entry.city}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </li>
+      ))}
+    </ol>
+
+    <ul class="stats" role="list">
+      {countingStats.map((stat) => (
+        <li class="stat">
+          <p class="stat__value">
+            {/* The real number, always final, always in the accessibility tree — spec
+                §13. The digits beside it are decoration and are hidden from it. */}
+            <span class="stat__truth">{stat.value}</span>
+            {stat.digits ? (
+              <Fragment>
+                <span
+                  class="stat__digits"
+                  aria-hidden="true"
+                  data-count-to={stat.digits}
+                  style={`--digits:${stat.digits.length}`}
+                >{stat.digits}</span><span class="stat__suffix" aria-hidden="true">{stat.suffix}</span>
+              </Fragment>
+            ) : (
+              <span aria-hidden="true">{stat.value}</span>
+            )}
+          </p>
+          <p class="stat__label">{stat.label}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .years {
+    padding-block: var(--section-y);
+  }
+
+  .years__inner {
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--s-5);
+  }
+
+  /* ── Section head ────────────────────────────────────────────────────────────── */
+
+  .years__marker,
+  .years__lede {
+    margin: 0;
+  }
+
+  /* Deliberately not uppercased, unlike the rest of the mono voice: `scan()` is an
+     RxJS operator, and an operator set in capitals stops being an identifier and starts
+     being a label. The tracking still makes it read as part of the same system. */
+  .years__marker {
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .years__title {
+    max-width: 18ch;
+    margin: var(--s-4) 0 var(--s-4);
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: clamp(32px, 4.2vw, 62px);
+    font-stretch: 125%;
+    font-weight: 700;
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+
+  .years__lede {
+    max-width: 52ch;
+    color: var(--type-dim);
+    font-size: clamp(15px, 1.15vw, 17px);
+    line-height: 1.6;
+  }
+
+  /* ── The run ─────────────────────────────────────────────────────────────────── */
+
+  .years__run {
+    display: flex;
+    /* The gap falls between countries and nowhere else, so the rail breaks exactly
+       where he crossed a border and runs unbroken everywhere else. */
+    gap: var(--s-6);
+    margin: clamp(var(--s-8), 7vw, var(--s-10)) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .years__country {
+    display: flex;
+    flex-direction: column;
+    /* Proportional to how many engagements the country holds, so every emission on the
+       row ends up the same width and the country bands read as spans of the timeline. */
+    flex: var(--span) 1 0;
+    min-width: 0;
+  }
+
+  .years__country-name {
+    margin: 0 0 var(--s-4);
+    padding-bottom: var(--s-3);
+    border-bottom: 1px solid color-mix(in srgb, var(--type) 12%, transparent);
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .years__emissions {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* ── One emission ────────────────────────────────────────────────────────────── */
+
+  .emission {
+    --emission: var(--type-dim);
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    padding-top: var(--s-6);
+    padding-right: var(--s-4);
+  }
+
+  /* Spec §6's state logic, and the only place it is written down in this component. */
+  .emission[data-state='live'] {
+    --emission: var(--signal);
+  }
+
+  .emission[data-state='shipped'] {
+    --emission: var(--shipped);
+  }
+
+  /* Each emission carries its own segment of the rail, so the line under a run of
+     engagements is the engagements, and it changes colour where the work does. */
+  .emission__rail {
+    position: absolute;
+    top: var(--s-5);
+    right: 0;
+    left: 0;
+    height: 1px;
+    background: color-mix(in srgb, var(--emission) 45%, transparent);
+    transform-origin: left center;
+  }
+
+  .emission__mark {
+    position: absolute;
+    top: calc(var(--s-5) - 5px);
+    left: 0;
+    width: 11px;
+    height: 11px;
+    border: 1.5px solid var(--emission);
+    border-radius: 50%;
+    /* Hollow for everything but the live emission — a second, non-colour difference
+       between "this is where he is now" and the rest of the run. */
+    background: var(--ground);
+  }
+
+  .emission[data-state='live'] .emission__mark {
+    background: var(--emission);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--signal) 16%, transparent);
+  }
+
+  .emission__body > * {
+    margin: 0;
+  }
+
+  .emission__state {
+    margin-bottom: var(--s-2);
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    /* 11px, not the 10 it started at: it would have been the smallest type on the site,
+       and the tracking below already buys it the separation from the period line. */
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .emission[data-state='live'] .emission__state {
+    color: var(--type);
+  }
+
+  .emission__period {
+    margin-bottom: var(--s-3);
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .emission__role {
+    color: var(--type);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .emission__company {
+    margin-top: var(--s-1);
+    color: var(--type);
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .emission__place {
+    margin-top: var(--s-2);
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Arrival, driven by scroll position ──────────────────────────────────────── */
+
+  /**
+   * The arrived state is the default, so with JavaScript off every emission is simply
+   * there. `data-motion` is set by the island on mount and is what opts the section
+   * into having a from-state at all.
+   */
+  .years[data-motion] .emission__rail {
+    transform: scaleX(0);
+    transition: transform 0.55s ease-out;
+  }
+
+  .years[data-motion] .emission__mark {
+    transform: scale(0);
+    /* Spec §7.4's emission easing: a slight overshoot, so they arrive rather than
+       fade in. */
+    transition: transform 0.45s cubic-bezier(0.34, 1.5, 0.64, 1);
+  }
+
+  .years[data-motion] .emission__body {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+  }
+
+  .years[data-motion] .emission.is-arrived .emission__rail {
+    transform: scaleX(1);
+  }
+
+  .years[data-motion] .emission.is-arrived .emission__mark {
+    transform: scale(1);
+  }
+
+  .years[data-motion] .emission.is-arrived .emission__body {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── The accumulating statistics ─────────────────────────────────────────────── */
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--s-6) var(--s-5);
+    margin: clamp(var(--s-8), 7vw, var(--s-10)) 0 0;
+    /* The UA's 40px list indent would otherwise push the numbers off the left edge every
+       other element on the page shares. */
+    padding: var(--s-7) 0 0;
+    border-top: 1px solid color-mix(in srgb, var(--type) 12%, transparent);
+    list-style: none;
+  }
+
+  .stat__value {
+    margin: 0;
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: clamp(34px, 4vw, 56px);
+    font-stretch: 125%;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  /**
+   * The accessible copy of the number: the final value, server-rendered, never touched
+   * by the island — spec §13 wants assistive technology given the answer immediately
+   * rather than a stream of intermediate ones. Clipped rather than `display: none`, so
+   * it is read; the digits beside it are `aria-hidden` and are the only thing that
+   * moves.
+   */
+  .stat__truth {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .stat__digits {
+    display: inline-block;
+    /* Reserved at the final digit count and right-aligned, so counting up from 0 to 90
+       moves nothing to its right. */
+    min-width: calc(var(--digits) * 1ch);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat__label {
+    margin: var(--s-3) 0 0;
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── Narrow ──────────────────────────────────────────────────────────────────── */
+
+  @media (max-width: 980px) {
+    /* The run turns vertical: one country under the next, one engagement under the
+       next, with the rail running down the left instead of across. */
+    .years__run,
+    .years__emissions {
+      flex-direction: column;
+    }
+
+    .years__run {
+      gap: var(--s-7);
+    }
+
+    .emission {
+      padding-top: 0;
+      padding-right: 0;
+      padding-bottom: var(--s-6);
+      padding-left: var(--s-6);
+    }
+
+    .emission:last-child {
+      padding-bottom: 0;
+    }
+
+    .emission__rail {
+      top: 0;
+      right: auto;
+      bottom: 0;
+      left: 5px;
+      width: 1px;
+      height: auto;
+      transform-origin: center top;
+    }
+
+    .emission__mark {
+      top: var(--s-1);
+      left: 0;
+    }
+
+    .years[data-motion] .emission__rail {
+      transform: scaleY(0);
+    }
+
+    .years[data-motion] .emission.is-arrived .emission__rail {
+      transform: scaleY(1);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
+
+<script>
+  import { mountYears } from '../islands/years';
+
+  mountYears();
+</script>
