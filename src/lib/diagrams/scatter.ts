@@ -23,7 +23,6 @@
 
 import type { ScatterDiagramData } from './types';
 import { mulberry32 } from './prng';
-import { clamp01 } from './util';
 
 export interface DensityGrid {
   cols: number;
@@ -88,10 +87,23 @@ export function scatterGeometry(data: ScatterDiagramData): ScatterGeometry {
   const fineCounts = new Array<number>(FINE_COLS * FINE_ROWS).fill(0);
 
   for (let i = 0; i < data.pointCount; i++) {
-    const cluster = CLUSTERS[Math.floor(rand() * CLUSTERS.length) % CLUSTERS.length];
-    const [z0, z1] = gaussianPair(rand);
-    const x = clamp01(cluster.cx + z0 * cluster.sigma);
-    const y = clamp01(cluster.cy + z1 * cluster.sigma);
+    // Rejection sampling, not clamping. A Gaussian's tail can land outside the diagram's
+    // 0..1 box; clamping a rejected coordinate to the nearest edge would pile every one of
+    // those points onto the border row/column — an artificial density stripe that is not
+    // part of the distribution being drawn. Redrawing instead keeps the shape genuinely
+    // Gaussian right up to the edge, and the exact point count is unaffected: every
+    // iteration of the outer loop still contributes exactly one binned point, it just may
+    // cost more than one draw to find it. Rejection rate here is a few percent at most
+    // (clusters sit 1.75–9.75 sigma from the nearest edge), so the extra draws are cheap.
+    let x: number;
+    let y: number;
+    for (;;) {
+      const cluster = CLUSTERS[Math.floor(rand() * CLUSTERS.length) % CLUSTERS.length];
+      const [z0, z1] = gaussianPair(rand);
+      x = cluster.cx + z0 * cluster.sigma;
+      y = cluster.cy + z1 * cluster.sigma;
+      if (x >= 0 && x < 1 && y >= 0 && y < 1) break;
+    }
     const col = Math.min(FINE_COLS - 1, Math.floor(x * FINE_COLS));
     const row = Math.min(FINE_ROWS - 1, Math.floor(y * FINE_ROWS));
     fineCounts[row * FINE_COLS + col]++;

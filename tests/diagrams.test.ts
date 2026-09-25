@@ -25,12 +25,12 @@ const reposData = diagramOf('Direct Line Group') as ReposDiagramData;
 const frametimeData = diagramOf('SRT Marine') as FrametimeDiagramData;
 const scatterData = diagramOf('QBurst') as ScatterDiagramData;
 
-describe('honesty — every diagram number traces to the resume', () => {
+describe('honesty — every diagram number traces to the RIGHT employer in the resume', () => {
   const transcriptPath = fileURLToPath(new URL('../docs/resume-transcript.md', import.meta.url));
   const transcript = readFileSync(transcriptPath, 'utf-8');
 
   /**
-   * Numbers in the transcript, normalised so a magnitude suffix matches its expanded value.
+   * Numbers in a block of text, normalised so a magnitude suffix matches its expanded value.
    * QBurst's line reads "1M+ rows", which is how the resume writes 1,000,000 — the honesty
    * check has to recognise that suffix or the scatter's real, resume-traced point count would
    * fail a test that is supposed to catch invented figures, not correctly-attributed ones
@@ -41,7 +41,7 @@ describe('honesty — every diagram number traces to the resume', () => {
    * instance is "1M+" or "…k", never "K" or a lowercase "m"). Without both constraints, "45
    * minutes" would misparse as "45m" and inflate to 45,000,000.
    */
-  function transcriptNumbers(text: string): Set<number> {
+  function textNumbers(text: string): Set<number> {
     const numbers = new Set<number>();
     const pattern = /(\d[\d,]*(?:\.\d+)?)([Mk])?\+?/g;
     for (const match of text.matchAll(pattern)) {
@@ -54,18 +54,87 @@ describe('honesty — every diagram number traces to the resume', () => {
     return numbers;
   }
 
-  const allowed = transcriptNumbers(transcript);
+  /**
+   * The transcript's `### <Role>, <Employer> — <dates> · <place>` headings, in the order they
+   * appear, delimit one employer's Experience bullets from the next. Slicing from one heading
+   * up to (not including) the next `###` or `##` heading isolates exactly that employer's own
+   * claims — which is the whole point: a number that is real but belongs to a *different*
+   * employer must not satisfy this check, per "Do not infer attribution."
+   */
+  function experienceSection(text: string, headingText: string): string {
+    const lines = text.split('\n');
+    const startIndex = lines.findIndex((line) => line.startsWith('### ') && line.includes(headingText));
+    if (startIndex === -1) {
+      throw new Error(`resume-transcript.md: no "### ...${headingText}..." heading found`);
+    }
+    let endIndex = lines.length;
+    for (let i = startIndex + 1; i < lines.length; i++) {
+      if (lines[i].startsWith('### ') || lines[i].startsWith('## ')) {
+        endIndex = i;
+        break;
+      }
+    }
+    return lines.slice(startIndex, endIndex).join('\n');
+  }
 
-  it('every numeric field in every case study\'s diagram appears in the transcript', () => {
+  /** Rows of the bottom attribution table whose Employer column mentions this exact name. */
+  function attributionRows(text: string, tableName: string): string {
+    return text
+      .split('\n')
+      .filter((line) => line.startsWith('|') && line.includes(tableName))
+      .join('\n');
+  }
+
+  /**
+   * Maps a `caseStudies` name to the exact strings needed to find its numbers, because the
+   * two places the transcript names employers do not always agree with each other or with
+   * `content.ts`: the Experience heading says "SRT Marine Systems PLC", the attribution table
+   * says "SRT Marine", and `content.ts` also says "SRT Marine". Explicit, not inferred.
+   */
+  const EMPLOYER: Record<string, { heading: string; table: string }> = {
+    'Winning Group': { heading: 'Winning Group', table: 'Winning Group' },
+    'Direct Line Group': { heading: 'Direct Line Group', table: 'Direct Line Group' },
+    'SRT Marine': { heading: 'SRT Marine Systems PLC', table: 'SRT Marine' },
+    QBurst: { heading: 'QBurst', table: 'QBurst' },
+  };
+
+  function employerNumbers(name: string): Set<number> {
+    const employer = EMPLOYER[name];
+    if (!employer) throw new Error(`honesty test: no employer heading mapped for "${name}"`);
+    const section = experienceSection(transcript, employer.heading);
+    const rows = attributionRows(transcript, employer.table);
+    return textNumbers(`${section}\n${rows}`);
+  }
+
+  it("every numeric field in every case study's diagram is attested in THAT employer's own section", () => {
     for (const study of caseStudies) {
+      const allowedForThisEmployer = employerNumbers(study.name);
       const diagram = study.diagram as unknown as Record<string, unknown>;
       for (const [field, value] of Object.entries(diagram)) {
         if (typeof value !== 'number') continue;
-        expect(allowed.has(value), `${study.name}.diagram.${field} = ${value} not found in transcript`).toBe(
-          true,
-        );
+        expect(
+          allowedForThisEmployer.has(value),
+          `${study.name}.diagram.${field} = ${value} not found in ${study.name}'s own resume section`,
+        ).toBe(true);
       }
     }
+  });
+
+  it('rejects a number that is real but belongs to a different employer — scoping actually bites', () => {
+    // 60 is a bad choice for this check: it is genuinely attested under BOTH Winning Group
+    // ("cutting total bundle size by 60%") AND SRT Marine ("holding real-time data rendering
+    // at 60fps"), so it would pass either way and prove nothing about scoping. 35 ("reducing
+    // CI/CD build times by 35%") is unique to Winning Group — grepped, it appears nowhere else
+    // in the transcript — so it is a real number that must still fail for every other employer.
+    expect(employerNumbers('Winning Group').has(35)).toBe(true);
+    expect(employerNumbers('SRT Marine').has(35)).toBe(false);
+    expect(employerNumbers('Direct Line Group').has(35)).toBe(false);
+    expect(employerNumbers('QBurst').has(35)).toBe(false);
+
+    // And directly: a diagram fixture that misattributes Winning Group's 35% to SRT Marine
+    // must fail the same assertion the honesty test above runs.
+    const misattributedToSrtMarine = { kind: 'bundle', reductionPercent: 35 } as const;
+    expect(employerNumbers('SRT Marine').has(misattributedToSrtMarine.reductionPercent)).toBe(false);
   });
 });
 
@@ -170,6 +239,25 @@ describe('scatter — QBurst', () => {
   it('exposes at least two resolutions with different cell counts', () => {
     const { fine, coarse } = scatterGeometry(scatterData);
     expect(fine.cols * fine.rows).toBeGreaterThan(coarse.cols * coarse.rows);
+  });
+
+  it('does not pile clipped Gaussian tails onto the border — rejection sampling, not clamping', () => {
+    const { fine } = scatterGeometry(scatterData);
+    const borderCounts: number[] = [];
+    for (let col = 0; col < fine.cols; col++) {
+      borderCounts.push(fine.counts[0 * fine.cols + col]); // top row
+      borderCounts.push(fine.counts[(fine.rows - 1) * fine.cols + col]); // bottom row
+    }
+    for (let row = 0; row < fine.rows; row++) {
+      borderCounts.push(fine.counts[row * fine.cols + 0]); // left column
+      borderCounts.push(fine.counts[row * fine.cols + (fine.cols - 1)]); // right column
+    }
+    const maxBorderCell = Math.max(...borderCounts);
+    // Clamping instead of redrawing would dump every out-of-range point onto whichever edge
+    // cell it was nearest to — thousands of points stacked into a single cell. A genuinely
+    // Gaussian-tailed distribution never concentrates more than a sliver of the total there.
+    // 0.5% of 1,000,000 is a generous ceiling, not a tight bound tuned to the current output.
+    expect(maxBorderCell).toBeLessThan(scatterData.pointCount * 0.005);
   });
 });
 
