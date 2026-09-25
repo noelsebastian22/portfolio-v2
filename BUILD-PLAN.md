@@ -66,7 +66,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 3 | Motion infrastructure | **complete** | Lenis + one GSAP ticker; `onSection()` owns every ScrollTrigger |
 | 4 | Shell — layout, nav, footer | **complete** | Tasks 4.1–4.5, reviewed clean after 1 fix round. First JS since Phase 0 |
 | 5 | Sections 01–02 — Hero, Nine Years | **complete** | Tasks 5.1–5.3. First two islands; Stats.astro retired into NineYears |
-| 6 | Section 03 — Selected Work + diagrams | not started | |
+| 6 | Section 03 — Selected Work + diagrams | **in progress** | Expanded to 6.1–6.3 on 2026-09-25 |
 | 7 | Section 04 — The Ring (2D rail) | not started | |
 | 8 | Sections 05–06 — Stack, Contact | not started | |
 | **9** | **SHIPPABLE — 2D site complete** | not started | **Real finish line. Deploy here.** |
@@ -864,6 +864,55 @@ reverts to prose. Never draw a chart of an invented figure.
 
 **Verification:** every number in every diagram traces to a line in `Resume.pdf`.
 
+**Task-level expansion (added 2026-09-25).** Three tasks. 6.1 is the precondition for the
+rest: measured on the built page at 1440, the curve's left-margin run sits at 26–54% of the
+document while `#work` starts at 71%. The curve's `y` is mapped linearly onto the whole
+document, so it lines up with a section only by coincidence. Nothing can be laid out against
+the line until the line is pinned to the sections. Briefs are in `.superpowers/sdd/BUILD-PLAN/`.
+
+### Task 6.1 — Pin the signal to the sections; derive the gutter; dim off-gutter
+
+- [ ] **Step 1: Section anchors (TDD).** A pure module maps curve `y` to page `y` piecewise:
+  each `SECTION_SPANS` seam lands on the top of the DOM element carrying
+  `data-signal-section="<id>"`. Linear within a section. `path.ts` geometry is untouched —
+  this is renderer scaling, which is the renderer's job. Sections not yet rebuilt are
+  anchored to their interim stand-ins (`ring` → `#gallery`, `stack` → `#skills`,
+  `contact` → `#contact`) until Phases 7–8 replace them.
+- [ ] **Step 2: Page order.** `<Work />` moves directly under `<NineYears />` (§5).
+- [ ] **Step 3: `--signal-gutter` derived from the curve (TDD).** The work section's spine
+  (the run parked at the left margin, control points 21–26) sets it: max spine `x` plus half
+  the stroke plus clearance, stated as a viewport-relative formula that also holds past
+  1440px. A test reads `tokens.css` and fails if the token no longer clears the curve.
+- [ ] **Step 4: The dim rule.** The line is full strength only where it sits in its gutter,
+  and dimmed everywhere else. That covers sections 01–02 (the 2026-09-24 decision), the
+  sweep that opens section 03, and phone width (§7.3) with one rule. The bands come from
+  the same sampled pixel points the path is drawn from. The dim alpha is computed, not
+  guessed: every text colour the line crosses stays ≥ 4.5:1 against the blended stroke.
+
+### Task 6.2 — `src/lib/diagrams/*.ts` (TDD, pure)
+
+- [ ] **Step 1:** `bundle` — one bar, 100 → 40. The Nx dependency graph in §9.03 is **dropped**:
+  the resume gives it no number, so any node count would be invented.
+- [ ] **Step 2:** `repos` — five lines converging into one, labelled `5+` (the resume says
+  5+, so five is a lower bound drawn as one); a deploy bar 45 → 12 min at true scale.
+- [ ] **Step 3:** `frametime` — a flat trace on the 16.7ms line. No jitter: sample noise
+  would be invented data. The claim is the flat line.
+- [ ] **Step 4:** `scatter` — exactly 1,000,000 points from a seeded PRNG, binned at build
+  time into a density grid. Test asserts the bins sum to 1,000,000. The distribution is
+  illustrative and the caption says so; the count is real.
+
+### Task 6.3 — Section 03: `SelectedWork.astro` + `src/islands/work.ts`
+
+- [ ] **Step 1:** Replace `Work.astro` with `SelectedWork.astro`: four studies,
+  problem / approach / result, each with its diagram as a server-rendered SVG `<figure>`.
+  The figcaption carries the numbers as text, so the section reads completely with JS off.
+- [ ] **Step 2:** Lay the section out against `--signal-gutter`. Content never enters it.
+- [ ] **Step 3:** The branch: as each card enters, a branch draws from the spine (its origin
+  sampled from `path.ts` through the 6.1 anchor mapping) right into the card, via
+  `onSection('work', …)`.
+- [ ] **Step 4:** Diagrams resolve on scroll position — bar collapses, repos converge, the
+  scatter resolves — never on a timer. Reduced motion shows the end state.
+
 ## PHASE 7 — Section 04: The Ring (2D rail first)
 
 **Deliverable:** the horizontal scroll-snap rail that is the mobile and no-WebGL
@@ -1090,6 +1139,24 @@ decision was made; this section records *what it is*.
   Forced by section 02 being the first section whose centre column is not empty: `--type` on
   `--signal` is ~2.9:1, so every glyph the 4px stroke crosses is under-contrasted, and it currently
   threads the gaps by luck. **Phase 6 implements both halves.**
+- **2026-09-25 (claude-code, refining the entry above)** — **The curve is pinned to the sections, and
+  the gutter is set by the spine's *maximum* `x`, not its minimum.** Measured: the curve's `y` maps
+  linearly onto the whole document, so its left-margin run lands at 26–54% of the page while `#work`
+  starts at 71%. It aligns with sections only by coincidence, so each `SECTION_SPANS` seam now anchors
+  to its DOM section (renderer scaling; `path.ts` untouched). The ~163.8px figure above is the
+  curve's leftmost point. Content has to clear the curve's *rightmost* point in the column, so the
+  gutter derives from the spine's max `x`. "Dim behind content in 01–02" generalises to **the line
+  is full strength only inside its gutter**. That also covers the right-to-left sweep that opens
+  section 03, which crosses its heading, and §7.3's phone behaviour, with one rule.
+- **2026-09-25 (claude-code)** — **§9.03's Nx dependency graph is dropped; three diagrams are drawn
+  as claims, not data.** The resume gives no number for the dependency graph, so it goes, per this
+  phase's own rule. The frame-time trace is flat with no simulated jitter, and the repo lines are
+  five labelled `5+`. The scatter plots a genuine 1,000,000 seeded points, and the caption labels
+  the distribution illustrative.
+- **2026-09-25 (claude-code)** — **The `optimise-gallery.mjs` double-encode moves to Phase 7.** The
+  Task 5.1 note assigned it to Phase 6 because "it rewrites the gallery anyway". But Phase 6 has no
+  screenshots (§9.03), and §10's screenshot pipeline feeds the ring cards. Fixing it now would
+  rewrite the committed gallery bytes twice.
 
 ## Known Gaps
 
