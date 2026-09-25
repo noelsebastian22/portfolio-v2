@@ -968,9 +968,9 @@ inside the frame. Keyboard reaches every card.
   `lib/signal/draw.ts` holds what it shares with `work.ts`.
 
 Measured: the curve meets the track at the drawn vertex exactly (Δ < 0.01px) at 1024, 1440, 1920,
-2560 and 375. Shipped JS on `/` 58,935 gzip by the same method that reads the Phase 6 build as
-57,745 (**+1,190**; against the recorded 57,756, +1,179), 73.7% of the 80 KB budget.
-`index.html` 19,945 → 18,951 gzip. CLS 0.
+2560 and 375. Shipped JS on `/` 59,069 gzip by the same method that reads the Phase 6 build as
+57,745 (**+1,324**; against the recorded 57,756, +1,313): 72.1% of the 80 KB budget, 22,851
+bytes left. `index.html` 19,945 → 18,955 gzip. CLS 0.
 
 ## PHASE 8 — Sections 05–06: Stack and Contact
 
@@ -1408,7 +1408,7 @@ decision was made; this section records *what it is*.
 - **The ring's hold runs down through About.** The `ring` span ends at the `stack` seam, which is
   still `#skills`, and `About.astro` sits between the ring and Skills with no anchor of its own. So
   control points 34→39 — the curve holding the centre — stretch from the track through the rest of
-  the rail and all of About (about 4,100px at 1440). Dimmed throughout, so contrast holds. Phase 8
+  the rail and all of About (about 2,200px at 1440). Dimmed throughout, so contrast holds. Phase 8
   decides where About goes; the ring's bottom seam follows.
 - **At phone width the curve runs 9px beside the first card's drop.** At 375 the meeting point is
   187.5px and the first card's drop is at its centre, 178px, so the dim curve and the drop run down

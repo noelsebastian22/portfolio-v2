@@ -114,7 +114,7 @@ const BAND_FADE_PX = 32;
  * Re-measured in Task 7.2, with the ring's split point (control point 34) pinned to the
  * rail's track as a third in-section anchor and a cut. The worst case is unchanged at
  * every width (1024 0.47px · 1440 0.66px · 1920 0.88px · 2560 1.17px · 375 0.17px), still
- * at the years → work corner; inside the ring span it is 0.34px at 1440 and 0.60px at
+ * at the years → work corner; inside the ring span it is 0.34px at 1440 and 0.58px at
  * 2560. The extra cut costs no vertices: the ring span's 115 intervals split 67 + 48.
  *
  * Pinning the curve to the sections (Task 6.1) stretches some spans more than the old
