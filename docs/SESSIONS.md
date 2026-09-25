@@ -7,6 +7,27 @@ This is not a changelog; git does that. It records intent, dead ends, and open t
 
 <!-- newest first -->
 
+## 2026-09-25 · claude-code · middot decision
+
+**Did**
+- Recorded Noel's ruling on the H1 middot in `BUILD-PLAN.md` (Decisions; Known Gap marked
+  resolved). No code changed since `058e227`. Build green, shipped JS unchanged at 57,756 gzip on `/`.
+
+**Decided**
+- The square middot in "Senior Web Engineer · Angular Specialist" stays for now. It reads as
+  an emission mark. The fallback if it grates is a `--font-mono` `<span>` around the separator.
+
+**Open**
+- Everything under the Phase 6 entry's Open list below, minus the middot.
+
+**Next**
+Phase 7 (The Ring, 2D rail first). Start with `optimise-gallery.mjs`'s double-encode (write the
+encoded buffer with `writeFile`, as `portrait.mjs` does), then build the rail as a centred
+`--container` + `--signal-gutter` section and move `data-signal-section="ring"` onto it.
+
+**Touched** — `BUILD-PLAN.md`
+
+
 ## 2026-09-25 · claude-code · Phase 6 selected work
 
 **Did**

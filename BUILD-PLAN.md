@@ -1178,6 +1178,11 @@ decision was made; this section records *what it is*.
   where the dim rule already covers it, and all four cards branch at every desktop width.
   Minimum card clearance went from 6.9px to 24.0px, which is exactly the clearance token. Still
   renderer scaling: `path.ts` is untouched, and 480 samples still hold (worst chord 0.66px at 1440).
+- **2026-09-25 (Noel)** — **The H1's square middot stays, for now.** Archivo draws U+00B7 as a
+  filled square at display size (it is the font's real glyph, not a fallback). In `--signal` on
+  the dark ground it reads as an emission mark. The mono voice keeps its round dot. If the
+  mismatch starts to grate, the cheapest change is to render just the separator in
+  `--font-mono`: one `<span>`, round, matching the status rail.
 - **2026-09-25 (claude-code)** — **The signal reveals to a viewport playhead, and branches follow the
   tip.** The drawn tip sits at page y `scrollY + vh·(0.5 + 0.5t)` rather than at `t × length`, which
   left it above the viewport. `src/lib/signal/tip.ts` publishes the tip and a
@@ -1334,7 +1339,7 @@ decision was made; this section records *what it is*.
   written to survive an Astro view transition re-mounting it, so the codebase anticipates them. If
   view transitions land (Phase 15 is the likely place), that is a leaked timer and listener per
   navigation. Minor; fold into the final whole-branch review.
-- **Archivo's middot is a square, and nothing chose that.** The H1's `·` separator renders as a
+- **RESOLVED 2026-09-25: kept, see Decisions. Original finding:** **Archivo's middot is a square, and nothing chose that.** The H1's `·` separator renders as a
   filled square block at display size. Verified it is genuinely Archivo's U+00B7 — the glyph is in
   the font (`document.fonts.check` true, 35.95px advance at 86px) and differs from both serif's and
   system-ui's round dots, while Archivo's own U+2022 bullet is round. So it is not a tofu and not a
