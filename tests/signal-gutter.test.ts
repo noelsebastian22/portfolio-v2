@@ -50,7 +50,7 @@ describe('--signal-gutter in tokens.css', () => {
 });
 
 describe('gutterBands', () => {
-  // A line that runs right, sweeps into the gutter, parks, and leaves again.
+  // A line that runs right, sweeps into the clear zone, parks, and leaves again.
   const line = [
     { x: 500, y: 0 },
     { x: 500, y: 100 },
@@ -59,17 +59,20 @@ describe('gutterBands', () => {
     { x: 500, y: 500 }, // crosses x = 300 at y 450
   ];
 
-  it('finds the run inside the gutter, interpolating the crossings along the chords', () => {
-    expect(gutterBands(line, { top: 0, right: 300, width: 200 })).toEqual([[150, 450]]);
+  it('finds the run that clears the content, interpolating the crossings along the chords', () => {
+    expect(gutterBands(line, { top: 0, contentLeft: 300, reach: 0 })).toEqual([[150, 450]]);
   });
 
-  it('is empty when the gutter has no width — phone, where the whole line dims', () => {
-    expect(gutterBands(line, { top: 0, right: 300, width: 0 })).toEqual([]);
+  it('counts the stroke and the clearance against the content edge', () => {
+    // Clear only where x + 100 <= 400, i.e. x <= 300: the same crossings as above.
+    expect(gutterBands(line, { top: 0, contentLeft: 400, reach: 100 })).toEqual([[150, 450]]);
+    // Nothing clears when the reach spans the whole distance to the content.
+    expect(gutterBands(line, { top: 0, contentLeft: 150, reach: 100 })).toEqual([]);
   });
 
   it('ignores anything above the first section that reserves a gutter', () => {
-    expect(gutterBands(line, { top: 250, right: 300, width: 200 })).toEqual([[250, 450]]);
-    expect(gutterBands(line, { top: 600, right: 300, width: 200 })).toEqual([]);
+    expect(gutterBands(line, { top: 250, contentLeft: 300, reach: 0 })).toEqual([[250, 450]]);
+    expect(gutterBands(line, { top: 600, contentLeft: 300, reach: 0 })).toEqual([]);
   });
 
   it('finds several separate bands', () => {
@@ -78,33 +81,55 @@ describe('gutterBands', () => {
       { x: 500, y: 100 },
       { x: 100, y: 200 },
     ];
-    expect(gutterBands(zigzag, { top: 0, right: 300, width: 200 })).toEqual([
+    expect(gutterBands(zigzag, { top: 0, contentLeft: 300, reach: 0 })).toEqual([
       [0, 50],
       [150, 200],
     ]);
   });
 });
 
-describe('the real curve at 1440', () => {
-  // Section tops measured on the built page at 1440x900, in the layer's coordinates.
-  const TOPS = [65, 1115.39, 2167.89, 3205.08, 7107.83, 7816.02];
-  const HEIGHT = 8568;
-  const WIDTH = 1440;
-  const GUTTER = { top: TOPS[2], right: 24 + 203.6, width: 203.6 };
-  const seams = resolveSeamPixels(TOPS, HEIGHT);
-  const points = toPixelPoints(sampleSignalRange(0, 1, 481), WIDTH, seams);
-  const bands = gutterBands(points, GUTTER);
+/**
+ * The content edge exactly as tokens.css and the probe in global.css define it: the
+ * centring margin of a 1440px container, its 24px padding, and --signal-gutter (0 at
+ * ≤768px). Reach is half the 4px stroke plus the 24px clearance.
+ */
+const CONTAINER = 1440;
+const PAD = 24;
+const REACH = 2 + 24;
+function contentLeft(viewport: number): number {
+  const margin = Math.max(0, (viewport - CONTAINER) / 2);
+  const gutter = viewport <= 768 ? 0 : Math.max(0, 0.14 * viewport + 2 + 24 - margin - PAD);
+  return margin + PAD + gutter;
+}
 
-  it('is full strength along the whole spine', () => {
-    const spineTop = mapCurveY(sampleSignal(SPINE_SPAN.tStart).y, seams);
-    const spineBottom = mapCurveY(sampleSignal(SPINE_SPAN.tEnd).y, seams);
-    expect(bands.some(([top, bottom]) => top <= spineTop && bottom >= spineBottom)).toBe(true);
-  });
+describe.each([
+  // Section tops measured on the built page, in the layer's coordinates.
+  { viewport: 768, tops: [65, 1250, 2500, 3700, 7500, 8200], height: 9000, lit: false },
+  { viewport: 1440, tops: [65, 1115.39, 2167.89, 3205.08, 7107.83, 7816.02], height: 8568, lit: true },
+  { viewport: 2560, tops: [65, 1201.17, 2366.77, 3357.77, 7241.77, 7954.77], height: 8708, lit: true },
+])('the real curve at $viewport', ({ viewport, tops, height, lit }) => {
+  const region = { top: tops[2], contentLeft: contentLeft(viewport), reach: REACH };
+  const seams = resolveSeamPixels(tops, height);
+  const points = toPixelPoints(sampleSignalRange(0, 1, 481), viewport, seams);
+  const bands = gutterBands(points, region);
+  const spineTop = mapCurveY(sampleSignal(SPINE_SPAN.tStart).y, seams);
+  const spineBottom = mapCurveY(sampleSignal(SPINE_SPAN.tEnd).y, seams);
 
-  it('is dim through sections 01–02 and the sweep that opens section 03', () => {
-    const workTop = TOPS[SECTION_SPANS.findIndex((s) => s.id === 'work')];
-    for (const [top] of bands) expect(top).toBeGreaterThan(workTop + 100);
-  });
+  if (lit) {
+    it('lights the whole spine', () => {
+      // Within a pixel: at 1440 the spine's rightmost points sit exactly on the clear edge.
+      expect(bands.some(([top, bottom]) => top <= spineTop + 1 && bottom >= spineBottom - 1)).toBe(true);
+    });
+
+    it('keeps sections 01–02 and the opening of the sweep dim', () => {
+      const workTop = tops[SECTION_SPANS.findIndex((s) => s.id === 'work')];
+      for (const [top] of bands) expect(top).toBeGreaterThan(workTop + 100);
+    });
+  } else {
+    it('dims the whole line — phone width falls out of the same test', () => {
+      expect(bands).toEqual([]);
+    });
+  }
 });
 
 describe('strengthStops', () => {

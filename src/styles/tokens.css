@@ -63,10 +63,11 @@
      longer clears the spine computed from path.ts — moving a control point breaks the
      test instead of quietly pushing the curve under content. */
   --signal-spine-x: 0.14;
+  --signal-clearance: var(--s-5);
   --signal-gutter: max(
     0px,
     calc(
-      var(--signal-spine-x) * 100vw + var(--signal-stroke) / 2 + var(--s-5)
+      var(--signal-spine-x) * 100vw + var(--signal-stroke) / 2 + var(--signal-clearance)
         - (100vw - min(100vw, var(--container))) / 2
         - var(--s-5)
     )

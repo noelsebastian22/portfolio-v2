@@ -1,6 +1,8 @@
 /**
- * The dim rule: the line is full strength only where it sits inside its gutter, and
- * dimmed everywhere else.
+ * The dim rule: the line is full strength only where it clears the content, and dimmed
+ * everywhere else. "Clears" means the stroke's right edge plus the clearance stays at or
+ * left of the content box's left edge — the gutter's right edge, or on a screen wider than
+ * the container, the empty centring margin plus the gutter.
  *
  * Text paints over the line, and `--type` on full-strength `--signal` is ~2.9:1. Inside the
  * gutter nothing sits on the line; outside it something might, so it drops to
@@ -18,26 +20,34 @@ export type Band = readonly [top: number, bottom: number];
 export interface GutterRegion {
   /** Pixel `y` where the gutter starts — the top of the first section that reserves it. */
   top: number;
-  /** Pixel `x` of the gutter's right edge: where content begins. */
-  right: number;
-  /** The gutter's width. Zero at phone width, where there is no gutter to be inside. */
-  width: number;
+  /**
+   * Pixel `x` where content begins: the centring margin, plus the container's padding,
+   * plus `--signal-gutter`. At phone width the gutter is 0 and this is the page padding.
+   */
+  contentLeft: number;
+  /** How far right of a point the line reaches, plus the clearance: stroke / 2 + clearance. */
+  reach: number;
 }
 
 /**
- * Contiguous `y` ranges where the drawn line is inside the gutter: at or below
- * `region.top`, and with `x` at or left of `region.right`.
+ * Contiguous `y` ranges where the drawn line clears the content: at or below `region.top`,
+ * and with `x + reach` at or left of `region.contentLeft`.
+ *
+ * There is no special case for phone width. There the content edge is the page padding
+ * (24px) and the curve never comes within 11.5% of the width of the left edge, so no point
+ * clears and the whole line dims — by geometry, the same test as everywhere else.
  *
  * Crossings are interpolated along the polyline segment rather than snapped to a vertex,
  * so a band edge sits where the drawn chord actually crosses the gutter edge.
  */
 export function gutterBands(points: readonly PixelPoint[], region: GutterRegion): Band[] {
-  if (!(region.width > 0) || points.length === 0) return [];
+  if (points.length === 0) return [];
 
   const bands: Band[] = [];
   let bandTop: number | null = null;
+  const clearRight = region.contentLeft - region.reach;
 
-  const isInside = (p: PixelPoint): boolean => p.y >= region.top && p.x <= region.right;
+  const isInside = (p: PixelPoint): boolean => p.y >= region.top && p.x <= clearRight;
 
   /** Where segment a→b crosses the gutter's boundary (its right edge or its top). */
   const crossingY = (a: PixelPoint, b: PixelPoint): number => {
@@ -45,7 +55,7 @@ export function gutterBands(points: readonly PixelPoint[], region: GutterRegion)
     if (crossesTop) return region.top;
     const dx = b.x - a.x;
     if (dx === 0) return b.y;
-    return a.y + ((region.right - a.x) / dx) * (b.y - a.y);
+    return a.y + ((clearRight - a.x) / dx) * (b.y - a.y);
   };
 
   for (let i = 0; i < points.length; i++) {

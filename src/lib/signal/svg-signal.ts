@@ -2,15 +2,15 @@
  * The 2D SVG renderer for the signal.
  *
  * Draws the whole canonical curve (`path.ts`) as a single `<path>` into one page-height
- * layer, and reveals it by animating `stroke-dashoffset` against global page progress.
+ * layer, and reveals it with `stroke-dashoffset`: page progress sets a page-`y` playhead
+ * that stays inside the viewport, and the line is drawn down to it (see `playhead.ts`).
  * This is the fast, always-available path — the Phase 10 Three.js tube samples the same
  * curve so the two are identically choreographed rather than one approximating the other.
  *
  * One renderer, one layer, one `<path>`. It draws the whole curve into the whole box, so
- * the line is continuous by construction. Splitting the line
- * across per-section mounts would mean six independently scaled spans meeting at six
- * seams, which is six lines that look like one until a seam disagrees — and §6 asks for
- * a continuous line.
+ * the line is continuous by construction. Splitting the line across per-section mounts
+ * would mean six independently scaled spans meeting at six seams, which is six lines
+ * that look like one until a seam disagrees — and §6 asks for a continuous line.
  *
  * The curve is pinned to the page's sections: each `SECTION_SPANS` seam lands on the top of
  * the element carrying `data-signal-section="<id>"`, and the curve scales linearly between
@@ -20,34 +20,44 @@
  * No framework: the `<svg>` and `<path>` are built with `document.createElementNS` and
  * torn down explicitly in `destroy()`. Geometry is sampled once from `path.ts` at
  * creation time — resize only re-measures the section anchors, re-scales those points into
- * pixels and re-measures the rendered length; it never re-samples the curve.
+ * pixels and rebuilds the length table; it never re-samples the curve.
  *
- * The dim rule (see `gutter.ts`): the line is full strength only where it sits inside
- * `--signal-gutter`, and `--signal-dim-alpha` everywhere else. It is one `<path>` stroked
+ * The dim rule (see `gutter.ts`): the line is full strength only where it clears the
+ * content, and `--signal-dim-alpha` everywhere else. It is one `<path>` stroked
  * with a vertical gradient whose stops carry the strength, not a mask and not two paths.
  * A CSS `mask-image` would clip the end caps the `overflow: visible` below exists to
  * save — a mask stops at the element's border box — while a gradient paint server simply
  * pads past its ends. The bands come from the same pixel points the path is drawn from.
  */
 
-export interface SvgSignalOptions {
-  /**
-   * Apply the dim rule. On by default: a page's text crosses the line, and full strength
-   * under text fails AA. `/dev/signal` turns it off — there is no text to protect, and a
-   * harness drawn at 15% cannot be debugged.
-   */
-  dimOffGutter?: boolean;
-}
-
 import { SECTION_SPANS, sampleSignalRange, type SignalPoint } from './path';
 import { resolveSeamPixels, toPixelPath, toPixelPoints, type PixelPoint } from './anchors';
 import { gutterBands, strengthStops, type GutterRegion } from './gutter';
+import { cumulativeLengths, lengthAtY, playheadPageY } from './playhead';
+import { publishSignalTip } from './tip';
+
+export interface SvgSignalOptions {
+  /**
+   * The mount is the page-height `#signal-layer` rather than an isolated box. On by
+   * default. It turns on the two behaviours that only mean anything against a page:
+   *
+   * - the dim rule — a page's text crosses the line, and full strength under text fails AA;
+   * - the playhead reveal (`playhead.ts`) — the tip follows the viewport, and its page `y`
+   *   is published through `tip.ts`.
+   *
+   * `/dev/signal` turns it off: its mount is a fixed box, there is no text to protect, a
+   * harness drawn at 15% cannot be debugged, and its `?t=` screenshots want the plain
+   * length-fraction reveal.
+   */
+  pageLayer?: boolean;
+}
 
 export interface SvgSignal {
   /**
-   * Reveals the curve up to `t`, where `t` is progress across the **whole document**,
-   * 0..1 — the value `onPageProgress` reports, not a section-local one. Passing a
-   * section's own progress here draws the wrong fraction of the line.
+   * Reveals the curve for `t`, where `t` is progress across the **whole document**,
+   * 0..1 — the value `onPageProgress` reports, not a section-local one. On the page layer
+   * the line is drawn down to the playhead (see `playhead.ts`); in an isolated mount, to
+   * the fraction `t` of its length.
    */
   setProgress(t: number): void;
   destroy(): void;
@@ -119,7 +129,7 @@ const GUTTER_FROM_SECTION = 'work';
 let gradientCount = 0;
 
 export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = {}): SvgSignal {
-  const dimOffGutter = options.dimOffGutter ?? true;
+  const pageLayer = options.pageLayer ?? true;
 
   // Deliberately not `reducedMotion()` from ../motion/scroll: that module imports gsap
   // and lenis at module scope, so importing it here would pull ~50 KB gzip into the 2D
@@ -162,7 +172,7 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   // with y1 0 and y2 the box height, so a stop's offset is simply its pixel y / height.
   const gradient = document.createElementNS(SVG_NS, 'linearGradient');
   let gutterProbe: HTMLElement | undefined;
-  if (dimOffGutter) {
+  if (pageLayer) {
     const defs = document.createElementNS(SVG_NS, 'defs');
     const gradientId = `signal-strength-${++gradientCount}`;
     gradient.id = gradientId;
@@ -180,13 +190,43 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   }
 
   let currentT = 0;
-  let totalLength = 0;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
 
-  /** Writes stroke-dashoffset for the current progress at the current measured length. */
-  function applyDashoffset(): void {
-    if (totalLength <= 0) return;
-    path.style.strokeDashoffset = String(totalLength * (1 - currentT));
+  // Re-measured on every resize pass, read on every progress update. Caching them keeps
+  // setProgress free of layout reads, which would otherwise force a reflow per frame.
+  let pixelPoints: PixelPoint[] = [];
+  let lengthTable: number[] = [];
+  let docHeight = 0;
+  let viewportHeight = 0;
+  let boxTopInPage = 0;
+
+  /**
+   * Draws the line down to the current progress. The dash is the whole length, shifted by
+   * the undrawn part — and once the line is complete, no dash at all, so the rounded `d`
+   * can never leave a sliver undrawn past the table's own total.
+   */
+  function applyReveal(): void {
+    const total = lengthTable.length > 0 ? lengthTable[lengthTable.length - 1] : 0;
+    if (total <= 0) return;
+
+    let drawn: number;
+    if (pageLayer) {
+      const playhead = playheadPageY(currentT, docHeight, viewportHeight) - boxTopInPage;
+      drawn = lengthAtY(pixelPoints, lengthTable, playhead);
+      const first = pixelPoints[0].y;
+      const last = pixelPoints[pixelPoints.length - 1].y;
+      publishSignalTip(boxTopInPage + Math.min(last, Math.max(first, playhead)));
+    } else {
+      drawn = currentT * total;
+    }
+
+    if (drawn >= total) {
+      path.style.strokeDasharray = 'none';
+      path.style.strokeDashoffset = '0';
+      return;
+    }
+    path.style.strokeDasharray = String(total);
+    path.style.strokeDashoffset = String(total - drawn);
   }
 
   /**
@@ -208,9 +248,13 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
    */
   function measureGutter(gutterTop: number | null): GutterRegion | null {
     if (!gutterProbe || gutterTop === null) return null;
-    const probe = gutterProbe.getBoundingClientRect();
-    const right = probe.right - svg.getBoundingClientRect().left;
-    return { top: gutterTop, right, width: probe.width };
+    const probeStyle = getComputedStyle(gutterProbe);
+    const probeLeft = gutterProbe.getBoundingClientRect().left - svg.getBoundingClientRect().left;
+    return {
+      top: gutterTop,
+      contentLeft: probeLeft + parseFloat(probeStyle.width),
+      reach: parseFloat(probeStyle.paddingRight),
+    };
   }
 
   /** Rewrites the gradient's stops: dim everywhere, full strength inside the gutter. */
@@ -234,8 +278,8 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
 
   /**
    * Re-measures the section anchors, re-scales the cached points into the `<svg>`'s
-   * current pixel box, sets the viewBox to match, and re-measures `getTotalLength()` — the
-   * length changes with the box even though the underlying curve did not.
+   * current pixel box, sets the viewBox to match, and rebuilds the cumulative length table
+   * the reveal reads — the lengths change with the box even though the curve did not.
    *
    * The `<svg>`'s box, not the mount's: the `<svg>` is `width: 100%`, so any padding on
    * the mount would make `mount.clientWidth` larger than the space the curve actually
@@ -251,27 +295,30 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     const sectionTops = measureSectionTops();
     const seamPixels = resolveSeamPixels(sectionTops, height);
-    const pixelPoints = toPixelPoints(points, width, seamPixels);
+    pixelPoints = toPixelPoints(points, width, seamPixels);
+    lengthTable = cumulativeLengths(pixelPoints);
     path.setAttribute('d', toPixelPath(pixelPoints));
 
+    docHeight = document.documentElement.scrollHeight;
+    viewportHeight = window.innerHeight;
+    boxTopInPage = svg.getBoundingClientRect().top + window.scrollY;
+
     // Before the reduced-motion early return on purpose: dimming is contrast, not motion.
-    if (dimOffGutter) {
+    if (pageLayer) {
       const gutterIndex = SECTION_SPANS.findIndex((span) => span.id === GUTTER_FROM_SECTION);
       applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
     }
 
     if (reduceMotion) {
       // Fully drawn, permanently. No dasharray at all rather than a dasharray equal to
-      // the length — that way an imprecise getTotalLength() can never leave a sliver
-      // undrawn.
+      // the length, so no length measurement can ever leave a sliver undrawn.
       path.style.strokeDasharray = 'none';
       path.style.strokeDashoffset = '0';
+      if (pageLayer) publishSignalTip(boxTopInPage + pixelPoints[pixelPoints.length - 1].y);
       return;
     }
 
-    totalLength = path.getTotalLength();
-    path.style.strokeDasharray = String(totalLength);
-    applyDashoffset();
+    applyReveal();
   }
 
   function scheduleRemeasure(): void {
@@ -287,6 +334,9 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   // document does — images loading, fonts swapping, a section expanding.
   const resizeObserver = new ResizeObserver(scheduleRemeasure);
   resizeObserver.observe(svg);
+  // The playhead also depends on the viewport's height, which can change without the
+  // layer changing size at all (a browser's toolbar, a window dragged taller).
+  if (pageLayer) window.addEventListener('resize', scheduleRemeasure);
 
   // Draw synchronously on creation rather than waiting for the observer's first
   // (asynchronous) callback, so a caller that calls setProgress() immediately after
@@ -297,11 +347,12 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
     if (reduceMotion) return; // stays fully drawn, does not respond to progress
     if (!Number.isFinite(t)) return; // never let NaN reach the DOM
     currentT = clamp01(t);
-    applyDashoffset();
+    applyReveal();
   }
 
   function destroy(): void {
     resizeObserver.disconnect();
+    window.removeEventListener('resize', scheduleRemeasure);
     if (resizeTimer !== undefined) {
       clearTimeout(resizeTimer);
       resizeTimer = undefined;

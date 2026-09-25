@@ -88,8 +88,9 @@ import '../../styles/tokens.css';
         throw new Error('dev/signal: #signal-mount not found');
       }
 
-      // No dim rule: there is no text here to protect, and the harness has to be legible.
-      const signal = createSvgSignal(mount, { dimOffGutter: false });
+      // An isolated box, not the page layer: no dim rule (no text to protect, and the
+      // harness has to be legible) and the plain length-fraction reveal `?t=` expects.
+      const signal = createSvgSignal(mount, { pageLayer: false });
 
       function report(t: number, mode: 'query' | 'scroll'): void {
         if (readout) readout.textContent = `t = ${t.toFixed(3)}  ·  mode = ${mode}`;
