@@ -384,23 +384,29 @@ enters frame.
 **Content:** the shipped freelance work — Daybook, Ezytrack, PLUMBER., TopDel Renovations,
 Menzone.
 
-Note that `content.ts` currently carries TopDel twice: once as `freelanceCaseStudy` and
-again in `galleryProjects`. These collapse into a single ring card, and
-`freelanceCaseStudy` is removed as a separate concept — the ring is now the only home for
-freelance work.
+`content.ts` carries them as `ringProjects`. TopDel used to appear twice, once as
+`freelanceCaseStudy` as well; that is gone, and the ring is the only home for freelance work.
 
 **Visual:** a 3D ring carousel. Cards placed with `rotateY(θ) translateZ(radius)` around a
 circle. The line splits into one branch per card, each terminating on its card.
 
 **Interaction:** drag or scroll to spin. On hover, the card's long duotone capture (§10)
 scrolls inside its frame — which reads as a screen recording at the cost of an image the
-card already loads. `Gallery.astro` already implements this trick; reuse it.
+card already loads. It moves the image with `transform` at a constant speed, set per card from
+the capture's height, and runs on focus as well as hover; under reduced motion the capture
+stays at its top. Browser chrome is markup above the frame, showing the site's real hostname.
 
 Every card is a real anchor to the live site. The ring is operable by keyboard with arrow
 keys, and focus moves the ring.
 
 **Fallback:** a horizontal scroll-snap rail on mobile and when the WebGL gate fails. Same
-cards, same content, same links.
+cards, same content, same links. In the rail **the split is a track**: a horizontal stroke above
+the cards at the signal's weight and colour, which the curve meets exactly where it reaches the
+centre (control point 34 is pinned to the track's centre line). Each card hangs off the track on
+a short drop ending in a `--shipped` emission, and says `shipped · live` in words. The drops sit
+inside the scroller and slide with their cards. The whole split is drawn in the HTML; with
+script, it draws outward from the meeting point as the signal's tip reaches the track. Left and
+Right move focus between cards; every card stays in the Tab order.
 
 ### 05 — The Stack: `pipe()`
 

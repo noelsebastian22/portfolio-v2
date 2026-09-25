@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { galleryProjects } from '../src/data/content';
+import { ringProjects } from '../src/data/content';
 import captures from '../src/data/ring-captures.json';
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
@@ -10,7 +10,7 @@ const manifest: Record<string, (typeof captures)[keyof typeof captures]> = captu
 // A ring card without a capture should break here, not render an empty frame.
 // The fix is an entry in optimise-gallery.mjs → RING and `npm run images`.
 describe('ring-captures.json', () => {
-  it.each(galleryProjects.map((project) => project.slug))('has a capture for %s', (slug) => {
+  it.each(ringProjects.map((project) => project.slug))('has a capture for %s', (slug) => {
     const entry = manifest[slug];
     expect(entry, `no capture for "${slug}"; add it to RING and run npm run images`).toBeDefined();
     expect(entry.width).toBeGreaterThan(0);

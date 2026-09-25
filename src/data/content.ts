@@ -3,7 +3,7 @@ import type { CaseStudyDiagram } from '../lib/diagrams/types';
 
 export const nav = [
   { label: 'Home', href: '#top' },
-  { label: 'Gallery', href: '#gallery' },
+  { label: 'Shipped', href: '#ring' },
   { label: 'About', href: '#about' },
   { label: 'Work', href: '#work' },
   { label: 'Contact', href: '#contact' },
@@ -171,7 +171,12 @@ export const caseStudies: Array<{
   },
 ];
 
-export const galleryProjects = [
+/**
+ * Section 04's cards, in ring order: the shipped freelance sites, and Daybook, Noel's own
+ * product. `slug` keys the card's capture in `src/data/ring-captures.json`, which
+ * `scripts/optimise-gallery.mjs` writes; `site` is the live URL each card links to.
+ */
+export const ringProjects = [
   {
     slug: 'daybook',
     title: 'Daybook',
@@ -182,7 +187,6 @@ export const galleryProjects = [
   },
   {
     slug: 'ezytrack',
-    img: 'ezytrack.png',
     title: 'Ezytrack',
     site: 'https://ezytrack.noel-sebastian.com/',
     desc: 'Market-leading GPS fleet-tracking business site — real-time vehicle visibility, route history, geofencing and dashcam integration for Australian fleets.',
@@ -190,7 +194,6 @@ export const galleryProjects = [
   },
   {
     slug: 'plumber',
-    img: 'plumping.png',
     title: 'PLUMBER.',
     site: 'https://plumber.noel-sebastian.com/',
     desc: 'Single-page marketing site for a New York-based plumbing & handyman company — conversion-focused layout built to turn renovation-planning homeowners into booked appointments.',

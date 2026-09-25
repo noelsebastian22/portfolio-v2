@@ -60,7 +60,7 @@ const MANIFEST = path.join(ROOT, 'src', 'data', 'ring-captures.json');
 const RING_URL = '/images/ring';
 
 /**
- * The ring's five cards, keyed by `galleryProjects[].slug` in content.ts. The
+ * The ring's five cards, keyed by `ringProjects[].slug` in content.ts. The
  * key names the output. The master is whatever file holds that site: PLUMBER.
  * was screenshotted as plumping.png.
  */

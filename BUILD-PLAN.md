@@ -67,7 +67,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 4 | Shell — layout, nav, footer | **complete** | Tasks 4.1–4.5, reviewed clean after 1 fix round. First JS since Phase 0 |
 | 5 | Sections 01–02 — Hero, Nine Years | **complete** | Tasks 5.1–5.3. First two islands; Stats.astro retired into NineYears |
 | 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
-| 7 | Section 04 — The Ring (2D rail) | not started | |
+| 7 | Section 04 — The Ring (2D rail) | **in review** | Tasks 7.1–7.2 done. Split drawn as a track the curve is pinned to; Gallery retired |
 | 8 | Sections 05–06 — Stack, Contact | not started | |
 | **9** | **SHIPPABLE — 2D site complete** | not started | **Real finish line. Deploy here.** |
 | 10 | WebGL — gate + signal tube | not started | |
@@ -196,6 +196,8 @@ src/
     signal/
       path.ts            THE canonical curve. Pure. Tested.
       svg-signal.ts      2D renderer — stroke-dashoffset
+      anchors.ts         pins the curve to sections and in-section anchors
+      draw.ts            drawing marks off the tip; the §7.4 easings
       tube-signal.ts     3D renderer — Three.js TubeGeometry   (phase 10)
     motion/
       scroll.ts          Lenis init + global progress
@@ -216,7 +218,7 @@ src/
     tokens.css           the design system — single source
     global.css
 scripts/
-  optimise-gallery.mjs   extended: duotone, grain, chrome, AVIF
+  optimise-gallery.mjs   ring captures (duotone, AVIF + WebP) and /websites cards
   portrait.mjs           duotone still + particle source data
   og-image.mjs           generated OG image
 tests/                   Vitest — pure modules only
@@ -940,6 +942,36 @@ pipeline extended with duotone and AVIF output (grain and chrome are not baked �
 **Verification:** every card is a real `<a>` to a live site. Hover scrolls the long capture
 inside the frame. Keyboard reaches every card.
 
+**Task-level expansion (added 2026-09-25).** Briefs are in `.superpowers/sdd/BUILD-PLAN/`.
+
+### Task 7.1 — The screenshot pipeline
+
+- [x] `optimise-gallery.mjs` rewritten: duotone `--ground`→`--type` ring captures at 480w/960w in
+  AVIF and WebP, `src/data/ring-captures.json` for their sizes, the double-encode fixed.
+
+### Task 7.2 — `Ring.astro` (the 2D rail) + `src/islands/ring.ts`
+
+- [x] **Step 1:** `Ring.astro` replaces `Gallery.astro` (deleted, with its divider and its
+  `is:inline` script). `#ring` carries `data-signal-section="ring"`; the nav links to it as
+  *Shipped*. Five cards in a native scroll-snap rail, each one `<a>` to the live site wrapping
+  markup browser chrome (the real hostname), the capture and the title. Hover or focus scrolls the
+  capture with `transform` at a constant 400px/s; none under reduced motion.
+- [x] **The split is a track** (see Decisions): a stroke above the rail, the curve pinned to its
+  centre line at control point 34 (`RING_SPLIT_POINT`), a drop and a `--shipped` emission per
+  card. Drawn in full in the HTML.
+- [x] **In-section anchors generalised.** `anchors.ts` holds a list of control point + selector +
+  edge (`IN_SECTION_ANCHORS`): the spine's two ends and the split. Every anchor is a sampling cut;
+  480 samples still hold (worst chord 0.66px at 1440, unchanged).
+- [x] **Step 2:** `ring.ts` draws the split off the tip over 128px (`--s-10`) of tip travel —
+  the track outward from the measured meeting point, then the drops, then the emissions. Arrow
+  keys, Home and End move between cards; a focused card is snapped fully into the rail.
+  `lib/signal/draw.ts` holds what it shares with `work.ts`.
+
+Measured: the curve meets the track at the drawn vertex exactly (Δ < 0.01px) at 1024, 1440, 1920,
+2560 and 375. Shipped JS on `/` 58,935 gzip by the same method that reads the Phase 6 build as
+57,745 (**+1,190**; against the recorded 57,756, +1,179), 73.7% of the 80 KB budget.
+`index.html` 19,945 → 18,951 gzip. CLS 0.
+
 ## PHASE 8 — Sections 05–06: Stack and Contact
 
 **Deliverable:** the `pipe()` operator chain including the new AI tooling node, and the
@@ -1196,6 +1228,22 @@ decision was made; this section records *what it is*.
   because noise is what AVIF and WebP compress worst. (3) Browser chrome is markup (Task 7.2),
   because the capture scrolls inside the frame on hover and the chrome has to hold still. As
   markup it can also show the real domain as text. §10 updated to match.
+- **2026-09-25 (controller, Task 7.2)** — **In 2D the ring's split is a track.** §6 has the line
+  split into five at the ring, one branch per card. The 2D rail draws that as a horizontal track
+  above the cards, at the signal's weight and colour, with each card hanging off it on a short drop
+  that ends in a `--shipped` emission (and says `shipped · live` in words, §13). The curve meets the
+  track exactly where it reaches the centre, because control point 34 (`RING_SPLIT_POINT`, `x` 0,
+  the curve's maximum `z`) is pinned to the track's centre line by a third in-section anchor. The
+  spine's two anchors and this one are now one list in `anchors.ts` rather than a spine special
+  case. The track is static; the drops live inside the scroller, so they slide with their cards
+  and horizontal scroll needs no script. Below the track the curve holds the centre behind the
+  cards, dimmed by the existing rule. `path.ts` coordinates untouched.
+- **2026-09-25 (claude-code, Task 7.2)** — **A focused ring card is scrolled fully into the rail.**
+  The brief expected native focus scrolling plus the snap to settle a card. Measured at 1440, it
+  does not: focusing the third card scrolls just the 57px needed, and `scroll-snap-type: x
+  mandatory` then re-snaps to the nearest position, which is 0, leaving the card and its focus ring
+  clipped. `ring.ts` scrolls a focused, partly hidden card to its own snap position on `focusin`, by
+  Tab or arrow alike. Instant, like native focus scrolling.
 
 ## Known Gaps
 
@@ -1337,7 +1385,8 @@ decision was made; this section records *what it is*.
   does this at phone width) or content routes around it.
 - **The JS budget has been measured with two blind spots all along.** The hero island is inlined
   into `index.html` rather than emitted as a chunk, so a chunk-only sum misses it; and
-  `Gallery.astro`'s `is:inline` script (~1.1 KB raw) has never been counted in any phase figure.
+  `Gallery.astro`'s `is:inline` script (~1.1 KB raw) was never counted in any phase figure (it
+  left with `Gallery.astro` in Task 7.2, so the page now has no `is:inline` script at all).
   Deltas between phases are still sound because the omission is consistent, but the **absolute**
   number understates what ships. Phase 9 must measure every script the page actually loads —
   external chunks, module-inlined scripts and `is:inline` blocks — not just `_astro/*.js`.
@@ -1354,15 +1403,33 @@ decision was made; this section records *what it is*.
   on-concept, but it was inherited rather than decided, and the same `·` renders round in the mono
   voice (the status rail, the `01 · of('Noel Sebastian')` caption). Noel's call.
 
+### Opened by Task 7.2 — 2026-09-25
+
+- **The ring's hold runs down through About.** The `ring` span ends at the `stack` seam, which is
+  still `#skills`, and `About.astro` sits between the ring and Skills with no anchor of its own. So
+  control points 34→39 — the curve holding the centre — stretch from the track through the rest of
+  the rail and all of About (about 4,100px at 1440). Dimmed throughout, so contrast holds. Phase 8
+  decides where About goes; the ring's bottom seam follows.
+- **At phone width the curve runs 9px beside the first card's drop.** At 375 the meeting point is
+  187.5px and the first card's drop is at its centre, 178px, so the dim curve and the drop run down
+  the 48px drop zone side by side before the card hides the curve. Legible, not ugly, but not
+  designed. A drop placed off-centre, or the first card snapped so its centre is the meeting point,
+  would settle it.
+- **The split meets a dim line.** The track and drops are full strength, while the curve arriving
+  at them is at `--signal-dim-alpha`: it is outside the gutter the whole way across the section's
+  head. Correct under the dim rule, and the track reads as the line arriving at full strength, but
+  the join is a step in strength, not a continuous stroke.
+
 ### Opened by Phase 6 — 2026-09-25
 
-- **Three sections are anchored to interim stand-ins.** `ring` → `#gallery`, `stack` → `#skills`,
-  `contact` → `#contact`, each marked `data-signal-section` and commented as interim. Phases 7–8
-  move the attribute onto the rebuilt sections. A missing anchor falls back to linear mapping, so
-  forgetting one fails soft, but it fails *wrong*: the line will drift off its section.
-- **The dim line still crosses unrebuilt text below section 03**: Gallery, About and Skills start at
-  x=0 because their layout classes are dead Tailwind. It is dimmed to 0.15, so contrast holds, but
-  it lies on the text. Phases 7–8 own it.
+- **Two sections are anchored to interim stand-ins** (the ring's moved onto `#ring` in Task 7.2):
+  `stack` → `#skills`, `contact` → `#contact`, each marked `data-signal-section` and commented as
+  interim. Phase 8 moves the attribute onto the rebuilt sections. A missing anchor falls back to
+  linear mapping, so forgetting one fails soft, but it fails *wrong*: the line will drift off its
+  section.
+- **The dim line still crosses unrebuilt text below section 04**: About and Skills start at
+  x=0 because their layout classes are dead Tailwind (Gallery is gone as of Task 7.2). It is
+  dimmed to 0.15, so contrast holds, but it lies on the text. Phase 8 owns it.
 - **The content-box assumption is load-bearing.** `gutter.ts`'s lit/dim bands assume every section
   from 03 down lays out as a centred `--container` with `--s-5` padding plus
   `padding-left: var(--signal-gutter)`. A section built differently gets a line lit under its
