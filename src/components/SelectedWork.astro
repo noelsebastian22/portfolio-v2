@@ -18,6 +18,11 @@
  * `--s-5`, plus `padding-left: var(--signal-gutter)`. That is exactly the content box the
  * renderer's gutter probe assumes (`.signal-gutter-probe` in global.css), so the line's lit
  * run and the content agree on where content starts. Change one, change both.
+ *
+ * The first card carries `data-signal-spine="start"` and the last `"end"`: the renderer
+ * pins the curve's spine to the first card's top and the last card's bottom (anchors.ts),
+ * so the line runs down the margin beside every study and the sweep that opens the
+ * section stays in its head.
  */
 import { caseStudies } from '../data/content';
 import { yearsElapsed } from '../lib/career';
@@ -134,8 +139,12 @@ const viewBox = `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`;
     </header>
 
     <ol class="work__studies" role="list">
-      {studies.map((study) => (
-        <li class="study" data-study>
+      {studies.map((study, i) => (
+        <li
+          class="study"
+          data-study
+          data-signal-spine={i === 0 ? 'start' : i === studies.length - 1 ? 'end' : undefined}
+        >
           {/* Decorative: the branch from the signal into this card. Server-rendered
               empty; the island gives it a position and a `d` once it can read the
               curve. Carries no content, so it adds no words for JS-off visitors. */}

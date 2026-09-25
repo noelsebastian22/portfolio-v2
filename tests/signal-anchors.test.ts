@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { SECTION_SPANS, sampleSignal, sampleSignalRange } from '../src/lib/signal/path';
+import { SECTION_SPANS, SPINE_SPAN, sampleSignal, sampleSignalRange } from '../src/lib/signal/path';
 import {
   SEAM_CURVE_Y,
+  SPINE_CURVE_Y,
   mapCurveY,
   resolveSeamPixels,
+  resolveSpinePixels,
   toPixelPoints,
   xAtPixelY,
   pageCurveLookup,
@@ -184,5 +186,83 @@ describe('the curve channel in tip.ts', () => {
     const calls: number[] = [];
     onSignalCurve(() => calls.push(1))();
     expect(calls).toEqual([1]);
+  });
+});
+
+describe('spine anchors — pinned inside the work section', () => {
+  const seams = resolveSeamPixels(TOPS, HEIGHT);
+  // TOPS: work opens at 1850, the ring at 3900. The first card starts at 2300, the last
+  // card ends at 3700.
+  const SPINE: [number, number] = [2300, 3700];
+  const spine = resolveSpinePixels(SPINE, seams);
+
+  it('sits strictly inside the work span, at control points 21 and 26', () => {
+    const work = SECTION_SPANS.find((s) => s.id === 'work')!;
+    expect(SPINE_CURVE_Y[0]).toBeCloseTo(sampleSignal(SPINE_SPAN.tStart).y, 12);
+    expect(SPINE_CURVE_Y[1]).toBeCloseTo(sampleSignal(SPINE_SPAN.tEnd).y, 12);
+    expect(SPINE_CURVE_Y[0]).toBeGreaterThan(sampleSignal(work.tStart).y);
+    expect(SPINE_CURVE_Y[1]).toBeLessThan(sampleSignal(work.tEnd).y);
+  });
+
+  it('lands the spine start and end on their anchors', () => {
+    expect(spine).toEqual(SPINE);
+    expect(mapCurveY(SPINE_CURVE_Y[0], seams, spine)).toBeCloseTo(2300, 9);
+    expect(mapCurveY(SPINE_CURVE_Y[1], seams, spine)).toBeCloseTo(3700, 9);
+  });
+
+  it('leaves every seam exactly where it was', () => {
+    SECTION_SPANS.forEach((span, i) => {
+      expect(mapCurveY(sampleSignal(span.tStart).y, seams, spine)).toBeCloseTo(TOPS[i], 9);
+    });
+    expect(mapCurveY(sampleSignal(1).y, seams, spine)).toBeCloseTo(HEIGHT, 9);
+  });
+
+  it('stays monotonic in y, sampled densely', () => {
+    let previous = -Infinity;
+    for (let i = 0; i <= 20000; i++) {
+      const y = mapCurveY(sampleSignal(i / 20000).y, seams, spine);
+      expect(y).toBeGreaterThanOrEqual(previous);
+      previous = y;
+    }
+  });
+
+  it('falls back to seam-linear mapping when either anchor is missing', () => {
+    const mid = (SPINE_CURVE_Y[0] + SPINE_CURVE_Y[1]) / 2;
+    expect(resolveSpinePixels([null, null], seams)).toEqual([null, null]);
+    expect(mapCurveY(mid, seams, [null, null])).toBeCloseTo(mapCurveY(mid, seams), 9);
+    expect(mapCurveY(mid, seams, undefined)).toBeCloseTo(mapCurveY(mid, seams), 9);
+    // Only the start: pinned there, seam-linear from it to the next seam.
+    const startOnly = resolveSpinePixels([2300, null], seams);
+    expect(mapCurveY(SPINE_CURVE_Y[0], seams, startOnly)).toBeCloseTo(2300, 9);
+    const workEnd = sampleSignal(SECTION_SPANS[3].tStart).y;
+    expect(mapCurveY(workEnd, seams, startOnly)).toBeCloseTo(TOPS[3], 9);
+  });
+
+  it('clamps anchors that would fold the line back up the page', () => {
+    // Start above its section's seam, end below the next seam.
+    expect(resolveSpinePixels([1000, 5000], seams)).toEqual([TOPS[2], TOPS[3]]);
+    // End above start: held at the start.
+    expect(resolveSpinePixels([3000, 2500], seams)).toEqual([3000, 3000]);
+    // End with no start: held within the section.
+    expect(resolveSpinePixels([null, 100], seams)).toEqual([null, TOPS[2]]);
+    for (const bad of [[1000, 5000], [3000, 2500], [null, 100]] as const) {
+      const clamped = resolveSpinePixels(bad, seams);
+      let previous = -Infinity;
+      for (let i = 0; i <= 4000; i++) {
+        const y = mapCurveY(sampleSignal(i / 4000).y, seams, clamped);
+        expect(y).toBeGreaterThanOrEqual(previous - 1e-9);
+        previous = y;
+      }
+    }
+  });
+
+  it('ignores non-finite measurements', () => {
+    expect(resolveSpinePixels([Number.NaN, Number.POSITIVE_INFINITY], seams)).toEqual([null, null]);
+  });
+
+  it('carries the pinning through toPixelPoints', () => {
+    const pts = toPixelPoints(sampleSignalRange(SPINE_SPAN.tStart, SPINE_SPAN.tEnd, 3), 1440, seams, spine);
+    expect(pts[0].y).toBeCloseTo(2300, 6);
+    expect(pts[2].y).toBeCloseTo(3700, 6);
   });
 });

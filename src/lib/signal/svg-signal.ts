@@ -30,10 +30,11 @@
  * pads past its ends. The bands come from the same pixel points the path is drawn from.
  */
 
-import { SECTION_SPANS, sampleSignalRange, type SignalPoint } from './path';
+import { SECTION_SPANS, SPINE_SPAN, sampleSignalRange, type SignalPoint } from './path';
 import {
   pageCurveLookup,
   resolveSeamPixels,
+  resolveSpinePixels,
   toPixelPath,
   toPixelPoints,
   type PixelPoint,
@@ -90,11 +91,23 @@ const RESIZE_DEBOUNCE_MS = 150;
  * Measured deviation against a 4px stroke, worst case over the whole curve. It peaks at
  * the corner where `years` hands over to `work`, just above the `work` seam:
  *
- *   box                              n=240    n=320    n=480
+  *   box                              n=240    n=320    n=480
  *   1440 x 8568, pinned to sections  2.49px   1.45px   0.66px   ← the real page, Task 6.1
  *   2560 x 8708, pinned to sections  4.35px   2.56px   1.17px   ← a wide desktop
  *   375 x 9392, pinned to sections   0.66px   0.38px   0.18px   ← phone
  *   2560 x 14000, whole-box linear   4.41px   2.57px   1.17px   ← the old stress case
+ *
+ * Re-measured in Task 6.3, with the spine pinned to the case studies (anchors.ts), which
+ * compresses the work section's sweep into its head — about 460px of page at 1440 instead
+ * of ~1330px. Worst case over the whole curve at n=480, and in brackets the worst inside
+ * the sweep and spine alone:
+ *
+ *   1024 x 11531   0.47px (0.36)      1920 x 10739   0.88px (0.59)
+ *   1440 x 10340   0.66px (0.48)      2560 x 10752   1.17px (0.65)
+ *   375 x 12240    0.17px
+ *
+ * The sharper sweep is still not the worst corner — the years → work corner is — and
+ * everything stays under half the stroke, so 480 holds.
  *
  * Pinning the curve to the sections (Task 6.1) stretches some spans more than the old
  * whole-document mapping did, but on the real page the worst corner sits in spans that are
@@ -109,15 +122,26 @@ const CURVE_SAMPLE_DENSITY = 480;
 
 /**
  * Samples the whole curve at roughly `CURVE_SAMPLE_DENSITY` intervals, span by span, so
- * every seam is a vertex of the drawn polyline. The seams are where the curve is pinned to
- * the page, so they are exactly where a chord cutting a corner would show.
+ * every anchor — each seam and both ends of the spine — is a vertex of the drawn polyline.
+ * The anchors are where the curve is pinned to the page, so they are exactly where a chord
+ * cutting a corner would show.
  */
 function sampleWholeCurve(): SignalPoint[] {
+  // The spine's two ends are anchors too (see anchors.ts), so they are split points
+  // exactly like the seams: the work span is sampled as sweep, spine and exit.
+  const cuts = [
+    ...SECTION_SPANS.map((span) => span.tStart),
+    SPINE_SPAN.tStart,
+    SPINE_SPAN.tEnd,
+    1,
+  ].sort((a, b) => a - b);
+
   const points: SignalPoint[] = [];
-  for (const span of SECTION_SPANS) {
-    const intervals = Math.max(1, Math.round(CURVE_SAMPLE_DENSITY * (span.tEnd - span.tStart)));
-    const spanPoints = sampleSignalRange(span.tStart, span.tEnd, intervals + 1);
-    // Each span starts on the previous span's last point; keep one copy of the seam.
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const [tStart, tEnd] = [cuts[i], cuts[i + 1]];
+    const intervals = Math.max(1, Math.round(CURVE_SAMPLE_DENSITY * (tEnd - tStart)));
+    const spanPoints = sampleSignalRange(tStart, tEnd, intervals + 1);
+    // Each run starts on the previous run's last point; keep one copy of the split.
     points.push(...(points.length === 0 ? spanPoints : spanPoints.slice(1)));
   }
   return points;
@@ -249,6 +273,21 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   }
 
   /**
+   * The spine's anchors in the `<svg>`'s coordinates: the top of the element marked
+   * `data-signal-spine="start"` and the bottom of the one marked `"end"` — on the home page,
+   * the first and last case study. `null` for either one the page does not have.
+   */
+  function measureSpine(): [number | null, number | null] {
+    const boxTop = svg.getBoundingClientRect().top;
+    const start = document.querySelector('[data-signal-spine="start"]');
+    const end = document.querySelector('[data-signal-spine="end"]');
+    return [
+      start ? start.getBoundingClientRect().top - boxTop : null,
+      end ? end.getBoundingClientRect().bottom - boxTop : null,
+    ];
+  }
+
+  /**
    * The gutter in the `<svg>`'s coordinates, read off the probe so the CSS stays the one
    * definition of it. `null` when the page has no section that reserves one.
    */
@@ -301,7 +340,8 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     const sectionTops = measureSectionTops();
     const seamPixels = resolveSeamPixels(sectionTops, height);
-    pixelPoints = toPixelPoints(points, width, seamPixels);
+    const spinePixels = resolveSpinePixels(measureSpine(), seamPixels);
+    pixelPoints = toPixelPoints(points, width, seamPixels, spinePixels);
     lengthTable = cumulativeLengths(pixelPoints);
     path.setAttribute('d', toPixelPath(pixelPoints));
 
