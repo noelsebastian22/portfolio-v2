@@ -180,6 +180,23 @@ export const SECTION_SPANS: readonly SectionSpan[] = SECTION_SEGMENTS.map(([id],
   tEnd: SEAMS[i + 1],
 }));
 
+/**
+ * The `work` section's spine: the run parked at the left margin that the case studies
+ * branch right from — control points 21 through 26. Metadata about the curve, not more
+ * curve: it names a range of `t` that lands exactly on those control points, the same way
+ * the seams do. Adding a waypoint before point 21 means updating these two indices.
+ *
+ * `--signal-gutter` is derived from the rightmost `x` in this range (see tokens.css, and
+ * the test that holds the two together).
+ */
+const SPINE_FIRST_POINT = 21;
+const SPINE_LAST_POINT = 26;
+
+export const SPINE_SPAN: Readonly<{ tStart: number; tEnd: number }> = {
+  tStart: SPINE_FIRST_POINT / TOTAL_SEGMENTS,
+  tEnd: SPINE_LAST_POINT / TOTAL_SEGMENTS,
+};
+
 function clamp01(value: number): number {
   if (!(value > 0)) return 0; // also catches NaN
   if (value > 1) return 1;
