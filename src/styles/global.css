@@ -95,20 +95,24 @@ body::after {
   pointer-events: none;
 }
 
-@media (max-width: 768px) {
-  /**
-   * Spec §7.3: no room for a reserved column at phone width — the same breakpoint that
-   * zeroes --signal-gutter — so the line runs behind the copy at low opacity instead.
-   *
-   * 0.15 is set by contrast, not by taste. Text sitting directly on one of the line's
-   * horizontal runs reads against the blend of --signal into --ground, and at the 0.3
-   * that first looked right, --type-dim falls to 3.66:1 — below AA. Measured over the
-   * blended background: --type 14.96:1, --type-dim 4.69:1. Both clear AA, and --type
-   * clears AAA, so body copy is comfortably readable and not merely passing.
-   */
-  #signal-layer {
-    opacity: 0.15;
-  }
+/**
+ * Where the gutter ends, measured by the renderer for the dim rule (see gutter.ts). Placed
+ * exactly as a section's content box is — a centred --container padded by --s-5 — and as
+ * wide as --signal-gutter, so the CSS stays the one place the gutter is defined and the
+ * renderer only reads it. `100%` here is the layer's width, which is the page's width
+ * without a scrollbar: the same box the curve is drawn across.
+ *
+ * Spec §7.3's phone behaviour — the line behind the copy at low opacity — needs no rule of
+ * its own any more: at ≤768px --signal-gutter is 0px, so the renderer finds no gutter to be
+ * inside and dims the whole line to --signal-dim-alpha.
+ */
+.signal-gutter-probe {
+  position: absolute;
+  top: 0;
+  left: calc((100% - min(100%, var(--container))) / 2 + var(--s-5));
+  width: var(--signal-gutter);
+  height: 0;
+  visibility: hidden;
 }
 
 /* ── Focus, selection, skip link ────────────────────────────────────────────────── */

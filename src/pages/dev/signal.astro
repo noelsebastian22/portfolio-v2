@@ -88,7 +88,8 @@ import '../../styles/tokens.css';
         throw new Error('dev/signal: #signal-mount not found');
       }
 
-      const signal = createSvgSignal(mount);
+      // No dim rule: there is no text here to protect, and the harness has to be legible.
+      const signal = createSvgSignal(mount, { dimOffGutter: false });
 
       function report(t: number, mode: 'query' | 'scroll'): void {
         if (readout) readout.textContent = `t = ${t.toFixed(3)}  ·  mode = ${mode}`;

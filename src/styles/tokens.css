@@ -72,6 +72,13 @@
     )
   );
 
+  /* The line's strength outside its gutter, where text may sit on it (see gutter.ts).
+     Bounded by contrast: text paints over the stroke blended into --ground, and the
+     tightest text colour, --type-dim, holds 4.5:1 only up to alpha 0.179. At 0.15 the
+     blend is rgb(47,19,19): --type-dim 4.69:1, --signal 5.23:1, --type 14.96:1,
+     --shipped 10.48:1. The margin under 0.179 covers 8-bit rounding and the grain. */
+  --signal-dim-alpha: 0.15;
+
   /* Stacking — spec §10's layers, bottom to top: the ground, the signal, content,
      the nav, the skip link, and the grain over all of it. The signal sits at a negative
      index so ordinary in-flow content paints above it without every section having to

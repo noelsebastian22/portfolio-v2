@@ -21,10 +21,27 @@
  * torn down explicitly in `destroy()`. Geometry is sampled once from `path.ts` at
  * creation time — resize only re-measures the section anchors, re-scales those points into
  * pixels and re-measures the rendered length; it never re-samples the curve.
+ *
+ * The dim rule (see `gutter.ts`): the line is full strength only where it sits inside
+ * `--signal-gutter`, and `--signal-dim-alpha` everywhere else. It is one `<path>` stroked
+ * with a vertical gradient whose stops carry the strength, not a mask and not two paths.
+ * A CSS `mask-image` would clip the end caps the `overflow: visible` below exists to
+ * save — a mask stops at the element's border box — while a gradient paint server simply
+ * pads past its ends. The bands come from the same pixel points the path is drawn from.
  */
 
+export interface SvgSignalOptions {
+  /**
+   * Apply the dim rule. On by default: a page's text crosses the line, and full strength
+   * under text fails AA. `/dev/signal` turns it off — there is no text to protect, and a
+   * harness drawn at 15% cannot be debugged.
+   */
+  dimOffGutter?: boolean;
+}
+
 import { SECTION_SPANS, sampleSignalRange, type SignalPoint } from './path';
-import { resolveSeamPixels, toPixelPath, toPixelPoints } from './anchors';
+import { resolveSeamPixels, toPixelPath, toPixelPoints, type PixelPoint } from './anchors';
+import { gutterBands, strengthStops, type GutterRegion } from './gutter';
 
 export interface SvgSignal {
   /**
@@ -37,6 +54,13 @@ export interface SvgSignal {
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * How far, in px of page height, the line crossfades from dim to full strength at each
+ * band edge, laid inside the band. Long enough that the sweep into the spine reads as the
+ * line arriving rather than a switch, short against a spine hundreds of px tall.
+ */
+const BAND_FADE_PX = 32;
 
 /** Resize re-measurement is debounced — the viewBox and total length both change. */
 const RESIZE_DEBOUNCE_MS = 150;
@@ -89,7 +113,14 @@ function clamp01(value: number): number {
   return value;
 }
 
-export function createSvgSignal(mount: HTMLElement): SvgSignal {
+/** The first section that reserves the gutter (§7.3): above it, nothing is inside one. */
+const GUTTER_FROM_SECTION = 'work';
+
+let gradientCount = 0;
+
+export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = {}): SvgSignal {
+  const dimOffGutter = options.dimOffGutter ?? true;
+
   // Deliberately not `reducedMotion()` from ../motion/scroll: that module imports gsap
   // and lenis at module scope, so importing it here would pull ~50 KB gzip into the 2D
   // fallback's own graph and couple it to the motion layer. A local matchMedia is the
@@ -105,9 +136,9 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
   svg.style.width = '100%';
   svg.style.height = '100%';
   // The curve's last point always lands exactly on this box's bottom edge, and its first
-  // lands on the top edge wherever the page has no hero anchor — and a round cap is a disc centred on
-  // the point, so the UA stylesheet's `svg:root { overflow: hidden }` slices both of
-  // them in half. Verified by pixel: without this, paint starts abruptly at the box's
+  // on the top edge wherever the page has no hero anchor — and a round cap is a disc
+  // centred on the point, so the UA stylesheet's `svg:root { overflow: hidden }` slices
+  // both of them in half. Verified by pixel: without this, paint starts abruptly at the box's
   // first row and stops abruptly at its last.
   //
   // Safe because the mount is inset by half the stroke (see #signal-layer in
@@ -126,6 +157,27 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
 
   svg.appendChild(path);
   mount.appendChild(svg);
+
+  // The dim rule's paint server and the probe that measures the gutter. userSpaceOnUse
+  // with y1 0 and y2 the box height, so a stop's offset is simply its pixel y / height.
+  const gradient = document.createElementNS(SVG_NS, 'linearGradient');
+  let gutterProbe: HTMLElement | undefined;
+  if (dimOffGutter) {
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    const gradientId = `signal-strength-${++gradientCount}`;
+    gradient.id = gradientId;
+    gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
+    gradient.setAttribute('x1', '0');
+    gradient.setAttribute('x2', '0');
+    gradient.setAttribute('y1', '0');
+    defs.appendChild(gradient);
+    svg.insertBefore(defs, path);
+    path.style.stroke = `url(#${gradientId})`;
+
+    gutterProbe = document.createElement('div');
+    gutterProbe.className = 'signal-gutter-probe';
+    mount.appendChild(gutterProbe);
+  }
 
   let currentT = 0;
   let totalLength = 0;
@@ -151,6 +203,36 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
   }
 
   /**
+   * The gutter in the `<svg>`'s coordinates, read off the probe so the CSS stays the one
+   * definition of it. `null` when the page has no section that reserves one.
+   */
+  function measureGutter(gutterTop: number | null): GutterRegion | null {
+    if (!gutterProbe || gutterTop === null) return null;
+    const probe = gutterProbe.getBoundingClientRect();
+    const right = probe.right - svg.getBoundingClientRect().left;
+    return { top: gutterTop, right, width: probe.width };
+  }
+
+  /** Rewrites the gradient's stops: dim everywhere, full strength inside the gutter. */
+  function applyStrength(
+    pixelPoints: readonly PixelPoint[],
+    gutter: GutterRegion | null,
+    height: number,
+  ): void {
+    const bands = gutter ? gutterBands(pixelPoints, gutter) : [];
+    gradient.setAttribute('y2', String(height));
+    gradient.replaceChildren(
+      ...strengthStops(bands, height, BAND_FADE_PX).map(({ offset, full }) => {
+        const stop = document.createElementNS(SVG_NS, 'stop');
+        stop.setAttribute('offset', String(offset));
+        stop.style.stopColor = 'var(--signal)';
+        stop.style.stopOpacity = full ? '1' : 'var(--signal-dim-alpha)';
+        return stop;
+      }),
+    );
+  }
+
+  /**
    * Re-measures the section anchors, re-scales the cached points into the `<svg>`'s
    * current pixel box, sets the viewBox to match, and re-measures `getTotalLength()` — the
    * length changes with the box even though the underlying curve did not.
@@ -167,9 +249,16 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
     if (width <= 0 || height <= 0) return;
 
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    const seamPixels = resolveSeamPixels(measureSectionTops(), height);
+    const sectionTops = measureSectionTops();
+    const seamPixels = resolveSeamPixels(sectionTops, height);
     const pixelPoints = toPixelPoints(points, width, seamPixels);
     path.setAttribute('d', toPixelPath(pixelPoints));
+
+    // Before the reduced-motion early return on purpose: dimming is contrast, not motion.
+    if (dimOffGutter) {
+      const gutterIndex = SECTION_SPANS.findIndex((span) => span.id === GUTTER_FROM_SECTION);
+      applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
+    }
 
     if (reduceMotion) {
       // Fully drawn, permanently. No dasharray at all rather than a dasharray equal to
@@ -218,6 +307,7 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
       resizeTimer = undefined;
     }
     svg.remove();
+    gutterProbe?.remove();
   }
 
   return { setProgress, destroy };
