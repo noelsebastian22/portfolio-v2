@@ -392,9 +392,9 @@ freelance work.
 **Visual:** a 3D ring carousel. Cards placed with `rotateY(θ) translateZ(radius)` around a
 circle. The line splits into one branch per card, each terminating on its card.
 
-**Interaction:** drag or scroll to spin. On hover, the card's long `-scroll.webp` capture
-scrolls inside its frame — which reads as a screen recording at the cost of a WebP that
-already ships. `Gallery.astro` already implements this trick; reuse it.
+**Interaction:** drag or scroll to spin. On hover, the card's long duotone capture (§10)
+scrolls inside its frame — which reads as a screen recording at the cost of an image the
+card already loads. `Gallery.astro` already implements this trick; reuse it.
 
 Every card is a real anchor to the live site. The ring is operable by keyboard with arrow
 keys, and focus moves the ring.
@@ -453,9 +453,16 @@ The concept is deliberately asset-light. Almost everything is generated at runti
 | Ring card imagery | Existing screenshots, reprocessed |
 | OG image | Generated at build time with `sharp` |
 
-**Screenshot treatment pipeline** (extends `scripts/optimise-gallery.mjs`): duotone into
-the palette, film grain, minimal browser chrome, responsive AVIF + WebP. Nine mismatched
-screenshots become one system.
+**Screenshot treatment pipeline** (`scripts/optimise-gallery.mjs`): each ring capture is a
+full-height duotone from `--ground` to `--type`, because red means *live* in §6 and five red
+slabs would compete with the line for it. There is no baked grain, because the page grain
+layer already paints over every card and noise is what AVIF and WebP compress worst. There
+is no baked browser chrome either: the capture scrolls inside its frame, so the chrome has
+to stay still, which makes it markup and lets the real domain appear as text. Each capture
+ships as AVIF + WebP at 480w (1x) and 960w (2x), and its size is recorded in
+`src/data/ring-captures.json` for `width`/`height` and a constant-speed hover scroll. Nine
+mismatched screenshots become one system. `/websites` keeps its plain-colour hero crops
+(§14).
 
 **No video.** It is the heaviest thing that can go on a page and the entire pitch is
 performance; a recruiter can click through to five live sites instead. The hover-scroll

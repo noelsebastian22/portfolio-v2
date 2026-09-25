@@ -1,0 +1,62 @@
+{
+  "daybook": {
+    "width": 960,
+    "height": 1988,
+    "avif": {
+      "480": "/images/ring/daybook-480w.avif",
+      "960": "/images/ring/daybook-960w.avif"
+    },
+    "webp": {
+      "480": "/images/ring/daybook-480w.webp",
+      "960": "/images/ring/daybook-960w.webp"
+    }
+  },
+  "ezytrack": {
+    "width": 960,
+    "height": 5239,
+    "avif": {
+      "480": "/images/ring/ezytrack-480w.avif",
+      "960": "/images/ring/ezytrack-960w.avif"
+    },
+    "webp": {
+      "480": "/images/ring/ezytrack-480w.webp",
+      "960": "/images/ring/ezytrack-960w.webp"
+    }
+  },
+  "plumber": {
+    "width": 960,
+    "height": 4871,
+    "avif": {
+      "480": "/images/ring/plumber-480w.avif",
+      "960": "/images/ring/plumber-960w.avif"
+    },
+    "webp": {
+      "480": "/images/ring/plumber-480w.webp",
+      "960": "/images/ring/plumber-960w.webp"
+    }
+  },
+  "topdel-renovations": {
+    "width": 960,
+    "height": 3888,
+    "avif": {
+      "480": "/images/ring/topdel-renovations-480w.avif",
+      "960": "/images/ring/topdel-renovations-960w.avif"
+    },
+    "webp": {
+      "480": "/images/ring/topdel-renovations-480w.webp",
+      "960": "/images/ring/topdel-renovations-960w.webp"
+    }
+  },
+  "laserclinic": {
+    "width": 960,
+    "height": 5403,
+    "avif": {
+      "480": "/images/ring/laserclinic-480w.avif",
+      "960": "/images/ring/laserclinic-960w.avif"
+    },
+    "webp": {
+      "480": "/images/ring/laserclinic-480w.webp",
+      "960": "/images/ring/laserclinic-960w.webp"
+    }
+  }
+}

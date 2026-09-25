@@ -930,14 +930,12 @@ the line until the line is pinned to the sections. Briefs are in `.superpowers/s
 
 **Deliverable:** the horizontal scroll-snap rail that is the mobile and no-WebGL
 presentation — built first so the ring has a working fallback before it exists. Screenshot
-pipeline extended with duotone, grain, browser chrome and AVIF output.
+pipeline extended with duotone and AVIF output (grain and chrome are not baked — see Decisions).
 
 **Files:** `src/components/Ring.astro`, `src/islands/ring.ts`,
 `scripts/optimise-gallery.mjs`
 
-**Note:** `gallery-masters/ezytrack2.jpg` is PNG data with a `.jpg` extension and is ~15MB.
-The pipeline must sniff the real format rather than trust the extension, and must supersede
-the 640px `ezytrack.jpg`.
+**Note:** the Ezytrack master is now `gallery-masters/ezytrack.png`, a correctly named 2704×14756 PNG.
 
 **Verification:** every card is a real `<a>` to a live site. Hover scrolls the long capture
 inside the frame. Keyboard reaches every card.
@@ -1189,6 +1187,15 @@ decision was made; this section records *what it is*.
   `signalXAtPageY` lookup, so islands follow the line without re-deriving the mapping. A branch
   draws over the 96px after the tip passes its origin; the diagrams run on their card's
   `onSection` progress.
+- **2026-09-25 (claude-code)** — **The ring captures are duotoned `--ground`→`--type`, with no baked
+  grain and no baked chrome.** Three rulings for Task 7.1. (1) The stops are `--type`, not
+  `--signal`: in §6 red means live, and these are shipped sites, so five red slabs would compete
+  with the line for the one colour that means "the signal is here". A warm monochrome print still
+  makes nine screenshots one system. (2) Grain comes from the page layer (`--z-grain`), which
+  already paints over every card. Baked noise would multiply the weight of 5,000px captures,
+  because noise is what AVIF and WebP compress worst. (3) Browser chrome is markup (Task 7.2),
+  because the capture scrolls inside the frame on hover and the chrome has to hold still. As
+  markup it can also show the real domain as text. §10 updated to match.
 
 ## Known Gaps
 
