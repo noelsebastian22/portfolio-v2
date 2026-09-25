@@ -127,3 +127,21 @@ export function xAtPixelY(points: readonly PixelPoint[], y: number): number | nu
   if (span <= 0) return b.x;
   return a.x + ((y - a.y) / span) * (b.x - a.x);
 }
+
+/**
+ * The one place the layer's box coordinates become page coordinates for a curve lookup:
+ * page `y` → the drawn curve's page `x`, given where the box's origin sits in the page.
+ * Closes over `points` as they are — the renderer replaces the array on every re-measure
+ * rather than mutating it, so a lookup handed out earlier stays self-consistent.
+ */
+export function pageCurveLookup(
+  points: readonly PixelPoint[],
+  boxLeftInPage: number,
+  boxTopInPage: number,
+): (pageY: number) => number | null {
+  return (pageY) => {
+    if (!Number.isFinite(pageY)) return null;
+    const x = xAtPixelY(points, pageY - boxTopInPage);
+    return x === null ? null : boxLeftInPage + x;
+  };
+}

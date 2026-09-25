@@ -1,18 +1,33 @@
 /**
- * Where the signal's drawn tip is, for anything that wants to follow it — Task 6.3's
- * branches start from it. A module-level channel rather than a method on the renderer, so
- * a section island can read it without being handed the renderer: `BaseLayout` creates
- * that, and islands only import modules. Vite emits this once as a shared chunk, so every
- * importer sees the same state.
+ * Where the signal is, for anything that wants to follow it — Task 6.3's branches start
+ * from it. A module-level channel rather than a method on the renderer, so a section
+ * island can read it without being handed the renderer: `BaseLayout` creates that, and
+ * islands only import modules. Vite emits this once as a shared chunk, so every importer
+ * sees the same state.
  *
- * Values are **page** `y` (document coordinates, comparable with
- * `getBoundingClientRect().top + scrollY`). No DOM, no timers.
+ * Two things are published, both by the renderer only:
+ *
+ * - the drawn **tip**, which moves with scroll;
+ * - the **curve lookup** — the curve's page `x` at a page `y` — which changes only when
+ *   the renderer re-measures (a resize, or the document changing height).
+ *
+ * Every value is in **page** coordinates (document coordinates, comparable with
+ * `getBoundingClientRect().top + scrollY`). The conversion from the layer's own box happens
+ * once, in the renderer (`pageCurveLookup` in `anchors.ts`), so no island ever re-samples
+ * the curve or re-measures a section anchor: that would be a second copy of the mapping.
+ * No DOM, no timers.
  */
 
 type TipListener = (pageY: number) => void;
 
+/** The curve's page `x` at page height `y`, or `null` above or below the drawn line. */
+export type CurveLookup = (pageY: number) => number | null;
+
 let currentTip: number | null = null;
 const listeners = new Set<TipListener>();
+
+let currentLookup: CurveLookup | null = null;
+const curveListeners = new Set<() => void>();
 
 /** The tip's page `y`, or `null` before the renderer has drawn. */
 export function signalTipY(): number | null {
@@ -36,4 +51,30 @@ export function publishSignalTip(pageY: number): void {
   if (!Number.isFinite(pageY) || pageY === currentTip) return;
   currentTip = pageY;
   for (const fn of listeners) fn(pageY);
+}
+
+/**
+ * The drawn curve's page `x` at page `y`, read off the same pixel points the line is drawn
+ * from. `null` before the renderer has measured, or outside the line's vertical extent.
+ */
+export function signalXAtPageY(pageY: number): number | null {
+  return currentLookup ? currentLookup(pageY) : null;
+}
+
+/**
+ * Calls `fn` every time the renderer re-measures the curve (after which `signalXAtPageY`
+ * answers differently), and once immediately if it already has. Returns an unsubscribe.
+ */
+export function onSignalCurve(fn: () => void): () => void {
+  curveListeners.add(fn);
+  if (currentLookup !== null) fn();
+  return () => {
+    curveListeners.delete(fn);
+  };
+}
+
+/** Renderer-only: publishes the lookup for the curve as it has just been drawn. */
+export function publishSignalCurve(lookup: CurveLookup): void {
+  currentLookup = lookup;
+  for (const fn of curveListeners) fn();
 }

@@ -31,10 +31,16 @@
  */
 
 import { SECTION_SPANS, sampleSignalRange, type SignalPoint } from './path';
-import { resolveSeamPixels, toPixelPath, toPixelPoints, type PixelPoint } from './anchors';
+import {
+  pageCurveLookup,
+  resolveSeamPixels,
+  toPixelPath,
+  toPixelPoints,
+  type PixelPoint,
+} from './anchors';
 import { gutterBands, strengthStops, type GutterRegion } from './gutter';
 import { cumulativeLengths, lengthAtY, playheadPageY } from './playhead';
-import { publishSignalTip } from './tip';
+import { publishSignalCurve, publishSignalTip } from './tip';
 
 export interface SvgSignalOptions {
   /**
@@ -301,7 +307,15 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
 
     docHeight = document.documentElement.scrollHeight;
     viewportHeight = window.innerHeight;
-    boxTopInPage = svg.getBoundingClientRect().top + window.scrollY;
+    const boxRect = svg.getBoundingClientRect();
+    boxTopInPage = boxRect.top + window.scrollY;
+
+    // The curve's page x at a page y, for the work section's branches (tip.ts). Published
+    // on every re-measure, after the points it reads are final, so a listener that asks
+    // straight away gets the line as it is now drawn.
+    if (pageLayer) {
+      publishSignalCurve(pageCurveLookup(pixelPoints, boxRect.left + window.scrollX, boxTopInPage));
+    }
 
     // Before the reduced-motion early return on purpose: dimming is contrast, not motion.
     if (pageLayer) {

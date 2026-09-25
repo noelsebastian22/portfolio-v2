@@ -6,7 +6,13 @@ import {
   resolveSeamPixels,
   toPixelPoints,
   xAtPixelY,
+  pageCurveLookup,
 } from '../src/lib/signal/anchors';
+import {
+  onSignalCurve,
+  publishSignalCurve,
+  signalXAtPageY,
+} from '../src/lib/signal/tip';
 
 // A plausible page: hero under a nav, then five sections of uneven height.
 const HEIGHT = 8568;
@@ -120,5 +126,63 @@ describe('toPixelPoints and xAtPixelY', () => {
     expect(xAtPixelY(points, TOPS[0] - 1)).toBeNull();
     expect(xAtPixelY(points, HEIGHT + 1)).toBeNull();
     expect(xAtPixelY([], 10)).toBeNull();
+  });
+});
+
+describe('pageCurveLookup — box coordinates to page coordinates, in one place', () => {
+  const seams = resolveSeamPixels(TOPS, HEIGHT);
+  const points = toPixelPoints(sampleSignalRange(0, 1, 480), 1440, seams);
+  // The layer is inset by half the stroke at the top of the document (#signal-layer).
+  const BOX_LEFT = 0;
+  const BOX_TOP = 2;
+  const lookup = pageCurveLookup(points, BOX_LEFT, BOX_TOP);
+
+  it('offsets both axes by the box origin', () => {
+    const vertex = points[250];
+    expect(lookup(vertex.y + BOX_TOP)).toBeCloseTo(vertex.x + BOX_LEFT, 9);
+    const shifted = pageCurveLookup(points, 30, 100);
+    expect(shifted(vertex.y + 100)).toBeCloseTo(vertex.x + 30, 9);
+  });
+
+  it('agrees with xAtPixelY everywhere along the line', () => {
+    for (let y = TOPS[0]; y <= HEIGHT; y += 97) {
+      expect(lookup(y + BOX_TOP)).toBeCloseTo(xAtPixelY(points, y)!, 9);
+    }
+  });
+
+  it('is null off the line and for non-finite input', () => {
+    expect(lookup(TOPS[0] + BOX_TOP - 1)).toBeNull();
+    expect(lookup(HEIGHT + BOX_TOP + 1)).toBeNull();
+    expect(lookup(Number.NaN)).toBeNull();
+  });
+
+  it('lands on the spine inside the work section', () => {
+    // A height a third of the way down the spine: the curve there is parked at the left
+    // margin, around 13% of the width — where the case studies branch from.
+    const spineTop = mapCurveY(sampleSignal(21 / 50).y, seams);
+    const spineBottom = mapCurveY(sampleSignal(26 / 50).y, seams);
+    const x = lookup((spineTop + spineBottom) / 2 + BOX_TOP)!;
+    expect(x / 1440).toBeGreaterThan(0.1);
+    expect(x / 1440).toBeLessThanOrEqual(0.14 + 1e-9);
+  });
+});
+
+describe('the curve channel in tip.ts', () => {
+  it('answers through the published lookup and notifies on every re-measure', () => {
+    const calls: number[] = [];
+    const unsubscribe = onSignalCurve(() => calls.push(signalXAtPageY(500) ?? -1));
+    publishSignalCurve((y) => y * 2);
+    publishSignalCurve((y) => y + 1);
+    expect(calls).toEqual([1000, 501]);
+    unsubscribe();
+    publishSignalCurve(() => 7);
+    expect(calls).toHaveLength(2);
+    expect(signalXAtPageY(1)).toBe(7);
+  });
+
+  it('calls a late subscriber once immediately', () => {
+    const calls: number[] = [];
+    onSignalCurve(() => calls.push(1))();
+    expect(calls).toEqual([1]);
   });
 });
