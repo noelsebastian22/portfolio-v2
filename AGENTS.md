@@ -54,7 +54,7 @@ deleting them is Phase 0 work.
 npm run dev        # astro dev
 npm run build      # astro build — the gate before any commit
 npm run images     # sharp pipeline for gallery assets
-npx vitest run     # pure-module tests only: career.ts, signal/path.ts
+npx vitest run     # pure-module tests only: career.ts, signal/path.ts, lib/diagrams/*.ts
 ```
 
 ## Code style

@@ -1,4 +1,5 @@
 import { yearsElapsed } from '../lib/career';
+import type { CaseStudyDiagram } from '../lib/diagrams/types';
 
 export const nav = [
   { label: 'Home', href: '#top' },
@@ -109,7 +110,16 @@ export const skillGroups = [
   },
 ];
 
-export const caseStudies = [
+export const caseStudies: Array<{
+  name: string;
+  role: string;
+  tags: string[];
+  problem: string;
+  approach: string;
+  result: string;
+  /** Feeds `src/lib/diagrams/*.ts` — see that module's doc comment for the honesty rule. */
+  diagram: CaseStudyDiagram;
+}> = [
   {
     name: 'Winning Group',
     role: 'E-commerce frontend at scale',
@@ -119,6 +129,7 @@ export const caseStudies = [
       'Architected an Nx monorepo, led the industry-first migration to Angular v20 with signals, pioneered AI-augmented development with MCP servers and Figma Code Connect, and built a custom UI library to replace legacy dependencies.',
     result:
       '35% faster CI/CD, 50% more code reuse, 60% smaller bundle, 400ms off First Contentful Paint, a 20% improvement in runtime memory efficiency, $15k/year in technical debt eliminated, a 25% faster design-to-code workflow with 40% less manual UI boilerplate, and a 10,000+ daily transaction order management system with zero critical downtime.',
+    diagram: { kind: 'bundle', reductionPercent: 60 },
   },
   {
     name: 'Direct Line Group',
@@ -129,6 +140,13 @@ export const caseStudies = [
       'Standardised NgRx state management across 5+ repos and hardened CI/CD with automated governance and pre-commit checks.',
     result:
       '30% fewer client-side API calls, deploys cut from 45 to 12 minutes, 100% zero-downtime releases, mentored 6 junior and mid-level developers to lift sprint velocity 20%, and shortened code review cycles by 15%.',
+    diagram: {
+      kind: 'repos',
+      repoCount: 5,
+      repoLabel: '5+',
+      deployStartMinutes: 45,
+      deployEndMinutes: 12,
+    },
   },
   {
     name: 'SRT Marine',
@@ -139,6 +157,7 @@ export const caseStudies = [
       'Solved complex Unity iframe integration and built a shared module library used across three product lines.',
     result:
       'Steady 60fps real-time rendering, 40% faster feature delivery, 85% test coverage, and a 25% year-over-year reduction in production bugs.',
+    diagram: { kind: 'frametime', fps: 60 },
   },
   {
     name: 'QBurst',
@@ -148,6 +167,7 @@ export const caseStudies = [
     approach:
       'Built D3.js analytic dashboards on an Angular + NestJS stack for projects with $200k+ budgets.',
     result: '1M+ rows visualised with sub-second latency, giving clients real-time insight.',
+    diagram: { kind: 'scatter', pointCount: 1_000_000 },
   },
 ];
 
