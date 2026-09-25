@@ -7,6 +7,85 @@ This is not a changelog; git does that. It records intent, dead ends, and open t
 
 <!-- newest first -->
 
+## 2026-09-25 · claude-code · Phase 5 sections 01–02
+
+**Did**
+- Task 5.1 subagent-driven: `scripts/portrait.mjs` bakes the duotone still from the 3960² master
+  (crop → tone → key light + edge dissolve → two-stop gradient map, both tones parsed out of
+  `tokens.css`), AVIF/WebP/JPEG at 640/1280, wired into `npm run images`. The ad-hoc
+  `portrait-400w/800w` files are deleted and `About.astro`, their only consumer, repointed.
+- Tasks 5.2–5.3 batched to one implementer: `Hero.astro` rewritten + `src/islands/hero.ts` (the
+  clock's numerals, nothing else); `NineYears.astro` + `src/islands/years.ts` (emissions grouped by
+  country, four statistics counting through one `onSection('years', …)`). `Stats.astro` deleted,
+  `heroChips` deleted.
+- Raised `--z-grain` from `-2` to `30` in `tokens.css` — the grain now paints over content.
+- Corrected the "Verify visually" rule in `task-5.1-brief.md` and `task-P5-brief.md`, which still
+  told implementers to check motion under `--virtual-time-budget`; added a controller addendum to
+  the P5 brief. (`.superpowers/` is gitignored — brief edits carry no commit.)
+- Reviewed both dispatches inline. Build green, 18/18. **Shipped JS on `/`: 52,332 → 53,241 gzip
+  (+909).** 65.0% of the 80 KB budget, 28,679 left for Phases 6–9.
+
+**Decided**
+- **The page grain paints above content** (`--z-grain: 30`, over nav and skip link). Behind it, every
+  opaque element punched a grain-free rectangle (portrait corners 10,9,7 vs grained ground 15,14,13).
+  The layer is `position: fixed` either way, so only paint order changes. Not stopped below the nav:
+  the nav is 84% opaque, so it would have become the new rectangle.
+- **`--signal-gutter` gets derived from the curve** (~163.8px measured at 1440, not the guessed
+  `clamp(48px, 6vw, 96px)`) for sections 03–06; sections 01–02, which §7.3 grants no gutter, dim the
+  line behind content instead. Phase 6 implements both halves.
+- **`NineYears` absorbs `Stats.astro`** — the four statistics are §9.02's accumulating statistics, and
+  the old component's IntersectionObserver + fixed-1100ms rAF loop was a second scroll pathway.
+- **A clock is information, not choreography.** §7.4's no-timers rule does not bind it: `setTimeout`
+  re-armed onto the next wall-clock second, not registered through `onSection()`, still running under
+  reduced motion. Build-time-baked numerals are forbidden on a static build — the rail's words are
+  server-rendered, the numerals arrive on mount over a reserved `calc(10ch + 0.6em)`.
+- **Archivo's `wdth` axis is live** — 521.16 / 787.83 / 984.58px condensed/normal/expanded at 64px/800.
+  `archivo-var.woff2` is the right file; that Known Gap is closed.
+
+**Didn't work**
+- **`mix-blend-mode: screen` on the portrait made the rectangle worse, not better** (22,21,18 against
+  a 15,14,13 ground). The asset dissolves to `--ground`, not to black, so screen adds a ground to a
+  ground. A `radial-gradient(farthest-side …)` mask fixed that instance — `farthest-side` puts the
+  radii on the mid-edges so the corners fall outside — but masks were rejected as the *general* rule:
+  §9.03's case-study screenshots have to read as rectangles and cannot dissolve.
+- **Chunk-summing understates shipped JS.** The hero island is small enough that Astro inlines it into
+  `index.html` rather than emitting a chunk, so it appears in no `_astro/*.js` listing while still
+  shipping; `Gallery.astro`'s `is:inline` script has never been counted in any phase figure either.
+  Deltas stay sound, the absolute number does not. Reproduce the recorded figures with `gzip -c <path>`
+  **by name** — stdin measures ~60 bytes smaller, `zlib.gzipSync` ~130 larger.
+- **The P5 implementer was killed mid-task by a session rate limit, and its final message claimed less
+  than it had done** — it had already committed 5.2 and written 487 lines of `NineYears.astro`
+  untracked. Check the tree before re-dispatching: resuming the original agent was right, a fresh
+  dispatch would have redone the hero.
+- **My own `git commit` of the brief corrections was a no-op** and I nearly reported it as landed —
+  `.gitignore:38` excludes `.superpowers/`. Brief and report edits never appear in git.
+
+**Open**
+- **Archivo's middot is a square**, and nothing chose it. Verified genuinely in-font
+  (`document.fonts.check` true, 35.95px advance at 86px; Archivo's own U+2022 is round), so not a tofu
+  or a fallback. Reads as an emission mark on the dark palette, and renders round in the mono voice.
+  Kept by default pending Noel.
+- `mountHeroClock()` is not idempotent — a leaked `visibilitychange` listener and `setTimeout` chain
+  per call. Inert today; `scroll.ts` anticipates view transitions, so Phase 15 would expose it.
+- `optimise-gallery.mjs` encodes every asset twice and discards the quality setting
+  (`sharp(buffer).toFile()`), so `npm run images` rewrites committed gallery bytes. Phase 6 owns it;
+  `node scripts/portrait.mjs` direct is deterministic and leaves the tree clean.
+- Phase 4's seven review minors and three critical-path perf items still held for one Phase 9 pass.
+- OG image still SVG; `src/pages/dev/signal.astro` still to delete before Phase 9.
+- Branch `feat/signal-path-rebuild` unmerged, unpushed, no upstream. 6 commits this session.
+
+**Next**
+Phase 6 (Section 03, Selected Work + generated diagrams). Start by settling `--signal-gutter` from
+the curve's measured minimum `x` and implementing the 01–02 dim — both are decided above and both
+block laying out any section against the line. Read the two Phase 5 Known Gaps first: the grain
+question is resolved but the *general* image-mount rule it implies is what Phase 6's case-study
+shots land on.
+
+**Touched** — `scripts/portrait.mjs`, `package.json`, `src/components/Hero.astro`,
+`src/components/NineYears.astro`, `src/components/Stats.astro` (deleted), `src/components/About.astro`,
+`src/islands/hero.ts`, `src/islands/years.ts`, `src/pages/index.astro`, `src/data/content.ts`,
+`src/styles/tokens.css`, `src/styles/global.css`, `public/images/portrait/*`, `BUILD-PLAN.md`
+
 ## 2026-09-23 · claude-code · Phase 4 shell complete
 
 **Did**
