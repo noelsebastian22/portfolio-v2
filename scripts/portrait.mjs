@@ -47,15 +47,15 @@
  * a fresh clone builds without running this.
  */
 
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { readTokens, readTone } from './lib/tokens.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'public', 'images', 'noel-sebastian.jpeg');
 const OUT_DIR = path.join(ROOT, 'public', 'images', 'portrait');
-const TOKENS = path.join(ROOT, 'src', 'styles', 'tokens.css');
 
 /** Spec §9.01. Anything else means the wrong file is in public/images/. */
 const SOURCE_SIZE = 3960;
@@ -101,14 +101,6 @@ const smoothstep = (edge0, edge1, x) => {
   const t = clamp01((x - edge0) / (edge1 - edge0));
   return t * t * (3 - 2 * t);
 };
-
-/** Read one custom property out of tokens.css. The tokens are the source of truth. */
-async function readTone(css, name) {
-  const match = css.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
-  if (!match) throw new Error(`--${name} not found in ${path.relative(ROOT, TOKENS)}`);
-  const hex = match[1];
-  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-}
 
 function applyTone(value) {
   let v = clamp01((value - TONE.black) / (TONE.white - TONE.black));
@@ -170,9 +162,9 @@ async function run() {
     );
   }
 
-  const css = await readFile(TOKENS, 'utf8');
-  const ground = await readTone(css, 'ground');
-  const signal = await readTone(css, 'signal');
+  const css = await readTokens();
+  const ground = readTone(css, 'ground');
+  const signal = readTone(css, 'signal');
 
   await mkdir(OUT_DIR, { recursive: true });
 
@@ -189,7 +181,7 @@ async function run() {
     for (const [ext, encode] of ENCODERS) {
       const buffer = await encode(duotone.clone()).toBuffer();
       // Written straight out, NOT via sharp(buffer).toFile() as the gallery
-      // script does: re-opening an encoded buffer re-encodes it at sharp's
+      // script once did: re-opening an encoded buffer re-encodes it at sharp's
       // defaults and quietly discards the settings above. On the JPEG that was
       // a 43 kB 4:4:4 mozjpeg landing on disk as a 27 kB 4:2:0 baseline.
       await writeFile(path.join(OUT_DIR, `portrait-${width}w.${ext}`), buffer);
