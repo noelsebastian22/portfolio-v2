@@ -358,10 +358,15 @@ Each study gets a diagram generated from the metrics already claimed in `content
 
 | Study | Diagram |
 |---|---|
-| Winning Group | A bundle bar collapsing 100% → 40%; an Nx dependency graph resolving |
+| Winning Group | A bundle bar collapsing 100% → 40% |
 | Direct Line Group | Five repos converging into one state tree; deploy 45min → 12min |
 | SRT Marine | A frame-time graph holding flat at 60fps under load |
 | QBurst | A scatter plot resolving one million points |
+
+*Amended 2026-09-25:* the Nx dependency graph originally listed for Winning Group is dropped.
+The resume gives it no number, so any node count would be invented. The frame-time trace is
+drawn flat, with no simulated samples, and the scatter plots a genuine 1,000,000 seeded points
+whose distribution is labelled illustrative.
 
 This is honest, on-brand, sidesteps the NDA problem entirely, and is considerably more
 persuasive to a technical lead than a screenshot of a login page.

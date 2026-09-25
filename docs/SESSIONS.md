@@ -7,6 +7,79 @@ This is not a changelog; git does that. It records intent, dead ends, and open t
 
 <!-- newest first -->
 
+## 2026-09-25 · claude-code · Phase 6 selected work
+
+**Did**
+- Expanded Phase 6 into 6.1–6.3 in `BUILD-PLAN.md`. Implementation went to subagents (6.2 in a
+  worktree, in parallel with 6.1); every review was inline, with one fix round per task.
+- 6.1: `anchors.ts` pins each `SECTION_SPANS` seam to its `data-signal-section` element;
+  `gutter.ts` sets the lit/dim bands; `playhead.ts` + `tip.ts` reveal the line to a viewport
+  playhead. `--signal-gutter` derived from `SPINE_SPAN`, held by a test that reads `tokens.css`.
+  `--signal-dim-alpha: 0.15`. `<Work />` moved under `<NineYears />`.
+- 6.2: `src/lib/diagrams/{bundle,repos,frametime,scatter,figure}.ts` + a `diagram` field on
+  each `caseStudies` entry. The honesty test scopes every diagram number to its employer's own
+  transcript section.
+- 6.3: `SelectedWork.astro` replaces `Work.astro` (deleted); `src/islands/work.ts`. The diagrams
+  are server-rendered at their end state and scrubbed on `onSection('work', …)`. Branches draw
+  as the tip passes. The spine is pinned to the first card's top and last card's bottom.
+- Spec §9.03 amended (Nx graph dropped). Attribution trailer normalised on the 10 implementer
+  commits by rebase, tree verified identical.
+- Build green, 103/103 tests. **Shipped JS on `/`: 53,241 → 57,756 gzip (+4,515)**, which is
+  70.5% of the 80 KB budget, 24,164 left for Phases 7–9. The diagram SVGs add 8,559 gzip of HTML.
+
+**Decided**
+- The curve is pinned to the sections by the renderer, and `path.ts` is untouched: it had
+  lined up with sections only by coincidence (`#work` at 71% of the page, its curve span at 26–54%).
+- The gutter derives from the spine's rightmost `x`, not the 163.8px leftmost figure logged
+  2026-09-24. It is 203.6px at 1440 and 0 past ~2006px.
+- The line is full strength only where it clears the content. One rule covers 01–02, the
+  sweep that opens section 03, phone width, and wide screens.
+- The spine's two ends anchor to the first and last card.
+- The Nx dependency graph is dropped (no resume number). The frame-time trace is flat with no
+  jitter; the scatter is 1,000,000 real seeded points.
+- `optimise-gallery.mjs`'s double-encode moves to Phase 7: Phase 6 has no screenshots.
+
+**Didn't work**
+- **Seam-only anchoring left cards 01–02 without a branch.** The sweep took the top 47.6% of
+  `#work` and the cards sat beside it. Fixed by the spine anchors; do not revert to seams only.
+- **"Gutter 0 → dim the whole line" dimmed the spine on screens over ~2006px**, where it sits in
+  empty margin. The test has to be "clears the content edge", not "gutter > 0".
+- **Revealing by `t × totalLength` left the tip above the viewport** once anchoring stretched the
+  spans. Branches need the tip on screen.
+- **Agent worktrees were provisioned off stale `master`**, not the current branch (no
+  `BUILD-PLAN.md`, the retired `PRODUCT.md` present). The 6.2 implementer caught it and reset.
+  Check a worktree's base before trusting it.
+- **Chrome's `--blink-settings=scriptEnabled=false` is ignored by new headless.** Use CDP
+  `Emulation.setScriptExecutionDisabled` for JS-off checks.
+- **`global.css`'s reduced-motion rule turned per-frame inline writes into 1ms transitions**
+  that stalled headless Chrome. The island's scrubbed parts opt out.
+- A honesty test that checked the numbers against the whole transcript proved nothing: 60, 5,
+  45 and 12 appear under several employers. And 60 was a bad negative example (both Winning
+  Group and SRT Marine have one); the test uses 35.
+
+**Open**
+- Three sections anchor to interim stand-ins (`ring` → `#gallery`, `stack` → `#skills`, `contact`
+  → `#contact`). Phases 7–8 must move `data-signal-section` onto the rebuilt sections and lay out
+  to the content-box assumption in `gutter.ts`.
+- The dim line lies over unrebuilt Gallery/About/Skills text (contrast holds; placement doesn't).
+- Minor: the scatter's lowest density level tints nearly the whole plot box.
+- Still carried: Archivo's square middot (Noel's call), `mountHeroClock()` idempotency, Phase 4
+  minors, OG image, `src/pages/dev/signal.astro` deletion before Phase 9, branch unpushed.
+
+**Next**
+Phase 7 (The Ring, 2D rail first). Start by fixing `optimise-gallery.mjs`'s double-encode:
+write the encoded buffer with `writeFile`, as `portrait.mjs` does, then re-run and commit the
+re-encoded gallery. Then build the rail as a centred `--container` + `--signal-gutter` section and
+move `data-signal-section="ring"` off `#gallery` onto it.
+
+**Touched** — `src/lib/signal/{anchors,gutter,playhead,tip,path,svg-signal}.ts`,
+`src/lib/diagrams/*.ts`, `src/components/SelectedWork.astro`, `src/components/Work.astro` (deleted),
+`src/islands/work.ts`, `src/data/content.ts`, `src/styles/{tokens,global}.css`,
+`src/pages/{index,dev/signal}.astro`, `src/components/{Hero,NineYears,Gallery,Skills}.astro`,
+`tests/{signal-anchors,signal-gutter,signal-playhead,diagrams,diagram-figure}.test.ts`,
+`AGENTS.md`, `BUILD-PLAN.md`, `docs/superpowers/specs/2026-09-19-signal-path-design.md`
+
+
 ## 2026-09-25 · claude-code · Phase 5 sections 01–02
 
 **Did**

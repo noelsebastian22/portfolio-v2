@@ -66,7 +66,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 3 | Motion infrastructure | **complete** | Lenis + one GSAP ticker; `onSection()` owns every ScrollTrigger |
 | 4 | Shell — layout, nav, footer | **complete** | Tasks 4.1–4.5, reviewed clean after 1 fix round. First JS since Phase 0 |
 | 5 | Sections 01–02 — Hero, Nine Years | **complete** | Tasks 5.1–5.3. First two islands; Stats.astro retired into NineYears |
-| 6 | Section 03 — Selected Work + diagrams | **in progress** | Expanded to 6.1–6.3 on 2026-09-25 |
+| 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
 | 7 | Section 04 — The Ring (2D rail) | not started | |
 | 8 | Sections 05–06 — Stack, Contact | not started | |
 | **9** | **SHIPPABLE — 2D site complete** | not started | **Real finish line. Deploy here.** |
@@ -173,6 +173,19 @@ filename header is included. Reading the same bytes from stdin measures ~60 byte
 `zlib.gzipSync` ~130 larger. Chunk-summing alone also understates: the hero island is small
 enough that Astro inlines it into `index.html` rather than emitting a chunk, so it appears in
 no `_astro/*.js` listing while still shipping.
+
+### Measured after Phase 6 — 2026-09-25
+
+| | Value |
+|---|---|
+| Build | green, 3 pages |
+| **Shipped JS on `/`** | **57,756 bytes gzip**: `timeline` 50,662 + `svg-signal` 3,627 + `SelectedWork` island 2,187 + `NineYears` 506 + `BaseLayout` 243 + `tip` 242 + the hero island inlined into the HTML (289) |
+| Against the 80 KB budget | **70.5% spent, 24,164 bytes gzip left** for Phases 7–9 |
+| Delta from Phase 5 | **+4,515** (53,241 → 57,756). Section anchors, dim rule and playhead in `svg-signal` +2,014; the section 03 island +2,187; the shared `tip` channel +242 |
+| HTML | the four inline diagram SVGs add 8,559 bytes gzip to `index.html`, 6,502 of it the scatter |
+| Tests | 103 passing across 8 files (was 18 across 3) |
+
+`svg-signal` more than doubled because it now owns three things that used to be implicit: where each section is, where the line may be lit, and where its tip is. All three are pure modules the renderer calls (`anchors.ts`, `gutter.ts`, `playhead.ts`), so the growth is the renderer's glue code rather than duplicated geometry.
 
 ## File Structure
 
@@ -872,18 +885,18 @@ the line until the line is pinned to the sections. Briefs are in `.superpowers/s
 
 ### Task 6.1 — Pin the signal to the sections; derive the gutter; dim off-gutter
 
-- [ ] **Step 1: Section anchors (TDD).** A pure module maps curve `y` to page `y` piecewise:
+- [x] **Step 1: Section anchors (TDD).** A pure module maps curve `y` to page `y` piecewise:
   each `SECTION_SPANS` seam lands on the top of the DOM element carrying
   `data-signal-section="<id>"`. Linear within a section. `path.ts` geometry is untouched —
   this is renderer scaling, which is the renderer's job. Sections not yet rebuilt are
   anchored to their interim stand-ins (`ring` → `#gallery`, `stack` → `#skills`,
   `contact` → `#contact`) until Phases 7–8 replace them.
-- [ ] **Step 2: Page order.** `<Work />` moves directly under `<NineYears />` (§5).
-- [ ] **Step 3: `--signal-gutter` derived from the curve (TDD).** The work section's spine
+- [x] **Step 2: Page order.** `<Work />` moves directly under `<NineYears />` (§5).
+- [x] **Step 3: `--signal-gutter` derived from the curve (TDD).** The work section's spine
   (the run parked at the left margin, control points 21–26) sets it: max spine `x` plus half
   the stroke plus clearance, stated as a viewport-relative formula that also holds past
   1440px. A test reads `tokens.css` and fails if the token no longer clears the curve.
-- [ ] **Step 4: The dim rule.** The line is full strength only where it sits in its gutter,
+- [x] **Step 4: The dim rule.** The line is full strength only where it sits in its gutter,
   and dimmed everywhere else. That covers sections 01–02 (the 2026-09-24 decision), the
   sweep that opens section 03, and phone width (§7.3) with one rule. The bands come from
   the same sampled pixel points the path is drawn from. The dim alpha is computed, not
@@ -891,26 +904,26 @@ the line until the line is pinned to the sections. Briefs are in `.superpowers/s
 
 ### Task 6.2 — `src/lib/diagrams/*.ts` (TDD, pure)
 
-- [ ] **Step 1:** `bundle` — one bar, 100 → 40. The Nx dependency graph in §9.03 is **dropped**:
+- [x] **Step 1:** `bundle` — one bar, 100 → 40. The Nx dependency graph in §9.03 is **dropped**:
   the resume gives it no number, so any node count would be invented.
-- [ ] **Step 2:** `repos` — five lines converging into one, labelled `5+` (the resume says
+- [x] **Step 2:** `repos` — five lines converging into one, labelled `5+` (the resume says
   5+, so five is a lower bound drawn as one); a deploy bar 45 → 12 min at true scale.
-- [ ] **Step 3:** `frametime` — a flat trace on the 16.7ms line. No jitter: sample noise
+- [x] **Step 3:** `frametime` — a flat trace on the 16.7ms line. No jitter: sample noise
   would be invented data. The claim is the flat line.
-- [ ] **Step 4:** `scatter` — exactly 1,000,000 points from a seeded PRNG, binned at build
+- [x] **Step 4:** `scatter` — exactly 1,000,000 points from a seeded PRNG, binned at build
   time into a density grid. Test asserts the bins sum to 1,000,000. The distribution is
   illustrative and the caption says so; the count is real.
 
 ### Task 6.3 — Section 03: `SelectedWork.astro` + `src/islands/work.ts`
 
-- [ ] **Step 1:** Replace `Work.astro` with `SelectedWork.astro`: four studies,
+- [x] **Step 1:** Replace `Work.astro` with `SelectedWork.astro`: four studies,
   problem / approach / result, each with its diagram as a server-rendered SVG `<figure>`.
   The figcaption carries the numbers as text, so the section reads completely with JS off.
-- [ ] **Step 2:** Lay the section out against `--signal-gutter`. Content never enters it.
-- [ ] **Step 3:** The branch: as each card enters, a branch draws from the spine (its origin
+- [x] **Step 2:** Lay the section out against `--signal-gutter`. Content never enters it.
+- [x] **Step 3:** The branch: as each card enters, a branch draws from the spine (its origin
   sampled from `path.ts` through the 6.1 anchor mapping) right into the card, via
   `onSection('work', …)`.
-- [ ] **Step 4:** Diagrams resolve on scroll position — bar collapses, repos converge, the
+- [x] **Step 4:** Diagrams resolve on scroll position — bar collapses, repos converge, the
   scatter resolves — never on a timer. Reduced motion shows the end state.
 
 ## PHASE 7 — Section 04: The Ring (2D rail first)
@@ -1157,6 +1170,20 @@ decision was made; this section records *what it is*.
   Task 5.1 note assigned it to Phase 6 because "it rewrites the gallery anyway". But Phase 6 has no
   screenshots (§9.03), and §10's screenshot pipeline feeds the ring cards. Fixing it now would
   rewrite the committed gallery bytes twice.
+- **2026-09-25 (claude-code)** — **The spine is pinned to the case studies, not just the section.**
+  Anchoring only the seams left the right-to-left sweep occupying the top 47.6% of `#work` (35.9% at
+  2560). Cards 01–02 sat beside the sweep, where no branch could start without crossing content.
+  Control points 21 and 26 (`SPINE_SPAN`) now anchor to the first card's top and the last card's
+  bottom (`data-signal-spine="start"`/`"end"`). The sweep compresses into the section heading,
+  where the dim rule already covers it, and all four cards branch at every desktop width.
+  Minimum card clearance went from 6.9px to 24.0px, which is exactly the clearance token. Still
+  renderer scaling: `path.ts` is untouched, and 480 samples still hold (worst chord 0.66px at 1440).
+- **2026-09-25 (claude-code)** — **The signal reveals to a viewport playhead, and branches follow the
+  tip.** The drawn tip sits at page y `scrollY + vh·(0.5 + 0.5t)` rather than at `t × length`, which
+  left it above the viewport. `src/lib/signal/tip.ts` publishes the tip and a
+  `signalXAtPageY` lookup, so islands follow the line without re-deriving the mapping. A branch
+  draws over the 96px after the tip passes its origin; the diagrams run on their card's
+  `onSection` progress.
 
 ## Known Gaps
 
@@ -1314,3 +1341,26 @@ decision was made; this section records *what it is*.
   fallback. On the dark palette in `--signal` it happens to read as an emission mark, which is
   on-concept, but it was inherited rather than decided, and the same `·` renders round in the mono
   voice (the status rail, the `01 · of('Noel Sebastian')` caption). Noel's call.
+
+### Opened by Phase 6 — 2026-09-25
+
+- **Three sections are anchored to interim stand-ins.** `ring` → `#gallery`, `stack` → `#skills`,
+  `contact` → `#contact`, each marked `data-signal-section` and commented as interim. Phases 7–8
+  move the attribute onto the rebuilt sections. A missing anchor falls back to linear mapping, so
+  forgetting one fails soft, but it fails *wrong*: the line will drift off its section.
+- **The dim line still crosses unrebuilt text below section 03**: Gallery, About and Skills start at
+  x=0 because their layout classes are dead Tailwind. It is dimmed to 0.15, so contrast holds, but
+  it lies on the text. Phases 7–8 own it.
+- **The content-box assumption is load-bearing.** `gutter.ts`'s lit/dim bands assume every section
+  from 03 down lays out as a centred `--container` with `--s-5` padding plus
+  `padding-left: var(--signal-gutter)`. A section built differently gets a line lit under its
+  text. Phases 7–8 build to it, or extend the probe.
+- **`global.css`'s reduced-motion rule turns inline style writes into 1ms transitions**, which
+  stalled in headless Chrome. The branch and each scrubbed diagram part opt out. Any later island
+  that writes positions per frame needs the same opt-out; worth one shared class in the Phase 9 pass.
+- **Minor: the scatter's lowest density level fills nearly the whole plot box**, since one point
+  lifts a cell to level 1. It reads as a tinted panel rather than empty ground around the clusters.
+  Cosmetic: a threshold or a log scale in `quantiseLevels`.
+- **The Phase 4 minor about footer text crossing the line** is now covered by the dim rule (the
+  line is dim anywhere it does not clear content). Re-check it when Phase 8 rebuilds the footer
+  approach.
