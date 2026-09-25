@@ -7,6 +7,35 @@ This is not a changelog; git does that. It records intent, dead ends, and open t
 
 <!-- newest first -->
 
+## 2026-09-25 · claude-code · Phase 7 ring rail
+
+**Did**
+- Task 7.1: `optimise-gallery.mjs` rewritten. It writes directly from each encoder's buffer, which fixes the double-encode. Five duotone ring captures (`--ground`→`--type`, AVIF+WebP, 480w/960w) go in `public/images/ring/`, and each capture's size goes in `src/data/ring-captures.json`. `readTone` is shared via `scripts/lib/tokens.mjs`. All `-scroll.webp` files and five unused `-card.webp` files are deleted.
+- Task 7.2: `Ring.astro` + `islands/ring.ts` replace `Gallery.astro`, and the nav links to `#ring` ("Shipped"). `galleryProjects` is now `ringProjects`. `anchors.ts` spine anchors are generalised to `IN_SECTION_ANCHORS`. `RING_SPLIT_POINT = 34` is exported from `path.ts`; no coordinate changed. `lib/signal/draw.ts` is extracted from `work.ts`.
+- Build green, 123 tests (from 109). Shipped JS on `/` 59,069 gzip (+1,313; Ring island 1,051), 72% of budget. `index.html` −990 gzip. Ring captures at 2x AVIF are 705 KB across five cards, 17% under the old scroll set.
+
+**Decided**
+- The 2D rail's split is a **track**: the curve is pinned to the track's centre line at x 0 (Δ ≤ 0.004px at every width), and each card hangs from it on a drop to a `--shipped` emission. The drops scroll with the cards natively.
+- The captures are duotoned to `--type`, not `--signal`, because red means live. Grain and browser chrome are not baked into the images: the page grain layer covers grain, and the chrome is markup. Spec §10 updated.
+- A focused card that is partly hidden is scrolled to its own snap position (`mountFocusSnap`), because native focus-scroll plus mandatory snap left it clipped.
+
+**Didn't work**
+- Native focus scrolling in a `scroll-snap-type: x mandatory` rail. It scrolls 57px, then the snap returns to 0 and the focused card stays clipped. That is why `mountFocusSnap` exists.
+- A plain S-curve tone step on the captures lowered the contrast of grey body text (#888 on white, 3.5→3.0:1). Gamma 1.2 before a gentle S fixed it.
+
+**Open**
+- The ring's centre hold runs dimmed about 2,200px through the rest of the rail and all of `About.astro`, until Phase 8 moves the `stack` anchor off `#skills`.
+- At 375 the line runs 9px beside the first card's drop (meeting point 187.5 vs drop 178).
+- `/websites` card tiles are 0px tall from a dead Tailwind height class, which predates Phase 7 (Phase 14).
+- Four masters (`directline`, `qburst`, `srtmarine`, `winning`.png) no longer feed any output. Deleting them is Noel's call.
+- An `astro dev` on :4321 and a headless Chrome on :9344 have been running for days, left untouched.
+- Carried: `mountHeroClock()` idempotency, OG image, `/dev/signal` deletion before Phase 9, branch unpushed.
+
+**Next**
+Phase 8 (Stack, Contact). Build `Stack.astro` and move `data-signal-section="stack"` onto it. Decide where `About.astro` goes: that settles how long the ring hold runs. Re-check the ring seam table afterwards.
+
+**Touched** — `scripts/optimise-gallery.mjs`, `scripts/lib/tokens.mjs`, `scripts/portrait.mjs`, `src/components/Ring.astro`, `src/islands/ring.ts`, `src/lib/signal/{anchors,path,draw,svg-signal}.ts`, `src/islands/work.ts`, `src/data/{content.ts,ring-captures.json}`, `src/pages/index.astro`, `public/images/{ring,gallery}/`, `BUILD-PLAN.md`, spec §9.04/§10
+
 ## 2026-09-25 · claude-code · middot decision
 
 **Did**
