@@ -26,13 +26,13 @@ import { onSection } from '../lib/motion/timeline';
 import { reducedMotion } from '../lib/motion/scroll';
 import { onSignalCurve, onSignalTip, signalTipY, signalXAtPageY } from '../lib/signal/tip';
 import {
-  bundleFrame,
-  deployFrame,
+  RESIZE_DEBOUNCE_MS,
   easeEmission,
   easeLine,
-  repoSegments,
+  tipFraction,
   unit,
-} from '../lib/diagrams/figure';
+} from '../lib/signal/draw';
+import { bundleFrame, deployFrame, repoSegments } from '../lib/diagrams/figure';
 import type { CaseStudyDiagram } from '../lib/diagrams/types';
 
 /**
@@ -52,9 +52,6 @@ const RESOLVE_TO = 0.45;
 
 /** Where in the diagram's own progress its emission arrives. */
 const EMISSION_FROM = 0.75;
-
-/** Same debounce as the signal layer's re-measure (`svg-signal.ts`). */
-const RESIZE_DEBOUNCE_MS = 150;
 
 interface Branch {
   svg: SVGSVGElement;
@@ -246,7 +243,7 @@ export function mountWork(): void {
 
   function paintBranch(branch: Branch, tipY: number | null): void {
     if (branch.originY === null || branch.length <= 0) return;
-    const drawn = reduce || tipY === null ? (reduce ? 1 : 0) : easeLine((tipY - branch.originY) / BRANCH_DRAW_PX);
+    const drawn = reduce ? 1 : easeLine(tipFraction(tipY, branch.originY, BRANCH_DRAW_PX));
     if (drawn === branch.painted) return;
     branch.painted = drawn;
     if (drawn >= 1) {

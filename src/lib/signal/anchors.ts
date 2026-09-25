@@ -7,14 +7,23 @@
  * is pinned to the top of the section it opens, and the curve is scaled linearly between
  * seams. This is renderer scaling — the geometry in `path.ts` is untouched.
  *
- * Inside the work section, two further anchors pin the spine's ends to the case studies
- * (`SPINE_CURVE_Y`, below). They are optional: without them the mapping is seam-linear.
+ * Inside sections, further anchors pin particular control points to particular elements
+ * (`IN_SECTION_ANCHORS`, below): the work spine's two ends and the ring's split. They are
+ * optional: without them the mapping is seam-linear.
  *
  * Pure module: no DOM. The renderer measures the section tops and hands them in.
  * All pixel values here are in the renderer's own box (the `<svg>`), not the document.
  */
 
-import { SECTION_SPANS, SPINE_SPAN, sampleSignal, type SignalPoint } from './path';
+import {
+  RING_SPLIT_POINT,
+  SECTION_SPANS,
+  SPINE_FIRST_POINT,
+  SPINE_LAST_POINT,
+  controlPointT,
+  sampleSignal,
+  type SignalPoint,
+} from './path';
 
 export interface PixelPoint {
   x: number;
@@ -61,69 +70,132 @@ export function resolveSeamPixels(
 }
 
 /**
- * The curve's `y` at the two ends of the work section's spine (`SPINE_SPAN`, control points
- * 21 and 26). These are anchors *inside* a section, not seams.
+ * Anchors *inside* a section, as opposed to the seams between sections: a control point
+ * pinned to an element's edge. They are optional — a page without the element keeps the
+ * seam-linear mapping on that side — and every one of them is renderer scaling: `path.ts`
+ * is untouched.
  *
- * The seams alone scale the curve linearly inside `work`, so the right-to-left sweep that
- * opens it always takes the same share of the section: 47.6% of its height. That puts the
- * first case studies beside the sweep instead of the spine they are supposed to branch
- * from. Pinning the spine's two ends to the first card's top and the last card's bottom
- * fits the sweep into the section head and stretches the spine down beside every card.
- * This is still renderer scaling; `path.ts` is untouched.
+ * Why they exist: the seams alone scale the curve linearly inside a section, so a feature
+ * of the curve lands wherever the section's height happens to put it.
+ *
+ * - **The spine** (`SPINE_SPAN`, control points 21 and 26). Seam-linear, the right-to-left
+ *   sweep that opens `work` always took 47.6% of the section, and the first case studies
+ *   sat beside the sweep instead of the spine they branch from. Pinning the spine's ends
+ *   to the first card's top and the last card's bottom fits the sweep into the head.
+ * - **The ring's split** (`RING_SPLIT_POINT`, control point 34). The arc reaches the
+ *   centre there, and §6 has the line split into five at that point. It is pinned to the
+ *   centre line of the ring rail's track, so the curve meets the track exactly.
+ *
+ * In curve order. Each must sit strictly inside one section's span, which the module
+ * checks at import.
  */
-export const SPINE_CURVE_Y: readonly [start: number, end: number] = [
-  sampleSignal(SPINE_SPAN.tStart).y,
-  sampleSignal(SPINE_SPAN.tEnd).y,
+export interface InSectionAnchor {
+  /** The control point that lands on the element (see `controlPointT`). */
+  point: number;
+  /** The element the renderer measures. */
+  selector: string;
+  /** Which of the element's horizontal lines the point lands on. */
+  edge: 'top' | 'centre' | 'bottom';
+}
+
+export const IN_SECTION_ANCHORS: readonly InSectionAnchor[] = [
+  { point: SPINE_FIRST_POINT, selector: '[data-signal-spine="start"]', edge: 'top' },
+  { point: SPINE_LAST_POINT, selector: '[data-signal-spine="end"]', edge: 'bottom' },
+  { point: RING_SPLIT_POINT, selector: '[data-signal-split]', edge: 'centre' },
 ];
 
-/** The index of the seam that opens the section the spine lives in. */
-const SPINE_SEAM = SECTION_SPANS.findIndex(
-  (span) => span.tStart <= SPINE_SPAN.tStart && SPINE_SPAN.tEnd <= span.tEnd,
-);
+/** The global `t` of every in-section anchor, in `IN_SECTION_ANCHORS` order. */
+export const ANCHOR_T: readonly number[] = IN_SECTION_ANCHORS.map((a) => controlPointT(a.point));
+
+/** The curve's `y` at every in-section anchor, in `IN_SECTION_ANCHORS` order. */
+export const ANCHOR_CURVE_Y: readonly number[] = ANCHOR_T.map((t) => sampleSignal(t).y);
+
+/** For each anchor, the index of the seam that opens the section it lives in. */
+const ANCHOR_SEAM: readonly number[] = ANCHOR_T.map((t, i) => {
+  const seam = SECTION_SPANS.findIndex((span) => span.tStart < t && t < span.tEnd);
+  // Fail at import, like path.ts does: an anchor on a seam would be two knots at one
+  // curve `y`, and one out of order would fold the mapping back up the page.
+  if (seam < 0) throw new Error(`signal/anchors: anchor ${i} is not strictly inside a section`);
+  if (i > 0 && !(t > ANCHOR_T[i - 1])) throw new Error('signal/anchors: anchors out of curve order');
+  return seam;
+});
+
+/**
+ * Pixel `y` for each in-section anchor, in `IN_SECTION_ANCHORS` order; `null` (or simply
+ * absent, past the end of a shorter list) where the page has no such element.
+ */
+export type AnchorPixels = readonly (number | null | undefined)[];
+
+/**
+ * The anchors, clamped so they can never fold the line back up the page: each stays inside
+ * its own section, between that section's seam and the next one, and at or below the
+ * anchor before it in the same section. A missing or non-finite measurement is `null`, and
+ * the mapping then falls back to the neighbouring knots on either side of it.
+ */
+export function resolveAnchorPixels(
+  measured: readonly (number | null | undefined)[],
+  seamPixels: readonly number[],
+): (number | null)[] {
+  const resolved: (number | null)[] = [];
+  for (let i = 0; i < IN_SECTION_ANCHORS.length; i++) {
+    const seam = ANCHOR_SEAM[i];
+    let floor = seamPixels[seam];
+    for (let j = 0; j < i; j++) {
+      const earlier = resolved[j];
+      if (ANCHOR_SEAM[j] === seam && earlier !== null) floor = earlier;
+    }
+    const ceiling = seamPixels[seam + 1];
+    const value = measured[i];
+    const isMeasured = typeof value === 'number' && Number.isFinite(value);
+    resolved.push(isMeasured ? Math.min(ceiling, Math.max(floor, value)) : null);
+  }
+  return resolved;
+}
+
+/**
+ * The spine's two anchors on their own — the first two entries of `IN_SECTION_ANCHORS`.
+ * Kept as a named view over the general mechanism because the spine is what the work
+ * section's layout and its tests reason about.
+ */
+export const SPINE_CURVE_Y: readonly [start: number, end: number] = [
+  ANCHOR_CURVE_Y[0],
+  ANCHOR_CURVE_Y[1],
+];
 
 /** Pixel `y` for the spine's two ends; `null` where the page has no such anchor. */
 export type SpinePixels = readonly [start: number | null, end: number | null];
 
-/**
- * The spine anchors, clamped so they can never fold the line back up the page: the start
- * stays inside its section, between the section's seam and the next one, and the end sits
- * at or below the start and at or above the next seam. A missing measurement is `null`,
- * and the mapping then falls back to the seams on that side.
- */
+/** `resolveAnchorPixels` for the spine alone. Any later anchor reads as missing. */
 export function resolveSpinePixels(
   spineTops: readonly [start: number | null | undefined, end: number | null | undefined],
   seamPixels: readonly number[],
 ): SpinePixels {
-  const top = seamPixels[SPINE_SEAM];
-  const bottom = seamPixels[SPINE_SEAM + 1];
-  const isMeasured = (v: number | null | undefined): v is number =>
-    typeof v === 'number' && Number.isFinite(v);
-  const clampInto = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-
-  const start = isMeasured(spineTops[0]) ? clampInto(spineTops[0], top, bottom) : null;
-  const end = isMeasured(spineTops[1]) ? clampInto(spineTops[1], start ?? top, bottom) : null;
+  const [start, end] = resolveAnchorPixels(spineTops, seamPixels);
   return [start, end];
 }
 
 /** Every anchor as a knot pair — curve `y` and pixel `y` — strictly ordered in curve `y`. */
-interface Knots {
+export interface Knots {
   curve: number[];
   pixel: number[];
 }
 
-function knotsOf(seamPixels: readonly number[], spine: SpinePixels | undefined): Knots {
+/**
+ * The seams, with every in-section anchor the page has slotted in after the seam that
+ * opens its section. Exported for the tests, which hold the curve side strictly increasing.
+ */
+export function anchorKnots(seamPixels: readonly number[], anchors?: AnchorPixels): Knots {
   const curve: number[] = [];
   const pixel: number[] = [];
   for (let i = 0; i < SEAM_CURVE_Y.length; i++) {
     curve.push(SEAM_CURVE_Y[i]);
     pixel.push(seamPixels[i]);
-    if (i === SPINE_SEAM && spine) {
-      for (const k of [0, 1] as const) {
-        const measured = spine[k];
-        if (measured === null) continue;
-        curve.push(SPINE_CURVE_Y[k]);
-        pixel.push(measured);
-      }
+    if (!anchors) continue;
+    for (let k = 0; k < IN_SECTION_ANCHORS.length; k++) {
+      const measured = anchors[k];
+      if (ANCHOR_SEAM[k] !== i || typeof measured !== 'number') continue;
+      curve.push(ANCHOR_CURVE_Y[k]);
+      pixel.push(measured);
     }
   }
   return { curve, pixel };
@@ -141,17 +213,17 @@ function mapThroughKnots(curveY: number, knots: Knots): number {
 }
 
 /**
- * Curve `y` (0..1) → pixel `y`, piecewise-linear between anchors: the seams, plus the
- * spine's ends where `spine` has them. Monotonic because every anchor is non-decreasing
- * in both spaces. Out-of-range input extrapolates along the end segments rather than
- * clamping, though the curve never produces any.
+ * Curve `y` (0..1) → pixel `y`, piecewise-linear between anchors: the seams, plus each
+ * in-section anchor `anchors` has a pixel for. Monotonic because every anchor is
+ * non-decreasing in both spaces. Out-of-range input extrapolates along the end segments
+ * rather than clamping, though the curve never produces any.
  */
 export function mapCurveY(
   curveY: number,
   seamPixels: readonly number[],
-  spine?: SpinePixels,
+  anchors?: AnchorPixels,
 ): number {
-  return mapThroughKnots(curveY, knotsOf(seamPixels, spine));
+  return mapThroughKnots(curveY, anchorKnots(seamPixels, anchors));
 }
 
 /**
@@ -162,9 +234,9 @@ export function toPixelPoints(
   points: readonly SignalPoint[],
   width: number,
   seamPixels: readonly number[],
-  spine?: SpinePixels,
+  anchors?: AnchorPixels,
 ): PixelPoint[] {
-  const knots = knotsOf(seamPixels, spine);
+  const knots = anchorKnots(seamPixels, anchors);
   return points.map((p) => ({
     x: ((p.x + 1) / 2) * width,
     y: mapThroughKnots(p.y, knots),

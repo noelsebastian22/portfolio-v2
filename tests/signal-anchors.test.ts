@@ -1,7 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { SECTION_SPANS, SPINE_SPAN, sampleSignal, sampleSignalRange } from '../src/lib/signal/path';
 import {
+  RING_SPLIT_POINT,
+  SECTION_SPANS,
+  SPINE_FIRST_POINT,
+  SPINE_LAST_POINT,
+  SPINE_SPAN,
+  controlPointT,
+  sampleSignal,
+  sampleSignalRange,
+} from '../src/lib/signal/path';
+import {
+  ANCHOR_CURVE_Y,
+  IN_SECTION_ANCHORS,
   SEAM_CURVE_Y,
+  anchorKnots,
+  resolveAnchorPixels,
   SPINE_CURVE_Y,
   mapCurveY,
   resolveSeamPixels,
@@ -264,5 +277,108 @@ describe('spine anchors — pinned inside the work section', () => {
     const pts = toPixelPoints(sampleSignalRange(SPINE_SPAN.tStart, SPINE_SPAN.tEnd, 3), 1440, seams, spine);
     expect(pts[0].y).toBeCloseTo(2300, 6);
     expect(pts[2].y).toBeCloseTo(3700, 6);
+  });
+});
+
+describe('the ring split — control point RING_SPLIT_POINT, pinned to the rail track', () => {
+  const splitT = controlPointT(RING_SPLIT_POINT);
+  const ring = SECTION_SPANS.find((s) => s.id === 'ring')!;
+
+  it('is where the arc reaches the centre: x is 0', () => {
+    expect(sampleSignal(splitT).x).toBeCloseTo(0, 12);
+  });
+
+  it('is the curve\'s maximum z — nearest the viewer on the whole curve', () => {
+    const splitZ = sampleSignal(splitT).z;
+    for (let i = 0; i <= 20000; i++) {
+      expect(sampleSignal(i / 20000).z).toBeLessThanOrEqual(splitZ + 1e-12);
+    }
+  });
+
+  it('sits strictly inside the ring span', () => {
+    expect(splitT).toBeGreaterThan(ring.tStart);
+    expect(splitT).toBeLessThan(ring.tEnd);
+  });
+
+  it('is an in-section anchor on the centre line of [data-signal-split]', () => {
+    const i = IN_SECTION_ANCHORS.findIndex((a) => a.point === RING_SPLIT_POINT);
+    expect(IN_SECTION_ANCHORS[i]).toEqual({
+      point: RING_SPLIT_POINT,
+      selector: '[data-signal-split]',
+      edge: 'centre',
+    });
+    expect(ANCHOR_CURVE_Y[i]).toBeCloseTo(sampleSignal(splitT).y, 12);
+  });
+});
+
+describe('in-section anchors — the general mechanism', () => {
+  const seams = resolveSeamPixels(TOPS, HEIGHT);
+  // Spine inside work (1850–3900), and the track inside the ring (3900–6400).
+  const MEASURED = [2300, 3700, 4600];
+  const anchors = resolveAnchorPixels(MEASURED, seams);
+
+  it('lists the spine ends first and every anchor in curve order', () => {
+    expect(IN_SECTION_ANCHORS.map((a) => a.point)).toEqual([
+      SPINE_FIRST_POINT,
+      SPINE_LAST_POINT,
+      RING_SPLIT_POINT,
+    ]);
+    for (let i = 1; i < ANCHOR_CURVE_Y.length; i++) {
+      expect(ANCHOR_CURVE_Y[i]).toBeGreaterThan(ANCHOR_CURVE_Y[i - 1]);
+    }
+  });
+
+  it('keeps the knots strictly ordered in curve y, and ordered in pixels, with every anchor in', () => {
+    const knots = anchorKnots(seams, anchors);
+    expect(knots.curve).toHaveLength(SEAM_CURVE_Y.length + IN_SECTION_ANCHORS.length);
+    for (let i = 1; i < knots.curve.length; i++) {
+      expect(knots.curve[i]).toBeGreaterThan(knots.curve[i - 1]);
+      expect(knots.pixel[i]).toBeGreaterThanOrEqual(knots.pixel[i - 1]);
+    }
+  });
+
+  it('lands every anchor on its element, and leaves every seam where it was', () => {
+    MEASURED.forEach((px, i) => expect(mapCurveY(ANCHOR_CURVE_Y[i], seams, anchors)).toBeCloseTo(px, 9));
+    SECTION_SPANS.forEach((span, i) => {
+      expect(mapCurveY(sampleSignal(span.tStart).y, seams, anchors)).toBeCloseTo(TOPS[i], 9);
+    });
+  });
+
+  it('stays monotonic in y, sampled densely', () => {
+    let previous = -Infinity;
+    for (let i = 0; i <= 20000; i++) {
+      const y = mapCurveY(sampleSignal(i / 20000).y, seams, anchors);
+      expect(y).toBeGreaterThanOrEqual(previous);
+      previous = y;
+    }
+  });
+
+  it('pins the split independently of the spine', () => {
+    const splitOnly = resolveAnchorPixels([null, null, 4600], seams);
+    expect(splitOnly).toEqual([null, null, 4600]);
+    expect(mapCurveY(ANCHOR_CURVE_Y[2], seams, splitOnly)).toBeCloseTo(4600, 9);
+    // The work section is untouched: seam-linear, exactly as with no anchors at all.
+    const mid = (SPINE_CURVE_Y[0] + SPINE_CURVE_Y[1]) / 2;
+    expect(mapCurveY(mid, seams, splitOnly)).toBeCloseTo(mapCurveY(mid, seams), 9);
+  });
+
+  it('clamps the split into the ring section, never across a seam', () => {
+    expect(resolveAnchorPixels([null, null, 3000], seams)[2]).toBe(TOPS[3]);
+    expect(resolveAnchorPixels([null, null, 9000], seams)[2]).toBe(TOPS[4]);
+    // A spine end past its own seam does not drag the split with it.
+    expect(resolveAnchorPixels([2300, 4800, 4600], seams)).toEqual([2300, TOPS[3], 4600]);
+  });
+
+  it('puts the split on a drawn vertex when the curve is cut there', () => {
+    const splitT = controlPointT(RING_SPLIT_POINT);
+    const pts = toPixelPoints(sampleSignalRange(splitT, splitT, 1), 1440, seams, anchors);
+    expect(pts[0]).toEqual({ x: 720, y: 4600 });
+  });
+});
+
+describe('controlPointT', () => {
+  it('names the same t the spine span is built from', () => {
+    expect(controlPointT(SPINE_FIRST_POINT)).toBe(SPINE_SPAN.tStart);
+    expect(controlPointT(SPINE_LAST_POINT)).toBe(SPINE_SPAN.tEnd);
   });
 });

@@ -189,13 +189,31 @@ export const SECTION_SPANS: readonly SectionSpan[] = SECTION_SEGMENTS.map(([id],
  * `--signal-gutter` is derived from the rightmost `x` in this range (see tokens.css, and
  * the test that holds the two together).
  */
-const SPINE_FIRST_POINT = 21;
-const SPINE_LAST_POINT = 26;
+export const SPINE_FIRST_POINT = 21;
+export const SPINE_LAST_POINT = 26;
+
+/**
+ * Global `t` of a control point. Sampling maps `t` uniformly onto the point list, so a
+ * control point sits at exactly `index / segments` — the same rule the seams follow.
+ */
+export function controlPointT(index: number): number {
+  return index / TOTAL_SEGMENTS;
+}
 
 export const SPINE_SPAN: Readonly<{ tStart: number; tEnd: number }> = {
-  tStart: SPINE_FIRST_POINT / TOTAL_SEGMENTS,
-  tEnd: SPINE_LAST_POINT / TOTAL_SEGMENTS,
+  tStart: controlPointT(SPINE_FIRST_POINT),
+  tEnd: controlPointT(SPINE_LAST_POINT),
 };
+
+/**
+ * The ring's split point: control point 34, where the `ring` span's arc reaches the centre
+ * (`x` 0) and the curve is nearest the viewer. §6 has the line split into five at the ring,
+ * and this is where: the 2D rail's track is pinned to it (anchors.ts), and the Phase 12
+ * ring hangs off the same point. Naming, like `SPINE_SPAN`, not more curve — adding a
+ * waypoint before point 34 means updating this index. tests/signal-anchors.test.ts holds
+ * it to `x` 0 and the curve's maximum `z`.
+ */
+export const RING_SPLIT_POINT = 34;
 
 function clamp01(value: number): number {
   if (!(value > 0)) return 0; // also catches NaN

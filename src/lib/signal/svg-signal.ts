@@ -30,11 +30,13 @@
  * pads past its ends. The bands come from the same pixel points the path is drawn from.
  */
 
-import { SECTION_SPANS, SPINE_SPAN, sampleSignalRange, type SignalPoint } from './path';
+import { SECTION_SPANS, sampleSignalRange, type SignalPoint } from './path';
 import {
+  ANCHOR_T,
+  IN_SECTION_ANCHORS,
   pageCurveLookup,
+  resolveAnchorPixels,
   resolveSeamPixels,
-  resolveSpinePixels,
   toPixelPath,
   toPixelPoints,
   type PixelPoint,
@@ -42,6 +44,9 @@ import {
 import { gutterBands, strengthStops, type GutterRegion } from './gutter';
 import { cumulativeLengths, lengthAtY, playheadPageY } from './playhead';
 import { publishSignalCurve, publishSignalTip } from './tip';
+// Resize re-measurement is debounced — the viewBox and total length both change. Shared
+// with the section islands that follow the line, so they re-measure on the same beat.
+import { RESIZE_DEBOUNCE_MS } from './draw';
 
 export interface SvgSignalOptions {
   /**
@@ -79,9 +84,6 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
  */
 const BAND_FADE_PX = 32;
 
-/** Resize re-measurement is debounced — the viewBox and total length both change. */
-const RESIZE_DEBOUNCE_MS = 150;
-
 /**
  * How many intervals the whole curve is sampled at (distributed across the sections by
  * their share of `t`, so the seams are vertices — see `sampleWholeCurve`). The path is a
@@ -109,6 +111,12 @@ const RESIZE_DEBOUNCE_MS = 150;
  * The sharper sweep is still not the worst corner — the years → work corner is — and
  * everything stays under half the stroke, so 480 holds.
  *
+ * Re-measured in Task 7.2, with the ring's split point (control point 34) pinned to the
+ * rail's track as a third in-section anchor and a cut. The worst case is unchanged at
+ * every width (1024 0.47px · 1440 0.66px · 1920 0.88px · 2560 1.17px · 375 0.17px), still
+ * at the years → work corner; inside the ring span it is 0.34px at 1440 and 0.60px at
+ * 2560. The extra cut costs no vertices: the ring span's 115 intervals split 67 + 48.
+ *
  * Pinning the curve to the sections (Task 6.1) stretches some spans more than the old
  * whole-document mapping did, but on the real page the worst corner sits in spans that are
  * stretched about as much as before, so the figures barely moved (1440: 0.69 → 0.66).
@@ -122,19 +130,16 @@ const CURVE_SAMPLE_DENSITY = 480;
 
 /**
  * Samples the whole curve at roughly `CURVE_SAMPLE_DENSITY` intervals, span by span, so
- * every anchor — each seam and both ends of the spine — is a vertex of the drawn polyline.
+ * every anchor — each seam and each in-section anchor — is a vertex of the drawn polyline.
  * The anchors are where the curve is pinned to the page, so they are exactly where a chord
  * cutting a corner would show.
  */
 function sampleWholeCurve(): SignalPoint[] {
-  // The spine's two ends are anchors too (see anchors.ts), so they are split points
-  // exactly like the seams: the work span is sampled as sweep, spine and exit.
-  const cuts = [
-    ...SECTION_SPANS.map((span) => span.tStart),
-    SPINE_SPAN.tStart,
-    SPINE_SPAN.tEnd,
-    1,
-  ].sort((a, b) => a - b);
+  // The in-section anchors (see anchors.ts) are split points exactly like the seams: the
+  // work span is sampled as sweep, spine and exit, and the ring span as arc and hold.
+  const cuts = [...SECTION_SPANS.map((span) => span.tStart), ...ANCHOR_T, 1].sort(
+    (a, b) => a - b,
+  );
 
   const points: SignalPoint[] = [];
   for (let i = 0; i < cuts.length - 1; i++) {
@@ -273,18 +278,19 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   }
 
   /**
-   * The spine's anchors in the `<svg>`'s coordinates: the top of the element marked
-   * `data-signal-spine="start"` and the bottom of the one marked `"end"` — on the home page,
-   * the first and last case study. `null` for either one the page does not have.
+   * Each in-section anchor in the `<svg>`'s coordinates — on the home page, the first case
+   * study's top, the last one's bottom, and the ring track's centre line. `null` for any
+   * the page does not have.
    */
-  function measureSpine(): [number | null, number | null] {
+  function measureInSectionAnchors(): (number | null)[] {
     const boxTop = svg.getBoundingClientRect().top;
-    const start = document.querySelector('[data-signal-spine="start"]');
-    const end = document.querySelector('[data-signal-spine="end"]');
-    return [
-      start ? start.getBoundingClientRect().top - boxTop : null,
-      end ? end.getBoundingClientRect().bottom - boxTop : null,
-    ];
+    return IN_SECTION_ANCHORS.map(({ selector, edge }) => {
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      const y = edge === 'top' ? rect.top : edge === 'bottom' ? rect.bottom : rect.top + rect.height / 2;
+      return y - boxTop;
+    });
   }
 
   /**
@@ -340,8 +346,8 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     const sectionTops = measureSectionTops();
     const seamPixels = resolveSeamPixels(sectionTops, height);
-    const spinePixels = resolveSpinePixels(measureSpine(), seamPixels);
-    pixelPoints = toPixelPoints(points, width, seamPixels, spinePixels);
+    const anchorPixels = resolveAnchorPixels(measureInSectionAnchors(), seamPixels);
+    pixelPoints = toPixelPoints(points, width, seamPixels, anchorPixels);
     lengthTable = cumulativeLengths(pixelPoints);
     path.setAttribute('d', toPixelPath(pixelPoints));
 

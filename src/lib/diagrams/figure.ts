@@ -114,27 +114,6 @@ export function frameTimeY(ms: number, frameTimeMs: number): number {
 
 // ── Motion easing — spec §7.4 ──────────────────────────────────────────────────────────
 
-/** Clamped to 0..1; NaN reads as 0. */
-export function unit(value: number): number {
-  if (!(value > 0)) return 0;
-  if (value > 1) return 1;
-  return value;
-}
-
-/**
- * The line's signature curve: a long ease-out. Applied to progress, never to a duration.
- * Quartic, so most of the travel happens early and the last stretch settles.
- */
-export function easeLine(t: number): number {
-  return 1 - (1 - unit(t)) ** 4;
-}
-
-/**
- * The emissions' curve: a slight overshoot, so an emission arrives rather than fades in.
- * A back-out with a small overshoot constant — it peaks about 6% past 1 and settles on 1.
- */
-const OVERSHOOT = 1.2;
-export function easeEmission(t: number): number {
-  const u = unit(t) - 1;
-  return 1 + (OVERSHOOT + 1) * u ** 3 + OVERSHOOT * u ** 2;
-}
+// Defined with the rest of the draw-off-the-line helpers, which the ring's split shares
+// with these diagrams; re-exported so the diagrams keep one import.
+export { easeEmission, easeLine, unit } from '../signal/draw';
