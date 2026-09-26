@@ -180,16 +180,19 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   svg.style.display = 'block';
   svg.style.width = '100%';
   svg.style.height = '100%';
-  // The curve's last point always lands exactly on this box's bottom edge, and its first
-  // on the top edge wherever the page has no hero anchor — and a round cap is a disc
-  // centred on the point, so the UA stylesheet's `svg:root { overflow: hidden }` slices
-  // both of them in half. Verified by pixel: without this, paint starts abruptly at the box's
-  // first row and stops abruptly at its last.
+  // The curve's first point lands on this box's top edge wherever the page has no hero
+  // anchor, and, on a page with no measured terminus (`/dev/signal`), its last point lands
+  // on the box's bottom edge too — a round cap is a disc centred on the point, so the UA
+  // stylesheet's `svg:root { overflow: hidden }` slices it in half wherever that happens.
+  // Verified by pixel: without this, paint starts or stops abruptly at the box's edge.
+  // Since Task 9.1 the real page's terminus (the footer's bar) sits well inside the box,
+  // clear of the bottom edge, but the rule stays: it costs nothing, and a hero-less page
+  // or the harness still put an end exactly on an edge.
   //
   // Safe because the mount is inset by half the stroke (see #signal-layer in
-  // global.css): the 2px that now overflows paints inside the document rather than past
-  // its last pixel, so it cannot grow scrollHeight. The curve's horizontal extremes are
-  // interior (11.5%–81.0% of the box), so nothing overflows sideways.
+  // global.css): whatever overflows at either edge paints inside the document rather than
+  // past its last pixel, so it cannot grow scrollHeight. The curve's horizontal extremes
+  // are interior (11.5%–81.0% of the box), so nothing overflows sideways.
   svg.style.overflow = 'visible';
   svg.setAttribute('aria-hidden', 'true'); // decorative — a marble diagram, not content
 
@@ -278,6 +281,20 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   }
 
   /**
+   * The footer's completion bar's centre line, in the `<svg>`'s own coordinates — the
+   * curve's terminus (Footer.astro). `null` on a page with no such element (`/dev/signal`),
+   * which leaves `resolveSeamPixels` to fall back to the box's bottom edge exactly as
+   * before.
+   */
+  function measureTerminus(): number | null {
+    const bar = document.querySelector('[data-signal-terminus]');
+    if (!bar) return null;
+    const boxTop = svg.getBoundingClientRect().top;
+    const rect = bar.getBoundingClientRect();
+    return rect.top + rect.height / 2 - boxTop;
+  }
+
+  /**
    * Each in-section anchor in the `<svg>`'s coordinates — on the home page, the first case
    * study's top, the last one's bottom, and the ring track's centre line. `null` for any
    * the page does not have.
@@ -345,7 +362,7 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
 
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     const sectionTops = measureSectionTops();
-    const seamPixels = resolveSeamPixels(sectionTops, height);
+    const seamPixels = resolveSeamPixels(sectionTops, height, measureTerminus());
     const anchorPixels = resolveAnchorPixels(measureInSectionAnchors(), seamPixels);
     pixelPoints = toPixelPoints(points, width, seamPixels, anchorPixels);
     lengthTable = cumulativeLengths(pixelPoints);

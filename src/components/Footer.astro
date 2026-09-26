@@ -2,10 +2,13 @@
 /**
  * The footer, and the end of the signal.
  *
- * Spec §6: the line terminates in a `|` completion bar, and the footer is where it
- * lands — the curve's last control point is `x: 0, y: 1`, dead centre at the very
- * bottom of the document. The bar is therefore centred and is the last thing in the
- * page, so the two meet rather than merely appearing in the same region.
+ * Spec §6: the line terminates in a `|` completion bar, at the top of the footer
+ * (Decisions, 2026-09-26 — "The line ends above the footer, not under it"). The
+ * curve's last control point is `x: 0, y: 1` in `path.ts`'s own space, but that maps
+ * to this bar's measured centre, not to the document's last pixel: `svg-signal.ts`
+ * queries `[data-signal-terminus]` and hands its centre to `resolveSeamPixels` as the
+ * terminus, so the curve and the bar meet by measurement rather than by both simply
+ * being at the bottom.
  *
  * It is drawn across the transport rather than along it. Marble diagrams run left to
  * right, which is why the notation is a vertical `|`; this one runs top to bottom, so
@@ -37,6 +40,11 @@ const year = new Date().getFullYear();
 ---
 
 <footer class="site-footer">
+  <!-- The completion bar, first so it can sit on the footer's top edge. Decorative: the
+       signal's end state is also stated in words below it, so nothing here is the sole
+       carrier of meaning. -->
+  <div class="site-footer__complete" data-signal-terminus aria-hidden="true"></div>
+
   <div class="site-footer__inner">
     <div class="site-footer__head">
       <div>
@@ -69,15 +77,15 @@ const year = new Date().getFullYear();
       </p>
     )}
   </div>
-
-  <!-- The completion bar. Decorative: the signal's end state is also stated in words
-       above it, so nothing here is the sole carrier of meaning. -->
-  <div class="site-footer__complete" aria-hidden="true"></div>
 </footer>
 
 <style>
   .site-footer {
-    border-top: 1px solid color-mix(in srgb, var(--type) 10%, transparent);
+    /* Named so the completion bar's margin math (below) can share the same width the
+       border itself is drawn at, instead of repeating the literal in two places. */
+    --footer-hairline: 1px;
+
+    border-top: var(--footer-hairline) solid color-mix(in srgb, var(--type) 10%, transparent);
   }
 
   .site-footer__inner {
@@ -163,12 +171,25 @@ const year = new Date().getFullYear();
     color: var(--shipped);
   }
 
-  /* Centred and flush with the bottom edge, because that is precisely where the curve
-     terminates: x 0 maps to 50% of the signal layer's width, y 1 to its last pixel. */
+  /* Centred (x 0 is the signal layer's centre) and sitting astride the hairline above,
+     because that is where `svg-signal.ts` measures this element's centre line as the
+     curve's terminus (`measureTerminus`, `resolveSeamPixels`) — the two meet here by
+     measurement, not because both happen to be at the same fixed edge.
+     Without this box, the flow cursor entering `.site-footer__inner` sits one
+     hairline below the footer's own top edge (the border, with no padding on
+     `.site-footer` before it). Pulling the bar up by half its own height plus that
+     hairline (margin-block-start) centres it exactly on the footer's top edge, astride
+     the border; pushing margin-block-end back down by the same hairline, less that
+     same half-height, cancels the net height this box would otherwise add to the
+     flow. The two margins are unequal but sum with the height to zero for any stroke
+     or hairline width, so `.site-footer__inner` starts, and the footer ends, exactly
+     where they would if this bar were not here. */
   .site-footer__complete {
     width: var(--s-9);
     height: var(--signal-stroke);
-    margin: 0 auto;
+    margin-inline: auto;
+    margin-block: calc(var(--signal-stroke) / -2 - var(--footer-hairline))
+      calc(var(--footer-hairline) - var(--signal-stroke) / 2);
     background: var(--signal);
   }
 </style>
