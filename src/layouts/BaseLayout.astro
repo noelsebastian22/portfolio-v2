@@ -36,7 +36,7 @@ interface Props {
 const {
   title = 'Noel Sebastian — Senior Web Engineer & Angular Specialist',
   description = `I build high-scale frontends for companies — and fast, reliable websites for growing businesses. ${yearsElapsed()}+ years, deep in the Angular ecosystem, and available for freelance.`,
-  ogImage = '/og-image.svg',
+  ogImage = '/og-image.png',
   collectionSchema = true,
   personJobTitle = 'Senior Web Engineer & Angular Specialist',
   personKnowsAbout = ['Angular', 'Frontend Engineering', 'Web Performance', 'Nx Monorepos', 'NgRx', 'TypeScript'],
@@ -99,6 +99,13 @@ const collectionPageSchema = {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={new URL(ogImage, Astro.site)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta
+      property="og:image:alt"
+      content="Noel Sebastian — Senior Web Engineer & Angular Specialist. Sydney, AU, open to senior frontend roles. The signal line arriving beside the name, on the Signal Path dark palette."
+    />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
