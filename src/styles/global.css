@@ -152,6 +152,17 @@ body::after {
   top: var(--s-3);
 }
 
+/* `#main-content` (both pages) carries `tabindex="-1"` so the skip link's jump is a real
+   focus move, not just a scroll — without it `document.activeElement` stayed on `<body>`
+   and a screen reader announced nothing. The global ring is the wrong shape for it: `main`
+   spans the whole page, so a 2px outline on it draws down both edges of the entire
+   document rather than marking one arrival point. The scroll position is the sighted-user
+   feedback here; the focus move (verified over CDP) is what the ring would otherwise be
+   standing in for. */
+#main-content:focus-visible {
+  outline: none;
+}
+
 /* ── Reduced motion ─────────────────────────────────────────────────────────────── */
 
 /**

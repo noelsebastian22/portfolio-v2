@@ -102,7 +102,8 @@ const eyebrowClass = 'mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text
   <div id="top" style="overflow-x:hidden">
     <WebsitesNav />
 
-    <main id="main-content">
+    {/* tabindex="-1": see index.astro's #main-content for why the skip link needs this. */}
+    <main id="main-content" tabindex="-1">
       <!-- ── HERO ──────────────────────────────────────────────────────── -->
       <header class="mx-auto max-w-[1200px] px-6 md:px-10" style="padding-top:clamp(48px,7vw,96px);padding-bottom:clamp(48px,6vw,84px)">
         <div class="max-w-[840px]">

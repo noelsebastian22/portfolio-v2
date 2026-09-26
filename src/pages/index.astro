@@ -13,7 +13,12 @@ import Footer from '../components/Footer.astro';
 <BaseLayout>
   <div id="top" style="overflow-x:hidden">
     <Nav />
-    <main id="main-content">
+    <!-- tabindex="-1": #main-content has no natural focus target of its own, so without
+         this the skip link's href="#main-content" only scrolls — document.activeElement
+         stays on <body> and a screen reader announces nothing. -1 keeps it out of the
+         normal Tab order (it is reachable only by the skip link's own jump) while making
+         it a real focus target once that jump lands. -->
+    <main id="main-content" tabindex="-1">
     <Hero />
     <NineYears />
     <SelectedWork />
