@@ -69,7 +69,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2, reviewed clean, no fix round. Split drawn as a track the curve is pinned to; Gallery retired |
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired, the Stack's nodes sit on the weave; Contact's form works with JS off, and the line ends in a final emission over the footer's bar |
-| **9** | **SHIPPABLE — 2D site complete** | in progress | Tasks 9.1–9.4 done. Base-path JS 61,370 gzip (74.9% of budget), 0 render-blocking resources. **Real finish line. Deploy here.** Tasks 9.5–9.6 remain |
+| **9** | **SHIPPABLE — 2D site complete** | in progress | Tasks 9.1–9.5 done. Base-path JS 61,364 gzip (74.9% of budget), 0 render-blocking resources, Lighthouse mobile Performance 97 / Accessibility 100, **LCP 2,404ms — over the 2.0s budget, diagnosed, no local fix moved it; re-check against the real Vercel deploy in 9.6.** **Real finish line. Deploy here.** Task 9.6 remains |
 | 10 | WebGL — gate + signal tube | not started | |
 | 11 | WebGL — particle portrait | not started | |
 | 12 | WebGL — 3D ring | not started | |
@@ -186,6 +186,73 @@ no `_astro/*.js` listing while still shipping.
 | Tests | 103 passing across 8 files (was 18 across 3) |
 
 `svg-signal` more than doubled because it now owns three things that used to be implicit: where each section is, where the line may be lit, and where its tip is. All three are pure modules the renderer calls (`anchors.ts`, `gutter.ts`, `playhead.ts`), so the growth is the renderer's glue code rather than duplicated geometry.
+
+### Measured after Phase 9 — 2026-09-26
+
+Task 9.5, the ship audit. Every figure is a median of 3 runs, `npm run build && npx astro
+preview` (never the dev server), `npx lighthouse` default mobile emulation and simulated
+throttling — the same methodology Task 9.4 used, so the numbers are comparable.
+
+| Global Constraints budget | Target | Measured — `/` | Measured — `/websites` | Status |
+|---|---|---|---|---|
+| Lighthouse mobile Performance | ≥ 95 | 97 | 98 | **PASS** both |
+| Accessibility | 100 | 100 | 96 | **PASS** `/`, **FAIL** `/websites` (finding — `target-size`, dead-Tailwind nav/FAQ, Phase 14) |
+| LCP (simulated 4G mobile) | ≤ 2.0s | 2,404.3ms | 2,477.4ms | **FAIL** both — see LCP diagnosis below |
+| CLS | < 0.02 | 0 | 0 | **PASS** both |
+| TBT (lab proxy for INP < 200ms) | report | 0 | 0 | **PASS** both (field INP still needs real users) |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 (80 KB) | 61,364 (74.9%) | 55,606 (67.9%) | **PASS** both |
+| Enhanced WebGL chunk gzip, post-interactive | ≤ 250KB | not built — Phase 10 | not built — Phase 10 | N/A |
+| Render-blocking requests above the fold | 0 | 0 | 0 | **PASS** both |
+| Keyboard: reachable, ordered, no trap, visible focus | pass | 35 stops, 1440 and 375, no traps, 2px `--signal`/`--type` ring at every stop | not audited (Phase 9 scope is `/`; `/websites` inherits the same global focus CSS) | **PASS** `/` |
+| JS off: every word present, page ends `●` then `\|` | pass | Confirmed both widths; only diff is the hero clock's live digits vs. the served "local time" placeholder, by design (`Hero.astro`) | not audited | **PASS** `/` |
+| `prefers-reduced-motion`: instant states, nothing on a timer | pass | 0 of ~350 sampled transform/opacity/dashoffset properties changed across 6 fixed scroll positions × 6 real-time samples; line fully drawn (`stroke-dasharray: none`) at every position; hero clock still ticks (allowed) | not audited | **PASS** `/` |
+
+**LCP diagnosis.** The LCP element on `/` is `header#hero > … > p.hero__lede` — body text,
+set in Archivo (the preloaded face), not an image and not a late font swap. Review Focus 5
+is met: nothing to fix there. Lighthouse's own diagnostics (`font-display-insight`,
+`render-blocking-insight`, `document-latency-insight`, `network-dependency-tree-insight`,
+`modern-http-insight`, `cache-insight`, `legacy/duplicated-javascript-insight`,
+`image-delivery-insight`) all report **zero recoverable savings** on the current build —
+there is nothing left that Lighthouse itself identifies as fixable.
+
+`lcp-breakdown-insight` (median of 3, same simulated-throttling runs as the score above):
+time-to-first-byte 3.2ms, element-render-delay 47.8ms, resource-load-delay/duration both 0
+(a text node has no resource to load). These do not sum to the reported 2,404ms — a
+documented Lighthouse characteristic, not a measurement error: under `throttlingMethod:
+simulate` (the default, used for every run above and in Task 9.4), the "Insights" audits
+are computed from the trace as captured — unthrottled, since simulate never actually slows
+the browser — while only the headline metric (LCP's `numericValue`) is Lantern's simulated
+estimate for a throttled mobile connection. The two numbers come from different models and
+are not additive.
+
+To get a breakdown computed on the *same* timeline as its own headline number, three more
+runs used `--throttling-method=devtools` (real CPU/network throttling applied during
+capture): median LCP **797.9ms** — comfortably under budget — with TTFB 3.4ms and
+element-render-delay 794.5ms, still nothing but the render delay itself. Two candidate
+fixes were tried and measured, neither committed because neither moved the number:
+
+- **`fetchpriority="low"` on the six per-section entry `<script type="module">` tags**, to
+  stop them competing with the fonts at the browser's default "High" priority for that tag.
+  Blocked immediately: any attribute beyond a bare `<script>` makes Astro stop bundling it
+  — the tag loses `type="module"` entirely and ships a raw `import` statement, a build that
+  looks fine and throws `SyntaxError` in the browser. Reverted before it was ever built into
+  a commit.
+- **Low-priority `modulepreload` hints for those same six entries** (extending Task 9.4's
+  integration, which deliberately preloads only shared chunks, not entries) — a
+  build-time-only change, no `<script>` tag touched. Three-run median: FCP 785.4ms (down
+  from 1,054.6ms, but noisy — one run read 1,211ms), **LCP 2,404.7ms, unchanged**. Not kept;
+  it moves a metric outside the gate without moving the gated one.
+- **Reordering `<head>`** (fonts before the OG/Twitter block) — three-run median FCP and LCP
+  both unchanged to the millisecond. Not kept.
+
+**Proposal, not applied — needs a ruling.** The gap between the graded 2,404ms (`simulate`)
+and the diagnostic 798ms (`devtools`, same build, same host) is wide enough that the
+`simulate` figure may be dominated by Lantern's local-preview model (this repo's `astro
+preview` serves plain HTTP/1.1, not the HTTP/2 the production Vercel deploy will use) rather
+than by anything wrong with the page. Recommend Task 9.6 re-run Lighthouse against the real
+Vercel preview before treating 2.0s as unmet — that is already on 9.6's checklist
+("Lighthouse against the real network"), so this is a note to weight that number over the
+local one if they disagree, not a new task.
 
 ## File Structure
 
@@ -1178,15 +1245,20 @@ clock's stop function (item 4) adds back +40 to the inline module script. See
 
 ### Task 9.5 — The ship audit
 
-- [ ] Lighthouse mobile, three runs with the median recorded: Performance ≥ 95, Accessibility
-  100, LCP ≤ 2.0s, CLS < 0.02, and TBT as INP's lab proxy.
-- [ ] A keyboard-only pass through the whole page. A screen-reader pass on the timeline, the
-  ring rail and the form. A JS-off pass, where every word is readable. A reduced-motion pass,
-  where nothing animates.
-- [ ] Phase 4 minors fixed: (2) `role="list"`, (7) the redundant `if (layer)`, and (1) the inert
+- [x] Lighthouse mobile, three runs with the median recorded: Performance **97/98** (`/`/
+  `/websites`, ≥ 95 ✓), Accessibility **100/96** (✓ / finding), **LCP 2,404ms/2,477ms — over
+  the 2.0s budget on both pages**, CLS **0/0** (✓), TBT **0/0** reported as INP's lab proxy.
+  See "Measured after Phase 9" for the full table and the LCP diagnosis.
+- [x] A keyboard-only pass through the whole page (35 stops, 1440 and 375, no traps, visible
+  focus at every stop). A screen-reader pass (AX tree over CDP) on the timeline, the ring
+  rail and the form — all match §13. A JS-off pass — every word readable, only the hero
+  clock's live digits differ from its "local time" placeholder, by design. A reduced-motion
+  pass — zero timer-driven property changes sampled at six fixed scroll positions.
+- [x] Phase 4 minors fixed: (2) `role="list"`, (7) the redundant `if (layer)`, and (1) the inert
   sound toggle, made honest per Noel's ruling (Decisions, 2026-09-26). (3) "Back to top" is not
-  restored, because the nav is persistent; recorded as a Decision.
-- [ ] Every Global Constraints budget measured and recorded under "Measured after Phase 9" and
+  restored, because the nav is persistent; recorded as a Decision below. (4) and (6) confirmed
+  still open, belonging to later phases (see Known Gaps); (5) already resolved by Task 9.3.
+- [x] Every Global Constraints budget measured and recorded under "Measured after Phase 9" and
   in `docs/SESSIONS.md`.
 
 ### Task 9.6 — Deploy (controller with Noel, no subagent)
@@ -1503,6 +1575,8 @@ decision was made; this section records *what it is*.
 - **2026-09-26 (Noel)** — **The four unreferenced gallery masters stay** (`directline`,
   `qburst`, `srtmarine`, `winning`; 312 KB in all). "Problems, solved" may be reworked, and they
   are its source material.
+- **2026-09-26 (controller)** — no back-to-top link: the persistent nav already reaches every
+  section, and the skip link covers the top.
 
 ## Known Gaps
 
@@ -1593,18 +1667,31 @@ decision was made; this section records *what it is*.
   Phase 4 check except the anchor trace was rAF-independent, so they stand.
 - **Seven Phase 4 review minors, deferred to the final whole-branch review:**
   (1) the inert sound toggle explains itself only via `title` on a `disabled` button, which is
-  neither focusable nor reliably announced; (2) `role="list"` missing on the nav and footer `ul`s
-  (Safari/VoiceOver drops list semantics under `list-style: none`); (3) the "Back to top" link was
-  dropped without a decision record, on a 9,163px document; (4) the desktop signal layer is
-  full-opacity and the footer is the one place Phase 4 lays text across the curve's path — latent,
-  since the centre column is mostly empty; (5) `og-image.svg` duplicates the generated `d` with no
-  regeneration command of its own, so it can go stale silently — **RESOLVED 2026-09-26 by Task
-  9.3:** `og-image.svg` is deleted; `scripts/og-image.mjs` bakes `public/og-image.png` from
-  `sampleSignalRange()` directly, so there is no `d` left to duplicate; (6) **24 lowercase
-  `font-bricolage` class strings survive in `src/`** — the Phase 4 ruling's grep was
-  case-sensitive and missed exactly the hole it was written to close, though they are inert
-  Tailwind names on components Phases 5–8 rewrite; (7) `BaseLayout.astro`'s `if (layer)` silently
-  no-ops on an element `BaseLayout` itself renders eleven lines above.
+  neither focusable nor reliably announced — **RESOLVED 2026-09-26 by Task 9.5:** a real
+  focusable button, `aria-disabled="true"` not `disabled`, visible label "Sound · soon"
+  (Decisions, 2026-09-26); (2) `role="list"` missing on the nav and footer `ul`s
+  (Safari/VoiceOver drops list semantics under `list-style: none`) — **RESOLVED 2026-09-26 by
+  Task 9.5:** both carry `role="list"` now, confirmed in the live AX tree; (3) the "Back to top"
+  link was dropped without a decision record, on a 9,163px document — **RESOLVED 2026-09-26
+  (Decisions):** staying dropped is the decision, recorded rather than left silent; (4) the
+  desktop signal layer is full-opacity and the footer is the one place Phase 4 lays text across
+  the curve's path — latent, since the centre column is mostly empty — **confirmed by Task 9.5,
+  matches the Task 8.2 re-check below: still open, still just cosmetic.** At 1440 the centre
+  column is empty (no overlap). At 375, under `prefers-reduced-motion` with the line fully
+  drawn, it runs straight through "Medium" in the footer's social row — visibly a dim red
+  stroke through the word, same as Task 8.2 found for the name/tagline/copyright/colophon at
+  this width. `--signal-dim-alpha` keeps it legible (screenshotted); no code change made. (5)
+  `og-image.svg`
+  duplicates the generated `d` with no regeneration command of its own, so it can go stale
+  silently — **RESOLVED 2026-09-26 by Task 9.3:** `og-image.svg` is deleted; `scripts/og-image.mjs`
+  bakes `public/og-image.png` from `sampleSignalRange()` directly, so there is no `d` left to
+  duplicate; (6) **24 lowercase `font-bricolage` class strings survive in `src/`** — the Phase 4
+  ruling's grep was case-sensitive and missed exactly the hole it was written to close, though
+  they are inert Tailwind names on components Phases 5–8 rewrite — **confirmed by Task 9.5: still
+  open**, on `/websites` only now (every other page was rewritten by Phases 5–8); Phase 14's
+  restyle owns it, per "Deliberately not in Phase 9"; (7) `BaseLayout.astro`'s `if (layer)`
+  silently no-ops on an element `BaseLayout` itself renders eleven lines above — **RESOLVED
+  2026-09-26 by Task 9.5:** the guard is gone; a missing layer now throws.
 - **RESOLVED 2026-09-26 by Task 9.4 — all three fixed together.** Original: **Three critical-path
   items for the Phase 9 performance pass, to be fixed together, not piecemeal:** `unused-javascript`
   reports 29 KiB (the motion chunk ships whole while no section registers a trigger yet — expected
