@@ -1,11 +1,11 @@
 import { yearsElapsed } from '../lib/career';
 import type { CaseStudyDiagram } from '../lib/diagrams/types';
 
+/** In page order. Home is the brand mark's job: it already links to `#top`. */
 export const nav = [
-  { label: 'Home', href: '#top' },
-  { label: 'Shipped', href: '#ring' },
-  { label: 'About', href: '#about' },
   { label: 'Work', href: '#work' },
+  { label: 'Shipped', href: '#ring' },
+  { label: 'Stack', href: '#stack' },
   { label: 'Contact', href: '#contact' },
 ];
 
@@ -36,76 +36,50 @@ export const status = {
   availability: 'Open to senior frontend roles',
 } as const;
 
-export const marqueeItems = [
-  'Angular v20', 'TypeScript', 'NgRx', 'Nx Monorepos', 'RxJS',
-  'SCSS', 'NestJS', 'Astro', 'Nuxt', 'Next.js', 'Signals', 'Jest',
-];
+/**
+ * Section 05's operator chain — the resume's Skills table, group for group and in its order
+ * (docs/resume-transcript.md → "Skills"; tests/skill-groups.test.ts holds the two together).
+ * No proficiency labels: §9.05 drops them, and the resume's "(Expert)" is one.
+ *
+ * `op` is the group's identifier in the `pipe(…)` form. A user-defined operator composed in
+ * `pipe()` is honest RxJS; one that shadows a real operator (`map`, `filter`, `share`…) is
+ * not, and the test checks that none does.
+ */
+export interface SkillGroup {
+  /** The resume's own name for the group. */
+  name: string;
+  /** camelCase identifier, rendered as `op()` in the chain. */
+  op: string;
+  items: string[];
+}
 
-export const aboutCols = [
+export const skillGroups: SkillGroup[] = [
   {
-    title: 'What I build',
-    items: ['Enterprise frontends', 'Business websites', 'Landing pages', 'SPAs & web apps'],
+    name: 'Core',
+    op: 'core',
+    items: ['Angular', 'TypeScript', 'JavaScript', 'HTML', 'SCSS', 'CSS'],
   },
   {
-    title: 'Core stack',
-    items: ['Angular v20', 'NgRx · NGXS', 'Nx Monorepos', 'TypeScript · RxJS'],
+    name: 'Architecture',
+    op: 'architecture',
+    items: ['Nx Monorepos', 'Angular Signals', 'NgRx', 'NGXS', 'Micro-frontends'],
   },
   {
-    title: 'Also works in',
-    items: ['React · Next.js', 'Astro · Nuxt', 'NestJS · Node', 'A11y · Testing'],
+    name: 'Testing',
+    op: 'testing',
+    items: ['Jest', 'Jasmine', 'Karma', 'Unit and integration testing', '90%+ coverage'],
   },
-];
-
-type Level = 'Expert' | 'Advanced' | 'Intermediate' | 'Freelance';
-
-export const skillGroups = [
   {
-    no: '01',
-    name: 'Frontend',
+    name: 'AI tooling',
+    op: 'aiTooling',
+    items: ['Model Context Protocol (MCP)', 'Figma Code Connect', 'AI-assisted code review'],
+  },
+  {
+    name: 'Also',
+    op: 'also',
     items: [
-      { n: 'Angular', l: 'Expert' as Level },
-      { n: 'TypeScript', l: 'Expert' as Level },
-      { n: 'JavaScript', l: 'Expert' as Level },
-      { n: 'HTML · SCSS · CSS', l: 'Expert' as Level },
-    ],
-  },
-  {
-    no: '02',
-    name: 'State & Data',
-    items: [
-      { n: 'NgRx', l: 'Expert' as Level },
-      { n: 'RxJS', l: 'Advanced' as Level },
-      { n: 'D3.js', l: 'Advanced' as Level },
-      { n: 'AG Grid', l: 'Intermediate' as Level },
-    ],
-  },
-  {
-    no: '03',
-    name: 'Tooling & Testing',
-    items: [
-      { n: 'Nx Monorepos', l: 'Expert' as Level },
-      { n: 'Jest', l: 'Advanced' as Level },
-      { n: 'Karma · Jasmine', l: 'Advanced' as Level },
-      { n: 'Git · Husky', l: 'Advanced' as Level },
-    ],
-  },
-  {
-    no: '04',
-    name: 'Beyond Angular',
-    items: [
-      { n: 'React', l: 'Intermediate' as Level },
-      { n: 'Next.js', l: 'Intermediate' as Level },
-      { n: 'Astro · Nuxt', l: 'Freelance' as Level },
-      { n: 'NestJS · Node', l: 'Intermediate' as Level },
-    ],
-  },
-  {
-    no: '05',
-    name: 'AI Tooling',
-    items: [
-      { n: 'MCP servers' },
-      { n: 'Figma Code Connect' },
-      { n: 'AI-assisted review' },
+      'React', 'Next.js', 'Node.js', 'NestJS', 'D3.js', 'AG Grid',
+      'Bootstrap', 'Ionic', 'Git', 'CI/CD', 'Husky', 'commitlint',
     ],
   },
 ];

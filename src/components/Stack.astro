@@ -1,0 +1,277 @@
+---
+/**
+ * Section 05 — the stack as an operator chain. Spec §9.05.
+ *
+ * The resume's five skill groups, in its order, as the operators of one `pipe(…)`. The
+ * order is the composition, so the rows are an ordered list. No proficiency labels (§9.05).
+ * Every word is server-rendered; `stack.ts` only moves the nodes and lights them.
+ *
+ * **Each row sits on a rule, and the row's node sits where the curve crosses it.** The
+ * stack span keeps its three authored bends (Decisions, 2026-09-26), so the line weaves
+ * left and right down the section. Each row opens with a hairline across its width that
+ * carries no text; the island reads the curve's `x` at that rule's `y` (`signalXAtPageY`)
+ * and moves the node there, so the nodes step with the weave and never sit on a glyph.
+ * Between rules the line runs behind the rows, dimmed by the existing rule (`gutter.ts`).
+ * In 2D the operator's "transform" is its node lighting as the tip passes.
+ *
+ * With JS off there is no line at all (the signal layer is script-drawn), so each node
+ * sits lit at the start of its rule: a rule with one filled mark is a marble diagram's own
+ * notation, `──●──`, so it reads as an emission rather than as a node waiting for a line.
+ *
+ * The identifiers are code (`core()`, `aiTooling()`); a screen reader gets the resume's
+ * own group name instead, and the chain's punctuation is hidden from it. The section
+ * marker already says `pipe()`.
+ *
+ * Layout is the content box every section from 03 down shares, because the renderer's
+ * gutter probe assumes it (see SelectedWork.astro).
+ */
+import { skillGroups } from '../data/content';
+
+const lastIndex = skillGroups.length - 1;
+---
+
+<section class="stack" id="stack" data-stack data-signal-section="stack">
+  <div class="stack__inner">
+    <header class="stack__head">
+      <p class="stack__marker">05 — pipe()</p>
+      <h2 class="stack__title">Tools, composed</h2>
+      <p class="stack__lede">
+        What I build with, grouped the way my CV groups it. No proficiency ratings: the case
+        studies above are the evidence.
+      </p>
+    </header>
+
+    <div class="stack__chain">
+      <p class="stack__paren" aria-hidden="true">pipe(</p>
+
+      <ol class="stack__ops" role="list">
+        {skillGroups.map((group, i) => (
+          <li class="op" data-op>
+            {/* The rule is the only place the node can land, and it carries no text. */}
+            <div class="op__rule" data-op-rule aria-hidden="true">
+              <span class="op__node" data-op-node>
+                <span class="op__fill" data-op-fill></span>
+              </span>
+            </div>
+            <h3 class="op__name">
+              <span class="op__sr">{group.name}</span>
+              <span class="op__code" aria-hidden="true">{group.op}(){i < lastIndex ? ',' : ''}</span>
+            </h3>
+            <ul class="op__items" role="list">
+              {/* One line on purpose: Astro keeps template whitespace, which would add a
+                  space before each separator. */}
+              {group.items.map((item, j) => (
+                <li class="op__item">{item}{j < group.items.length - 1 && <span class="op__sep" aria-hidden="true">{'\u00a0· '}</span>}</li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
+
+      <p class="stack__paren" aria-hidden="true">)</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .stack {
+    /* The node: a ring on the rule that fills as the tip passes. */
+    --op-node: var(--s-3);
+    --op-node-ring: 2px;
+    --op-rule: color-mix(in srgb, var(--type) 14%, transparent);
+
+    padding-block: var(--section-y);
+  }
+
+  /* The content box the signal's gutter probe assumes — see SelectedWork.astro. */
+  .stack__inner {
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--s-5);
+    padding-left: calc(var(--s-5) + var(--signal-gutter));
+  }
+
+  /* ── Section head — the house voice, as SelectedWork sets it ────────────────────── */
+
+  .stack__marker,
+  .stack__lede {
+    margin: 0;
+  }
+
+  /* Not uppercased: `pipe()` is an operator, and an operator in capitals stops being an
+     identifier. */
+  .stack__marker {
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .stack__title {
+    max-width: 18ch;
+    margin: var(--s-4) 0;
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: clamp(32px, 4.2vw, 62px);
+    font-stretch: 125%;
+    font-weight: 700;
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+
+  .stack__lede {
+    max-width: 52ch;
+    color: var(--type-dim);
+    font-size: clamp(15px, 1.15vw, 17px);
+    line-height: 1.6;
+  }
+
+  /* ── The chain ──────────────────────────────────────────────────────────────────── */
+
+  .stack__chain {
+    margin-top: clamp(var(--s-8), 7vw, var(--s-10));
+  }
+
+  .stack__paren {
+    margin: 0;
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: clamp(20px, 1.9vw, 28px);
+    line-height: 1;
+  }
+
+  /* Indented inside `pipe(` the way the code would be. */
+  .stack__ops {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--s-7);
+    margin: var(--s-6) 0;
+    padding: 0 0 0 var(--s-4);
+    list-style: none;
+  }
+
+  /* ── One operator ───────────────────────────────────────────────────────────────── */
+
+  /* `--lit` is 1 as served; the island moves it to 0 and back with the tip. */
+  .op {
+    --lit: 1;
+
+    display: grid;
+    grid-template-areas:
+      'rule'
+      'name'
+      'items';
+    row-gap: var(--s-4);
+  }
+
+  .op__rule {
+    position: relative;
+    grid-area: rule;
+    height: 1px;
+    background: var(--op-rule);
+  }
+
+  /* Centred on the hairline, at the rule's start until the island places it on the
+     curve. `--ground` inside the ring, so neither the rule nor the dimmed line shows
+     through an unlit node: the line visibly passes through it. */
+  .op__node {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: var(--op-node);
+    height: var(--op-node);
+    margin-top: calc(var(--op-node) / -2);
+    border: var(--op-node-ring) solid var(--signal);
+    border-radius: 50%;
+    background: var(--ground);
+  }
+
+  .op__fill {
+    position: absolute;
+    inset: calc(var(--op-node-ring) * -1);
+    border-radius: 50%;
+    background: var(--signal);
+  }
+
+  /* Written by script per tip move, so never transitioned: global.css's reduced-motion
+     net would otherwise turn each write into a 1ms transition (see SelectedWork.astro). */
+  .op__node,
+  .op__fill,
+  .op__name {
+    transition-property: none;
+  }
+
+  /* --type-dim (5.43:1) to --type (17.32:1) as the node lights; every mix between is
+     above AA on --ground. */
+  .op__name {
+    grid-area: name;
+    margin: 0;
+    color: color-mix(in srgb, var(--type) calc(var(--lit) * 100%), var(--type-dim));
+    font-family: var(--font-mono);
+    font-size: clamp(18px, 1.5vw, 22px);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .op__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .op__items {
+    grid-area: items;
+    margin: 0;
+    padding: 0;
+    color: var(--type);
+    font-size: clamp(16px, 1.2vw, 18px);
+    line-height: 1.7;
+    list-style: none;
+  }
+
+  /* Inline, so the items wrap as a sentence. Each item holds together; the separator
+     sticks to the item before it and the line breaks after it. The separator is text, not
+     generated content, so a copied row reads "Angular · TypeScript", not "AngularTypeScript";
+     a screen reader gets the list items and skips it. */
+  .op__item {
+    display: inline;
+    white-space: nowrap;
+  }
+
+  .op__sep {
+    color: var(--type-dim);
+    white-space: normal;
+  }
+
+  /* Past phone width the name and the items share a line under the rule, so the rule
+     runs the row's whole width over both. The rows share one pair of columns (subgrid),
+     so every row's items start at the same `x`, set by the longest identifier. */
+  @media (min-width: 769px) {
+    .stack__ops {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      column-gap: var(--s-7);
+      padding-left: var(--s-6);
+    }
+
+    .op {
+      grid-column: 1 / -1;
+      grid-template-areas:
+        'rule rule'
+        'name items';
+      grid-template-columns: subgrid;
+      row-gap: var(--s-5);
+      align-items: baseline;
+    }
+  }
+</style>
+
+<script>
+  import { mountStack } from '../islands/stack';
+
+  mountStack();
+</script>

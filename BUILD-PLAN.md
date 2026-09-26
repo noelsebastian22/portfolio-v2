@@ -68,7 +68,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 5 | Sections 01–02 — Hero, Nine Years | **complete** | Tasks 5.1–5.3. First two islands; Stats.astro retired into NineYears |
 | 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2, reviewed clean, no fix round. Split drawn as a track the curve is pinned to; Gallery retired |
-| 8 | Sections 05–06 — Stack, Contact | **in progress** | Tasks 8.1–8.2. About + Marquee retired; Stack keeps the weave |
+| 8 | Sections 05–06 — Stack, Contact | **in progress** | Task 8.1 built: About + Marquee retired, the Stack's nodes sit on the weave. Task 8.2 (Contact) next |
 | **9** | **SHIPPABLE — 2D site complete** | not started | **Real finish line. Deploy here.** |
 | 10 | WebGL — gate + signal tube | not started | |
 | 11 | WebGL — particle portrait | not started | |
@@ -992,17 +992,25 @@ About and the Marquee retire (see Decisions), so the page runs Ring → Stack �
 
 ### Task 8.1 — Section 05: `Stack.astro` + `src/islands/stack.ts`
 
-- [ ] `About.astro`, `Marquee.astro`, `Skills.astro` deleted, and `aboutCols`, `marqueeItems` and
+- [x] `About.astro`, `Marquee.astro`, `Skills.astro` deleted, and `aboutCols`, `marqueeItems` and
   the proficiency `Level` with them. `#stack` carries `data-signal-section="stack"`. Nav reads
   Work · Shipped · Stack · Contact.
-- [ ] `skillGroups` rebuilt from the resume's five groups (Core, Architecture, Testing, AI
+- [x] `skillGroups` rebuilt from the resume's five groups (Core, Architecture, Testing, AI
   tooling, Also). No proficiency labels.
-- [ ] Five operator rows inside a mono `pipe(` … `)`. Each row sits on a hairline rule, and the
+- [x] Five operator rows inside a mono `pipe(` … `)`. Each row sits on a hairline rule, and the
   row's node is drawn on the rule at the curve's own `x` (`signalXAtPageY`), so a node never
   sits on a glyph. The curve's weave is unchanged; between rules it passes behind the rows,
   dimmed.
-- [ ] `stack.ts`: each node fills as the tip passes its rule. Server-rendered lit, so JS-off and
+- [x] `stack.ts`: each node fills as the tip passes its rule. Server-rendered lit, so JS-off and
   reduced-motion visitors see the finished chain.
+
+Measured: every node sits on the drawn curve at its rule (Δ ≤ 0.005px) at 1024, 1440, 1920, 2560
+and 375, inside its rule and clear of the gutter; none needed the on-rule hold. The ring's centre
+hold is now 808px at 1440 (was ~2,195). 480 samples still hold (worst chord 0.66px at 1440,
+unchanged; 0.48px inside the stack span). Each node passes 30–31 intermediate fill states over
+64px of tip travel. Shipped JS on `/` **59,921 gzip (+852)**: the Stack island 650, the shared
+`follow` chunk 282, the Ring island −79. 73.1% of the 80 KB budget. `index.html` 18,955 → 17,179
+gzip. CLS 0.
 
 ### Task 8.2 — Section 06: `Contact.astro` + `src/islands/contact-form.ts`
 
@@ -1293,6 +1301,17 @@ decision was made; this section records *what it is*.
   time: `PUBLIC_FORMSPREE_ENDPOINT`, else the live default. The form's `action` is that URL, so a
   native POST works with JS off. Only a missing or placeholder value makes the action `mailto:`.
 
+- **2026-09-26 (claude-code, Task 8.1)** — **The Stack's operators are camelCase identifiers,
+  and its nodes are served lit at the start of their rules.** Three calls. (1) The rows read
+  `core()`, `architecture()`, `testing()`, `aiTooling()`, `also()` inside one `pipe(…)`, so the
+  chain is a syntactically real pipe a tech lead can read; each is a user-defined operator and
+  none shadows an RxJS operator (`tests/skill-groups.test.ts`). A screen reader gets the resume's
+  group names instead, and the punctuation is hidden from it. (2) "Also" keeps all twelve resume
+  entries: the rule is that the groups mirror the resume, and cutting is Noel's editorial call,
+  not the build's. (3) With JS off there is no line, so each node sits filled at its rule's start:
+  a rule with one filled mark is the marble notation `──●──`, an emission rather than a node
+  waiting for a line. With JS, the island moves it onto the curve.
+
 ## Known Gaps
 
 - No test framework existed before Phase 0. Vitest covers pure modules only —
@@ -1399,7 +1418,8 @@ decision was made; this section records *what it is*.
   so the re-encode and the byte change land there rather than as a drive-by now.
   Workaround meanwhile: run `node scripts/portrait.mjs` directly to re-bake the portrait. Verified
   deterministic — a re-run leaves the tree clean.
-- **`About.astro`'s portrait mount still carries dead Tailwind-era styling** (`border-2 border-ink`,
+- **RESOLVED 2026-09-26 by Task 8.1 — `About.astro` is deleted; the portrait lives only in the
+  Hero.** Original: **`About.astro`'s portrait mount still carries dead Tailwind-era styling** (`border-2 border-ink`,
   an inline box-shadow). Inert since Phase 0, but the new portrait is engineered to dissolve into
   `--ground` with no edges, so a border around it is the wrong mount. Whichever phase rebuilds
   that section drops it.
@@ -1451,9 +1471,30 @@ decision was made; this section records *what it is*.
   on-concept, but it was inherited rather than decided, and the same `·` renders round in the mono
   voice (the status rail, the `01 · of('Noel Sebastian')` caption). Noel's call.
 
+### Opened by Task 8.1 — 2026-09-26
+
+- **The Stack's nodes step right, then back once, rather than left and right.** The weave's
+  bends are at control points 41 (`x` −0.30), 44 (0.24) and 46 (−0.14, the contact seam). The
+  seams pin the span to the section, and the five rules fall at 41–76% of its height at 1440, so
+  the left bend lands in the head (at the lede's second line) and the rows see the run from it
+  to the right bend and a little way back: nodes at 640, 761, 860, 897, 865px. The same shape at
+  every width. Honest to the curve, and the nodes still never sit on a glyph, but it is less of a
+  weave than the Decision pictures. Pinning a stack control point to a rule would fix it; that is
+  an in-section anchor, which Task 8.1's brief ruled out.
+- **RxJS is not on the resume.** The site is built on RxJS operators, but neither the Skills
+  table nor the experience lists RxJS (the old `skillGroups` and marquee did). The rule is that
+  every Stack item traces to the resume, so it is not in the chain. Noel's call: add it to the
+  resume, and the test lets it into the chain.
+- **The shared `follow` helper is its own 282-byte chunk and one more request.** Rollup splits it
+  because its importers (Ring, Stack) differ from `tip`'s. Duplicating the wiring instead measured
+  59,821 gzip, 100 bytes less, with no extra request. Fold it into the `tip` chunk with a
+  `manualChunks` rule in the Phase 9 chunking pass, alongside the missing `modulepreload`.
+
 ### Opened by Task 7.2 — 2026-09-25
 
-- **The ring's hold runs down through About.** The `ring` span ends at the `stack` seam, which is
+- **RESOLVED 2026-09-26 by Task 8.1 — About is gone and the `stack` seam is `#stack`, so the hold
+  ends at the Stack's top: 808px at 1440 (754 at 1024, 836 at 1920 and 2560, 699 at 375).**
+  Original finding: **the ring's hold runs down through About.** The `ring` span ends at the `stack` seam, which is
   still `#skills`, and `About.astro` sits between the ring and Skills with no anchor of its own. So
   control points 34→39 — the curve holding the centre — stretch from the track through the rest of
   the rail and all of About (about 2,200px at 1440). Dimmed throughout, so contrast holds. Phase 8
@@ -1470,12 +1511,17 @@ decision was made; this section records *what it is*.
 
 ### Opened by Phase 6 — 2026-09-25
 
-- **Two sections are anchored to interim stand-ins** (the ring's moved onto `#ring` in Task 7.2):
+- **AMENDED 2026-09-26 by Task 8.1 — one interim anchor left: `contact` → `#contact`, which Task 8.2
+  moves onto `Contact.astro`. `stack` is on `Stack.astro` (`#stack`).** Original finding:
+  **Two sections are anchored to interim stand-ins** (the ring's moved onto `#ring` in Task 7.2):
   `stack` → `#skills`, `contact` → `#contact`, each marked `data-signal-section` and commented as
   interim. Phase 8 moves the attribute onto the rebuilt sections. A missing anchor falls back to
   linear mapping, so forgetting one fails soft, but it fails *wrong*: the line will drift off its
   section.
-- **The dim line still crosses unrebuilt text below section 04**: About and Skills start at
+- **RESOLVED 2026-09-26 by Task 8.1 — About and Skills are deleted, and the Stack lays out in the
+  shared content box; the dim line crosses its rows by design (Decisions, "The Stack keeps the
+  weave"). The interim `#contact` block below it still starts at x=0 until Task 8.2.** Original:
+  **The dim line still crosses unrebuilt text below section 04**: About and Skills start at
   x=0 because their layout classes are dead Tailwind (Gallery is gone as of Task 7.2). It is
   dimmed to 0.15, so contrast holds, but it lies on the text. Phase 8 owns it.
 - **The content-box assumption is load-bearing.** `gutter.ts`'s lit/dim bands assume every section

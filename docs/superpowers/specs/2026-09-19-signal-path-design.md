@@ -410,18 +410,36 @@ Right move focus between cards; every card stays in the Tab order.
 
 ### 05 — The Stack: `pipe()`
 
-**Content:** the skill groups from `content.ts`, reframed as an operator chain rather than
-a proficiency grid. The tech marquee folds in here.
+**Content:** the resume's Skills table, reframed as an operator chain rather than a
+proficiency grid. It has exactly five groups — Core, Architecture, Testing, AI tooling,
+Also — and `content.ts` carries them as `skillGroups`, in that order, with every item traced
+to the table. The tech marquee folds in here: the items it shared with the resume are in the
+groups, and the rest of it retires with it.
 
-A fifth node is added for **AI tooling** — MCP, Figma Code Connect, AI-assisted review —
-which exists on the resume but nowhere in `content.ts`. Given the roles being targeted in
-2026, it earns a node of its own rather than a line in "Also".
+**AI tooling** — MCP, Figma Code Connect, AI-assisted code review — is one of the five. Given
+the roles being targeted in 2026, it earns an operator of its own rather than a line in
+"Also".
 
-**Visual:** the line passes through a series of operator nodes that visibly transform it —
-colour shift, thickness change — each activating as the playhead passes.
+Each group is a user-defined operator composed in one `pipe(…)`: `core()`,
+`architecture()`, `testing()`, `aiTooling()`, `also()`. That is honest RxJS; an identifier
+that shadowed a real operator (`map`, `share`, `retry`) would not be, and a test holds the
+names to that. A screen reader gets the resume's own group names; the code punctuation is
+visual.
 
-Proficiency labels ("Expert", "Advanced") are dropped. Self-assessed skill ratings read as
-filler to a hiring manager; the case-study metrics do that job properly.
+**Visual:** the line passes through a series of operator nodes, each activating as the
+playhead passes. The stack span keeps its three authored bends. In 2D, each operator row sits
+on a hairline rule that carries no text, and the row's node is drawn where the curve crosses
+that rule, so the nodes step with the weave and never cover a glyph; between rules the line
+runs behind the rows, dimmed. A node is an outline until the signal's tip reaches its rule,
+then fills as an emission while the row's identifier comes up from `--type-dim` to `--type`.
+The chain is served lit: with JS off there is no line, and each node sits filled at the start
+of its rule, which is a marble diagram's own notation. The colour shift and thickness change
+on the line itself come with `TubeSignal` (Phase 10), where they are per-vertex attributes
+rather than a second renderer.
+
+Proficiency labels ("Expert", "Advanced") are dropped, including the resume's own
+"(Expert)". Self-assessed skill ratings read as filler to a hiring manager; the case-study
+metrics do that job properly.
 
 ### 06 — Contact: `subscribe()`
 
