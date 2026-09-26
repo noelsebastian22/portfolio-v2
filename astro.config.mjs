@@ -16,4 +16,27 @@ export default defineConfig({
     // trade, it wins on both.
     inlineStylesheets: 'always',
   },
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          // `follow` (Ring, Stack, Contact) imports `tip` (every island). Rollup splits
+          // them into two chunks because their importer sets differ — but `follow` alone was
+          // 262 bytes gzip, never used without `tip`, and under the "candidate for folding"
+          // ~1 KB line the Task 9.4 brief draws (Task 8.1 flagged it first). Measured: the
+          // merged `tip` chunk is 489 bytes gzip against the two chunks' 262 + 334 = 596
+          // before, and the page total drops 61,540 → 61,370 (−170, better than folding
+          // saves alone — every other entry chunk also lost a byte or two of Rollup
+          // wrapper/boilerplate, the same effect Task 9.2 saw when `/dev/signal` left the
+          // module graph), with one fewer request. `timeline` (GSAP, 50.84 KB gzip) is not a
+          // candidate: it is already far over the ~1 KB line, and merging it into anything
+          // would make every one of its non-GSAP importers (Ring, Stack, Contact, tip) carry
+          // GSAP whether they use it or not.
+          manualChunks(id) {
+            if (/\/src\/lib\/signal\/(?:follow|tip)\.ts$/.test(id)) return 'tip';
+          },
+        },
+      },
+    },
+  },
 });
