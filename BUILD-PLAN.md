@@ -69,7 +69,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2, reviewed clean, no fix round. Split drawn as a track the curve is pinned to; Gallery retired |
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired, the Stack's nodes sit on the weave; Contact's form works with JS off, and the line ends in a final emission over the footer's bar |
-| **9** | **SHIPPABLE — 2D site complete** | not started | **Real finish line. Deploy here.** |
+| **9** | **SHIPPABLE — 2D site complete** | in progress | Tasks 9.1–9.4 done. Base-path JS 61,370 gzip (74.9% of budget), 0 render-blocking resources. **Real finish line. Deploy here.** Tasks 9.5–9.6 remain |
 | 10 | WebGL — gate + signal tube | not started | |
 | 11 | WebGL — particle portrait | not started | |
 | 12 | WebGL — 3D ring | not started | |
@@ -1132,18 +1132,49 @@ clock's stop function (item 4) adds back +40 to the inline module script. See
 - [x] `public/og-image.svg` deleted. `BaseLayout` points at the PNG and emits `og:image:width`,
   `og:image:height`, `og:image:type` and `og:image:alt`. This closes Phase 4 minor (5).
 
-### Task 9.4 — The critical path, and a budget that measures itself
+### Task 9.4 — The critical path, and a budget that measures itself ✅ Done
 
-- [ ] `scripts/budget.mjs` (`npm run budget`): for each built page, every script the page loads
+- [x] `scripts/budget.mjs` (`npm run budget`): for each built page, every script the page loads
   before interaction is gzipped and summed: external module scripts, their static import graph,
   inline module scripts and `is:inline` blocks. Dynamic `import()` is excluded. The run fails
-  above 80 KB. Its pure parts are in `scripts/lib/budget.mjs` and tested.
-- [ ] The three critical-path items, fixed together. Render-blocking CSS: inline it, or justify
-  keeping the link with Lighthouse numbers. The renderer chunk's missing `modulepreload`, and the
-  chunking, including folding the 282-byte `follow` chunk. Also re-measure the 29 KiB of
-  "unused JavaScript".
-- [ ] Before and after, recorded: the budget script's figure, the page's request chain, and a
-  Lighthouse mobile run.
+  above 80 KB. Its pure parts are in `scripts/lib/budget.mjs` and tested (`tests/budget.test.ts`,
+  TDD — RED on the missing module, GREEN on the first implementation, 7 tests). `/` reconciled
+  exactly to the pre-existing 61,540-byte figure with no gap to explain.
+- [x] The three critical-path items, fixed together. Render-blocking CSS: `build.inlineStylesheets:
+  'always'` in `astro.config.mjs` — kept; render-blocking-insight 2 → 0, LCP −147.5ms, FCP −76.1ms,
+  Performance 97 → 98, and combined HTML+CSS bytes over the wire *fall* 25,257 → 24,920 gzip
+  (−337). The missing `modulepreload`: `src/integrations/modulepreload.ts`, an `astro:build:done`
+  hook reusing `pageScripts`/`staticImports`/`resolveSpecifier`, adding a `<link
+  rel="modulepreload" fetchpriority="low">` per shared chunk. `fetchpriority="low"` is not
+  decorative — the default-priority version regressed FCP +373.5ms by pulling GSAP's 50.84 KB
+  chunk forward at high priority; low priority keeps the round-trip fix (chain depth 3 → 2) and
+  *improves* FCP over even the no-preload baseline. The renderer chunk's own missing
+  `modulepreload` (`svg-signal`) is moot — Task 9.2 folded it into `BaseLayout`'s entry chunk, so
+  it was never a separate chunk to preload. Chunking: `vite.build.rollupOptions.output.manualChunks`
+  folds the 282-byte `follow` chunk into `tip` (489 bytes merged vs. 262 + 334 = 596 apart,
+  −170 on the page total including the wrapper-boilerplate shrink on every other entry chunk, one
+  fewer request). No other chunk under ~1 KB gzip exists once `follow`/`tip` are merged — `timeline`
+  (GSAP, 50.84 KB) is the only other shared chunk and is far over the line, so nothing else
+  qualifies. "Unused JavaScript" re-measured: still 29,451 bytes, entirely within `timeline.js`
+  (57.9% of its 50,890 transferred bytes) — GSAP core code no section's `ScrollTrigger` usage
+  exercises during the Lighthouse trace window. Accepted: dropping it means dropping GSAP
+  features, which the brief rules out.
+- [x] Before and after, recorded below and in `.superpowers/sdd/BUILD-PLAN/task-9.4-report.md`
+  (full `npm run budget` output, three-run Lighthouse medians, request-chain evidence, island
+  smoke checks over real-time CDP, JS-off check via CDP `Emulation.setScriptExecutionDisabled`).
+
+  | Metric | Before | After |
+  |---|---|---|
+  | Budget total (`/`) | 61,540 gzip (75.1%) | 61,370 gzip (74.9%) |
+  | Render-blocking resources | 2 | 0 |
+  | Request-chain depth | 3 (HTML → entry → shared chunk) | 2 (HTML → entry; shared chunks preloaded directly) |
+  | Lighthouse Performance (median of 3) | 97 | 98 |
+  | LCP (median of 3) | 2,554.5ms | 2,404.8ms |
+  | FCP (median of 3) | 1,434.8ms | 1,054.8ms |
+  | CLS (median of 3) | 0 | 0 |
+  | TBT (median of 3) | 0 | 0 |
+  | Unused JavaScript | 29,451 bytes (`timeline.js`) | 29,451 bytes (`timeline.js`, unchanged, accepted) |
+  | Accessibility (median of 3) | 100 | 100 |
 
 ### Task 9.5 — The ship audit
 
@@ -1574,11 +1605,26 @@ decision was made; this section records *what it is*.
   case-sensitive and missed exactly the hole it was written to close, though they are inert
   Tailwind names on components Phases 5–8 rewrite; (7) `BaseLayout.astro`'s `if (layer)` silently
   no-ops on an element `BaseLayout` itself renders eleven lines above.
-- **Three critical-path items for the Phase 9 performance pass, to be fixed together, not
-  piecemeal:** `unused-javascript` reports 29 KiB (the motion chunk ships whole while no section
-  registers a trigger yet — expected to amortise across Phases 5–8, but verify rather than assume);
-  a render-blocking 1.9 KB `_astro/index.css` link worth ~150ms; and no `modulepreload` for the
-  1.6 KB `svg-signal` chunk, which `BaseLayout`'s chunk statically imports — one extra round trip.
+- **RESOLVED 2026-09-26 by Task 9.4 — all three fixed together.** Original: **Three critical-path
+  items for the Phase 9 performance pass, to be fixed together, not piecemeal:** `unused-javascript`
+  reports 29 KiB (the motion chunk ships whole while no section registers a trigger yet — expected
+  to amortise across Phases 5–8, but verify rather than assume); a render-blocking 1.9 KB
+  `_astro/index.css` link worth ~150ms; and no `modulepreload` for the 1.6 KB `svg-signal` chunk,
+  which `BaseLayout`'s chunk statically imports — one extra round trip. Now: `unused-javascript`
+  re-measured at **29,451 bytes, unchanged** — it never amortised, because it is GSAP core code no
+  section's `ScrollTrigger` usage exercises during Lighthouse's trace window, not motion-chunk
+  code waiting for a trigger to register. Accepted — removing it means removing GSAP features.
+  The render-blocking CSS is gone: `build.inlineStylesheets: 'always'` (there are two stylesheets
+  by Task 9.4, 5,341 + 1,806 bytes gzip, not one) drops render-blocking-insight's count 2 → 0, for
+  a measured LCP −147.5ms / FCP −76.1ms / Performance 97 → 98, and the combined HTML+CSS bytes
+  over the wire *fall* (one gzip stream beats three). The `svg-signal` chunk's missing
+  `modulepreload` is moot — Task 9.2 folded `svg-signal` into `BaseLayout`'s own entry chunk,
+  so it was never a separate chunk to preload by the time Task 9.4 started. The request-chain
+  problem the finding was really pointing at (any shared chunk discovered only after its entry
+  parses) still existed for `timeline` and `tip`, and Task 9.4 fixes it there: `src/integrations/
+  modulepreload.ts` adds a `modulepreload` link per shared chunk, `fetchpriority="low"` (measured:
+  default priority regressed FCP +373.5ms by pulling GSAP's 50.84 KB chunk forward; low priority
+  keeps the chain-depth fix, 3 → 2, without the regression).
 - **RESOLVED 2026-09-26 by Task 9.3 — the OG image is a build-time PNG.** Original: **the OG image
   is still an SVG**, which Twitter/X, Facebook, LinkedIn and Slack do not render, so the share card
   currently shows nowhere. Pre-existing; spec §10 already schedules a build-time `sharp` raster.
@@ -1634,13 +1680,23 @@ decision was made; this section records *what it is*.
   curve's real extent, and Phase 6 already owns that — settle both together: derive the gutter from
   the curve's measured minimum `x`, and decide whether the line dims behind content (§7.3 already
   does this at phone width) or content routes around it.
-- **The JS budget has been measured with two blind spots all along.** The hero island is inlined
-  into `index.html` rather than emitted as a chunk, so a chunk-only sum misses it; and
-  `Gallery.astro`'s `is:inline` script (~1.1 KB raw) was never counted in any phase figure (it
-  left with `Gallery.astro` in Task 7.2, so the page now has no `is:inline` script at all).
-  Deltas between phases are still sound because the omission is consistent, but the **absolute**
-  number understates what ships. Phase 9 must measure every script the page actually loads —
-  external chunks, module-inlined scripts and `is:inline` blocks — not just `_astro/*.js`.
+- **RESOLVED 2026-09-26 by Task 9.4 — `npm run budget` measures every script, not just
+  `_astro/*.js`.** Original: **The JS budget has been measured with two blind spots all along.**
+  The hero island is inlined into `index.html` rather than emitted as a chunk, so a chunk-only
+  sum misses it; and `Gallery.astro`'s `is:inline` script (~1.1 KB raw) was never counted in any
+  phase figure (it left with `Gallery.astro` in Task 7.2, so the page now has no `is:inline`
+  script at all). Deltas between phases are still sound because the omission is consistent, but
+  the **absolute** number understates what ships. Phase 9 must measure every script the page
+  actually loads — external chunks, module-inlined scripts and `is:inline` blocks — not just
+  `_astro/*.js`. Now: `scripts/budget.mjs` (`npm run budget`) parses `pageScripts()` off the
+  built HTML itself — every `<script type="module" src>`, `<link rel="modulepreload">`, and every
+  inline executable `<script>` body, whatever page structure produced them — then walks each
+  external file's static import closure and gzips everything, inline bodies included. No blind
+  spot is possible by construction: it does not know "chunk" from "inline", only "script the page
+  runs". Reconciled exactly against the existing 61,540-byte figure (Task 9.2/9.3's manual
+  `zlib.gzipSync` sum) before any Task 9.4 code change — no gap to explain, confirming the manual
+  sums were already counting the hero island's inline script correctly by hand; the blind spot
+  was in *not having a script that does this automatically*, which is now fixed.
 - **`mountHeroClock()` is not idempotent.** Each call adds a `visibilitychange` listener and starts
   a `setTimeout` chain nothing cancels. Nothing re-mounts it today, but `scroll.ts` is deliberately
   written to survive an Astro view transition re-mounting it, so the codebase anticipates them. If
@@ -1742,10 +1798,16 @@ before then.
   the resume transcript on both sides — it inserts RxJS into the expected list at the right
   slot, and a second test fails if RxJS ever appears in the resume itself, so the exception
   retires on its own the day Noel adds it there.
-- **The shared `follow` helper is its own 282-byte chunk and one more request.** Rollup splits it
-  because its importers (Ring, Stack) differ from `tip`'s. Duplicating the wiring instead measured
-  59,821 gzip, 100 bytes less, with no extra request. Fold it into the `tip` chunk with a
-  `manualChunks` rule in the Phase 9 chunking pass, alongside the missing `modulepreload`.
+- **RESOLVED 2026-09-26 by Task 9.4 — folded into `tip`.** Original: **The shared `follow` helper
+  is its own 282-byte chunk and one more request.** Rollup splits it because its importers (Ring,
+  Stack) differ from `tip`'s. Duplicating the wiring instead measured 59,821 gzip, 100 bytes less,
+  with no extra request. Fold it into the `tip` chunk with a `manualChunks` rule in the Phase 9
+  chunking pass, alongside the missing `modulepreload`. Now: `vite.build.rollupOptions.output.
+  manualChunks` in `astro.config.mjs` matches `/src/lib/signal/(?:follow|tip)\.ts$` into one `tip`
+  chunk. Measured: 489 bytes gzip merged against 262 + 334 = 596 bytes apart, and the page total
+  drops 61,540 → 61,370 (−170, more than the merge alone accounts for — every other entry chunk
+  lost a byte or two of Rollup wrapper/boilerplate, the same effect Task 9.2 saw removing
+  `/dev/signal` from the module graph), with one fewer request.
 
 ### Opened by Task 7.2 — 2026-09-25
 
