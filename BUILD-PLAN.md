@@ -68,7 +68,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 5 | Sections 01–02 — Hero, Nine Years | **complete** | Tasks 5.1–5.3. First two islands; Stats.astro retired into NineYears |
 | 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2, reviewed clean, no fix round. Split drawn as a track the curve is pinned to; Gallery retired |
-| 8 | Sections 05–06 — Stack, Contact | **in progress** | Task 8.1 built: About + Marquee retired, the Stack's nodes sit on the weave. Task 8.2 (Contact) next |
+| 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired, the Stack's nodes sit on the weave; Contact's form works with JS off, and the line ends in a final emission over the footer's bar |
 | **9** | **SHIPPABLE — 2D site complete** | not started | **Real finish line. Deploy here.** |
 | 10 | WebGL — gate + signal tube | not started | |
 | 11 | WebGL — particle portrait | not started | |
@@ -983,8 +983,9 @@ dependency.
 
 Headline: **"Nothing happens until you subscribe."**
 
-**Verification:** form submits to Formspree via `PUBLIC_FORMSPREE_ENDPOINT` and falls back
-to `mailto:` when unset. Native constraint validation, errors announced to screen readers,
+**Verification:** form submits to Formspree via `PUBLIC_FORMSPREE_ENDPOINT`, else the live
+default, and falls back to `mailto:` only when neither is a usable Formspree URL (Decisions,
+2026-09-26 — falling back whenever the variable is unset would turn the live form off). Native constraint validation, errors announced to screen readers,
 no React in the built output (`grep -r "react" dist/` is clean).
 
 **Task-level expansion (added 2026-09-26).** Briefs are in `.superpowers/sdd/BUILD-PLAN/`.
@@ -1014,13 +1015,24 @@ gzip. CLS 0.
 
 ### Task 8.2 — Section 06: `Contact.astro` + `src/islands/contact-form.ts`
 
-- [ ] `Contact.astro` replaces the interim `#contact` block in `index.astro` and takes over
+- [x] `Contact.astro` replaces the interim `#contact` block in `index.astro` and takes over
   `data-signal-section="contact"`. Headline "Nothing happens until you subscribe."
-- [ ] The form posts natively to Formspree, so it works with JS off. The island adds
+- [x] The form posts natively to Formspree, so it works with JS off. The island adds
   constraint messages, announced errors and an in-place sent/failed state. The endpoint is
   `PUBLIC_FORMSPREE_ENDPOINT`, else the live default; if neither is a usable URL, `mailto:`.
-- [ ] Email, socials, CV, and one line on freelance availability linking to `/websites`.
-- [ ] The final emission on the line, drawn as the tip reaches it, above the footer's `|`.
+- [x] Email, socials, CV, and one line on freelance availability linking to `/websites`.
+- [x] The final emission on the line, drawn as the tip reaches it, above the footer's `|`.
+
+Measured: every seam Δ 0 at 1024, 1440, 1920, 2560 and 375; `#contact` still opens at 7235.36 at
+1440 (the Stack above it is unchanged), and `/` grows 7990 → 8816px. The emission sits on the
+drawn curve (|Δx| ≤ 0.004px) at all five widths and lands 392–396px above the footer's bar on
+desktop (526px at 375), 17–37px left of it (6px at 375). It fills over 64px of tip travel with
+30–31 intermediate states, and under reduced motion it is placed and lit with one state. The
+line runs behind the form's opaque panel and, dimmed, across the head. Worst chord in the contact
+span 0.26px at 1440 (whole curve 0.66px, unchanged). CLS 0. The form was exercised over CDP
+interception only — 200, 422, 500 and a network failure; nothing reached Formspree. Shipped JS on
+`/` **61,790 gzip (+1,869)**: the Contact chunk 1,873. 75.4% of the 80 KB budget. `index.html`
+17,179 → 17,913 gzip. No `react-dom`, `jsx-runtime`, `react-hook-form` or `zod` in `dist/`.
 
 ## PHASE 9 — SHIPPABLE: 2D Site Complete
 
@@ -1312,6 +1324,18 @@ decision was made; this section records *what it is*.
   a rule with one filled mark is the marble notation `──●──`, an emission rather than a node
   waiting for a line. With JS, the island moves it onto the curve.
 
+- **2026-09-26 (claude-code, Task 8.2)** — **Contact: field names, one opaque panel, and an
+  emission served centred.** (1) Formspree receives `name`, `email` (its reply-to), `message`
+  and `lookingFor` (`role` / `project`, optional), the names the old React form sent, so new
+  submissions fill the same columns as old ones; `_gotcha` is the honeypot. (2) The form sits on
+  an opaque `--ground-lift` panel, like the ring's cards, so the contact span runs behind it
+  rather than under the fields' text, and dims across the head and the direct routes as
+  everywhere else. (3) The final emission's track is full-bleed and serves the node lit at the
+  page's centre, directly over the footer's bar, so with JS off the page still ends `●` then `|`;
+  the island moves it onto the curve and fills it with the tip, the Stack's pattern. (4) The
+  emission lives in its own island (`contact.ts`), so `/websites` can mount `contact-form.ts`
+  without it. The island reads only the served `action`: the server alone decides the endpoint.
+
 ## Known Gaps
 
 - No test framework existed before Phase 0. Vitest covers pure modules only —
@@ -1471,6 +1495,21 @@ decision was made; this section records *what it is*.
   on-concept, but it was inherited rather than decided, and the same `·` renders round in the mono
   voice (the status rail, the `01 · of('Noel Sebastian')` caption). Noel's call.
 
+### Opened by Task 8.2 — 2026-09-26
+
+- **The final emission and the `|` are 392–396px apart on desktop, 526px at 375, and the line
+  runs on between them.** The curve ends at the document's last pixel, where the footer's bar is,
+  and the emission sits in Contact above the footer, so the whole footer lies between the two.
+  They read as one sequence — one mark on the line, then the bar it ends in, both near the centre
+  (the emission 17–37px left of the bar, where the curve is still settling) — but §6's
+  "terminates in a final emission" is looser than it could be. Tighter would mean the emission in
+  the footer, or a shorter footer; Phase 9's polish pass or Noel.
+- **The success state is a status line.** On a 200 the form resets and the status reads "Sent.
+  Thank you — I will reply by email." Nothing else changes. That is enough for a single-purpose
+  form; a larger confirmation would be island-rendered content, so it was not built.
+- **JS off lands on Formspree's own confirmation page.** Acceptable per the brief; Formspree's
+  `_next` redirect back to the site needs a paid plan.
+
 ### Opened by Task 8.1 — 2026-09-26
 
 - **The Stack's nodes step right, then back once, rather than left and right.** The weave's
@@ -1511,8 +1550,8 @@ decision was made; this section records *what it is*.
 
 ### Opened by Phase 6 — 2026-09-25
 
-- **AMENDED 2026-09-26 by Task 8.1 — one interim anchor left: `contact` → `#contact`, which Task 8.2
-  moves onto `Contact.astro`. `stack` is on `Stack.astro` (`#stack`).** Original finding:
+- **RESOLVED 2026-09-26 by Task 8.2 — `contact` is on `Contact.astro` (`#contact`), so no interim
+  anchor is left. Amended by Task 8.1: `stack` is on `Stack.astro` (`#stack`).** Original finding:
   **Two sections are anchored to interim stand-ins** (the ring's moved onto `#ring` in Task 7.2):
   `stack` → `#skills`, `contact` → `#contact`, each marked `data-signal-section` and commented as
   interim. Phase 8 moves the attribute onto the rebuilt sections. A missing anchor falls back to
@@ -1534,6 +1573,8 @@ decision was made; this section records *what it is*.
 - **Minor: the scatter's lowest density level fills nearly the whole plot box**, since one point
   lifts a cell to level 1. It reads as a tinted panel rather than empty ground around the clusters.
   Cosmetic: a threshold or a log scale in `quantiseLevels`.
-- **The Phase 4 minor about footer text crossing the line** is now covered by the dim rule (the
-  line is dim anywhere it does not clear content). Re-check it when Phase 8 rebuilds the footer
-  approach.
+- **Re-checked by Task 8.2 — the Phase 4 minor about footer text crossing the line** is covered
+  by the dim rule (the line is dim anywhere it does not clear content). Measured with Contact
+  built: at 1440, 1920 and 2560 the line crosses no footer text; at 1024 it crosses the colophon;
+  at 375 it crosses the name, tagline, copyright line, "Medium" and the colophon. All at 0.15, so
+  contrast holds.

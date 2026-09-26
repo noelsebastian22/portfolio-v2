@@ -1,0 +1,511 @@
+---
+/**
+ * Section 06 — Contact, `subscribe()`. Spec §4 and §9.06.
+ *
+ * The terminal operator: nothing runs until you subscribe, so the headline is the CTA. The
+ * form, then the direct routes (email, CV, socials), then one line for freelance clients,
+ * which inherits the retired About's small-business sentence and points at `/websites`.
+ *
+ * **The form works with JS off.** Its `action` is resolved here, at build time:
+ * `PUBLIC_FORMSPREE_ENDPOINT`, else the live form, and `mailto:` only when neither is a
+ * usable Formspree URL (Decisions, 2026-09-26). A native POST lands on Formspree's own
+ * confirmation page; the browser shows its own constraint messages. `contact-form.ts` adds
+ * inline messages and an in-place sent/failed state on top.
+ *
+ * Field names are what Formspree records: `name`, `email` (Formspree's reply-to), `message`
+ * and `lookingFor` — the names the old React form sent, so new submissions land in the same
+ * columns as old ones. `_gotcha` is Formspree's honeypot.
+ *
+ * **The line.** The contact span settles through the middle of the page, so it runs behind
+ * the form's panel (opaque `--ground-lift`, like the ring's cards) and, dimmed, across the
+ * head and the direct routes. Below the content it reaches the final emission, which
+ * `contact.ts` places on the curve and fills as the tip arrives; the footer's `|` closes it.
+ * Served lit and centred over that bar, so with JS off the page still ends `●` then `|`.
+ *
+ * Layout is the content box every section from 03 down shares (see SelectedWork.astro).
+ */
+import { socials } from '../data/content';
+import { CONTACT_EMAIL, resolveFormEndpoint } from '../lib/contact-form';
+
+const endpoint = resolveFormEndpoint(import.meta.env.PUBLIC_FORMSPREE_ENDPOINT);
+// A mailto: form with JS off posts its fields as the email body; plain text reads.
+const enctype = endpoint.startsWith('mailto:') ? 'text/plain' : undefined;
+---
+
+<section class="contact" id="contact" data-signal-section="contact">
+  <div class="contact__inner">
+    <header class="contact__head">
+      <p class="contact__marker">06 — subscribe()</p>
+      <h2 class="contact__title">Nothing happens until you <span class="contact__verb">subscribe.</span></h2>
+      <p class="contact__lede">
+        Hiring for a role, or planning a project? Tell me which, what it involves and when it
+        starts.
+      </p>
+    </header>
+
+    <div class="contact__body">
+      <form class="form" data-contact-form method="post" action={endpoint} enctype={enctype}>
+        <fieldset class="form__choice">
+          <legend class="form__label">I'm looking for (optional)</legend>
+          <div class="form__options">
+            <label class="form__option">
+              <input type="radio" name="lookingFor" value="role" />
+              <span>A role</span>
+            </label>
+            <label class="form__option">
+              <input type="radio" name="lookingFor" value="project" />
+              <span>A project</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="form__pair">
+          <div class="form__field">
+            <label class="form__label" for="contact-name">Name</label>
+            <input
+              class="form__input"
+              id="contact-name"
+              name="name"
+              type="text"
+              required
+              minlength="2"
+              autocomplete="name"
+            />
+            <p class="form__error" id="contact-name-error" data-error-for="name"></p>
+          </div>
+          <div class="form__field">
+            <label class="form__label" for="contact-email">Email</label>
+            <input
+              class="form__input"
+              id="contact-email"
+              name="email"
+              type="email"
+              required
+              autocomplete="email"
+              spellcheck="false"
+            />
+            <p class="form__error" id="contact-email-error" data-error-for="email"></p>
+          </div>
+        </div>
+
+        <div class="form__field">
+          <label class="form__label" for="contact-message">Message</label>
+          <textarea
+            class="form__input form__input--area"
+            id="contact-message"
+            name="message"
+            rows="6"
+            required
+            minlength="10"></textarea>
+          <p class="form__error" id="contact-message-error" data-error-for="message"></p>
+        </div>
+
+        {/* Formspree's honeypot. display: none takes it out of sight, out of the tab order
+            and out of the accessibility tree; it is still submitted, so a bot that fills
+            every input fills this one too. */}
+        <div class="form__gotcha">
+          <label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" /></label>
+        </div>
+
+        <div class="form__foot">
+          <button class="form__submit" type="submit">Send message</button>
+          {/* Always rendered, so it is already in the accessibility tree when the island
+              first writes to it; a live region that appears with its text is often missed. */}
+          <p class="form__status" role="status" data-form-status></p>
+        </div>
+      </form>
+
+      <div class="contact__direct">
+        <h3 class="contact__direct-title">Or directly</h3>
+        <dl class="contact__routes">
+          <div class="contact__route">
+            <dt>Email</dt>
+            <dd><a class="contact__link" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></dd>
+          </div>
+          <div class="contact__route">
+            <dt>CV</dt>
+            <dd><a class="contact__link" href="/noel-sebastian.pdf" download>Download the PDF</a></dd>
+          </div>
+          <div class="contact__route">
+            <dt>Elsewhere</dt>
+            <dd>
+              <ul class="contact__socials" role="list">
+                {socials.map((social) => (
+                  <li>
+                    <a class="contact__link" href={social.href} target="_blank" rel="noopener noreferrer">
+                      {social.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        </dl>
+        <p class="contact__freelance">
+          Need a website for your business? <a class="contact__link" href="/websites">I build those too.</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {/* The final emission. Full-bleed, so its served centre is the page's centre — where
+      the curve ends and the footer's bar sits. Decorative: the section's words carry
+      everything it says. */}
+  <div class="contact__emission" data-final-emission aria-hidden="true">
+    <span class="final-emission" data-final-emission-node>
+      <span class="final-emission__fill" data-final-emission-fill></span>
+    </span>
+  </div>
+</section>
+
+<style>
+  .contact {
+    --emission: var(--s-4);
+    --emission-ring: 2px;
+    --field-border: var(--type-dim);
+
+    padding-top: var(--section-y);
+    padding-bottom: var(--s-8);
+  }
+
+  /* The content box the signal's gutter probe assumes — see SelectedWork.astro. */
+  .contact__inner {
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--s-5);
+    padding-left: calc(var(--s-5) + var(--signal-gutter));
+  }
+
+  /* ── Section head — the house voice, as SelectedWork sets it ────────────────────── */
+
+  .contact__marker,
+  .contact__lede {
+    margin: 0;
+  }
+
+  /* Not uppercased: `subscribe()` is an operator. */
+  .contact__marker {
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .contact__title {
+    max-width: 18ch;
+    margin: var(--s-4) 0;
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: clamp(32px, 4.2vw, 62px);
+    font-stretch: 125%;
+    font-weight: 700;
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+
+  /* The verb is the call to action, and large text: --signal is allowed (§7.1). */
+  .contact__verb {
+    color: var(--signal);
+  }
+
+  .contact__lede {
+    max-width: 52ch;
+    color: var(--type-dim);
+    font-size: clamp(15px, 1.15vw, 17px);
+    line-height: 1.6;
+  }
+
+  /* ── Form beside the direct routes ──────────────────────────────────────────────── */
+
+  .contact__body {
+    display: grid;
+    gap: var(--s-8);
+    margin-top: clamp(var(--s-7), 5vw, var(--s-9));
+  }
+
+  @media (min-width: 960px) {
+    .contact__body {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+      gap: var(--s-9);
+      align-items: start;
+    }
+  }
+
+  /* ── The form ───────────────────────────────────────────────────────────────────── */
+
+  /* Opaque, like the ring's cards: the contact span runs through here, and passes behind
+     the panel rather than under the fields' text. */
+  .form {
+    /* Native controls (the radios, the textarea's resize grip) drawn for a dark ground
+       rather than as white discs. */
+    color-scheme: dark;
+
+    display: grid;
+    gap: var(--s-5);
+    padding: var(--s-5);
+    border: 1px solid color-mix(in srgb, var(--type) 10%, transparent);
+    border-radius: var(--radius);
+    background: var(--ground-lift);
+  }
+
+  @media (min-width: 600px) {
+    .form {
+      padding: var(--s-6);
+    }
+  }
+
+  .form__label {
+    display: block;
+    margin-bottom: var(--s-2);
+    padding: 0;
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .form__choice {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .form__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-6);
+  }
+
+  .form__option {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-3);
+    min-height: var(--s-7);
+    color: var(--type);
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  /* Native radios, tinted: the dot is a graphic, so --signal is allowed. */
+  .form__option input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--signal);
+  }
+
+  .form__pair {
+    display: grid;
+    gap: var(--s-5);
+  }
+
+  @media (min-width: 600px) {
+    .form__pair {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .form__field {
+    min-width: 0;
+  }
+
+  /* --type-dim edges: 5.05:1 on --ground-lift, so the field's boundary clears the 3:1
+     non-text minimum on its own. */
+  .form__input {
+    display: block;
+    width: 100%;
+    padding: var(--s-3) var(--s-4);
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius);
+    background: var(--ground);
+    color: var(--type);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .form__input:hover {
+    --field-border: var(--type);
+  }
+
+  .form__input--area {
+    resize: vertical;
+  }
+
+  /* The edge carries the invalid state as a graphic; the message under it carries it in
+     words (§13). */
+  .form__input[aria-invalid='true'] {
+    --field-border: var(--signal);
+
+    box-shadow: inset 3px 0 0 var(--signal);
+  }
+
+  .form__error {
+    margin: var(--s-2) 0 0;
+    color: var(--type);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .form__error:empty {
+    display: none;
+  }
+
+  .form__gotcha {
+    display: none;
+  }
+
+  .form__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-4) var(--s-5);
+  }
+
+  /* The section's CTA — the one --signal fill here, like the hero's primary. */
+  .form__submit {
+    padding: var(--s-4) var(--s-6);
+    border: 0;
+    border-radius: var(--radius);
+    background: var(--signal);
+    color: var(--ground);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .form__submit:hover {
+    background: var(--type);
+  }
+
+  /* The global ring is --signal; on a --signal button only its offset would read. */
+  .form__submit:focus-visible {
+    outline-color: var(--type);
+  }
+
+  .form__submit[aria-disabled='true'] {
+    cursor: progress;
+  }
+
+  .form__status {
+    flex: 1 1 16rem;
+    margin: 0;
+    color: var(--type);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── The direct routes ──────────────────────────────────────────────────────────── */
+
+  .contact__direct-title {
+    margin: 0 0 var(--s-5);
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+  }
+
+  .contact__routes {
+    display: grid;
+    gap: var(--s-5);
+    margin: 0;
+  }
+
+  .contact__route dt {
+    margin-bottom: var(--s-1);
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .contact__route dd {
+    margin: 0;
+    font-size: clamp(16px, 1.2vw, 18px);
+    line-height: 1.6;
+  }
+
+  .contact__socials {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-1) var(--s-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* The failure message's link is written by the island, so it carries no scoped
+     attribute: reached with :global, styled as every other link here. */
+  .contact__link,
+  .form__status :global(a) {
+    color: var(--type);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--type) 35%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+    transition: text-decoration-color 0.2s;
+  }
+
+  .contact__link:hover,
+  .form__status :global(a:hover) {
+    text-decoration-color: currentColor;
+  }
+
+  .contact__freelance {
+    margin: var(--s-7) 0 0;
+    padding-top: var(--s-5);
+    border-top: 1px solid color-mix(in srgb, var(--type) 10%, transparent);
+    color: var(--type-dim);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── The final emission ─────────────────────────────────────────────────────────── */
+
+  /* A track with no rule of its own: only the node shows, on the line. */
+  .contact__emission {
+    position: relative;
+    height: var(--emission);
+    margin-top: var(--s-10);
+  }
+
+  /* Served centred and lit. `--ground` inside the ring, so an unlit node reads as an
+     outline the line runs into. */
+  .final-emission {
+    position: absolute;
+    top: 0;
+    left: calc(50% - var(--emission) / 2);
+    width: var(--emission);
+    height: var(--emission);
+    border: var(--emission-ring) solid var(--signal);
+    border-radius: 50%;
+    background: var(--ground);
+  }
+
+  .final-emission__fill {
+    position: absolute;
+    inset: calc(var(--emission-ring) * -1);
+    border-radius: 50%;
+    background: var(--signal);
+  }
+
+  /* Written by script per tip move, so never transitioned (see Stack.astro). */
+  .final-emission,
+  .final-emission__fill {
+    transition-property: none;
+  }
+</style>
+
+<script>
+  import { mountContactForms } from '../islands/contact-form';
+  import { mountContactEmission } from '../islands/contact';
+
+  mountContactForms();
+  mountContactEmission();
+</script>

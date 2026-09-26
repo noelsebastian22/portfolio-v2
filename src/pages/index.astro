@@ -6,6 +6,7 @@ import NineYears from '../components/NineYears.astro';
 import SelectedWork from '../components/SelectedWork.astro';
 import Ring from '../components/Ring.astro';
 import Stack from '../components/Stack.astro';
+import Contact from '../components/Contact.astro';
 import Footer from '../components/Footer.astro';
 ---
 
@@ -18,33 +19,7 @@ import Footer from '../components/Footer.astro';
     <SelectedWork />
     <Ring />
     <Stack />
-
-    <!-- CONTACT -->
-    {/* Interim signal anchor for the `contact` span: Phase 8 replaces this section with Contact.astro, which takes the attribute over. */}
-    <section
-      id="contact"
-      data-signal-section="contact"
-      style="padding-top:clamp(72px,9vw,130px);padding-bottom:clamp(72px,9vw,130px)"
-    >
-      <div>
-        <div>08 — Let's talk</div>
-        <h2 style="font-size:clamp(38px,6vw,80px);margin:0">
-          Interested in working together?
-        </h2>
-      </div>
-      <p style="margin:0 auto 48px">
-        Hiring for a role or planning a project — tell me which, and I'll get back to you. Or email
-        me directly at{' '}
-        <a href="mailto:noel@noel-sebastian.com">
-          noel@noel-sebastian.com
-        </a>.
-      </p>
-
-      <div>
-        <!-- Contact form rebuilt in Phase 8 -->
-      </div>
-    </section>
-
+    <Contact />
     </main>
     <Footer />
   </div>

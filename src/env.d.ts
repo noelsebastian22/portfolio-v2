@@ -2,7 +2,8 @@
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
-  readonly PUBLIC_FORMSPREE_ENDPOINT: string;
+  /** Optional: unset, the live form ships (see src/lib/contact-form.ts). */
+  readonly PUBLIC_FORMSPREE_ENDPOINT?: string;
 }
 
 interface ImportMeta {
