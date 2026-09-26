@@ -10,12 +10,22 @@
  * Everything else in the rail is server-rendered text. This island fills numerals into
  * a slot that already holds a word of the same width, so the page reads complete with
  * JavaScript off and nothing shifts when the numerals arrive.
+ *
+ * `mountHeroClock()` is idempotent: nothing re-mounts it today, but a module-level stop
+ * function lets a second call cancel the first one's timer and listener rather than
+ * leaking one of each, so it survives a future Astro view transition re-mount for free.
  */
 
 /** The rail's clock slot, server-rendered with its timezone on it. */
 const CLOCK_SELECTOR = '[data-hero-clock]';
 
+/** The running clock's teardown, or `null` between mounts — see the module comment. */
+let stopClock: (() => void) | null = null;
+
 export function mountHeroClock(): void {
+  stopClock?.();
+  stopClock = null;
+
   const slot = document.querySelector<HTMLElement>(CLOCK_SELECTOR);
   if (!slot) return;
 
@@ -44,13 +54,15 @@ export function mountHeroClock(): void {
     slot!.textContent = clockFormat.format(new Date());
   }
 
+  let tickTimer: ReturnType<typeof setTimeout>;
+
   /**
    * Re-armed onto the next wall-clock second instead of `setInterval(fn, 1000)`. An
    * interval drifts against the clock it is displaying, and a drifted interval makes
    * the seconds digit visibly stall and then skip.
    */
   function scheduleTick(): void {
-    window.setTimeout(() => {
+    tickTimer = setTimeout(() => {
       paint();
       scheduleTick();
     }, 1000 - (Date.now() % 1000));
@@ -59,10 +71,16 @@ export function mountHeroClock(): void {
   // A backgrounded tab has its timers throttled to as little as once a minute, so the
   // first thing a returning reader would otherwise see is a stale reading presented as
   // the current one.
-  document.addEventListener('visibilitychange', () => {
+  function onVisibilityChange(): void {
     if (!document.hidden) paint();
-  });
+  }
+  document.addEventListener('visibilitychange', onVisibilityChange);
 
   paint();
   scheduleTick();
+
+  stopClock = () => {
+    clearTimeout(tickTimer);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+  };
 }

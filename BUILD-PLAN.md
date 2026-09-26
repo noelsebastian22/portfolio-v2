@@ -1105,8 +1105,14 @@ the reduced-motion opt-out: each opt-out is local and commented, which is enough
 - [x] `/dev/signal` deleted, and with it `createSvgSignal`'s `pageLayer` option, which only the
   harness turned off. The build reports 2 pages. See Known Gaps ("Closed by Task 9.2") for the
   full verification and the JS delta (61,500 gzip, −347 against 61,847).
-- [ ] `mountHeroClock()` is idempotent: a second call cancels the first one's timer and
-  listener.
+- [x] `mountHeroClock()` is idempotent: a second call cancels the first one's timer and
+  listener. Verified live (see Known Gaps, "Closed by Task 9.2"): three back-to-back mounts
+  leave exactly one live timer chain and one live listener running.
+
+Shipped JS on `/` after all four items: **61,540 gzip (−307 against the Task 9.1 baseline of
+61,847)** — the `/dev/signal`/`pageLayer` teardown (item 3) accounts for −347, and the hero
+clock's stop function (item 4) adds back +40 to the inline module script. See
+`task-9.2-report.md` for every script named.
 
 ### Task 9.3 — The OG image as a raster
 
@@ -1629,7 +1635,17 @@ decision was made; this section records *what it is*.
   a `setTimeout` chain nothing cancels. Nothing re-mounts it today, but `scroll.ts` is deliberately
   written to survive an Astro view transition re-mounting it, so the codebase anticipates them. If
   view transitions land (Phase 15 is the likely place), that is a leaked timer and listener per
-  navigation. Minor; fold into the final whole-branch review.
+  navigation. Minor; fold into the final whole-branch review. **Closed by Task 9.2:** a
+  module-level `stopClock` calls `stopClock?.()` at the top of `mountHeroClock()`, clearing the
+  pending timeout and removing the named `visibilitychange` listener before scheduling a new
+  chain. Verified live on the dev server (import through `/src/islands/hero.ts`, spying on
+  `setTimeout`/`clearTimeout`/`addEventListener`/`removeEventListener` against an isolated DOM,
+  the Astro dev 404 page, so nothing else on a real page confounds the count): three back-to-back
+  `mountHeroClock()` calls produce 3 `setTimeout` calls and 2 `clearTimeout` calls (each of the
+  2nd and 3rd mounts cancelling the previous), and 3 listener adds against 2 removes — net exactly
+  one live timer chain and one live listener. A further 3.2s real-time wait adds exactly 3 more
+  `setTimeout` calls (one re-arm per second, one chain) and zero more `clearTimeout` calls,
+  confirming only the single surviving chain keeps ticking.
 - **RESOLVED 2026-09-25: kept, see Decisions. Original finding:** **Archivo's middot is a square, and nothing chose that.** The H1's `·` separator renders as a
   filled square block at display size. Verified it is genuinely Archivo's U+00B7 — the glyph is in
   the font (`document.fonts.check` true, 35.95px advance at 86px) and differs from both serif's and
