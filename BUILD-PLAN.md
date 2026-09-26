@@ -1098,7 +1098,10 @@ the reduced-motion opt-out: each opt-out is local and commented, which is enough
   (two lines at 375, one at 1440), no glyph sits on the node, and the node still lands on the
   curve — max Δ 0.005px at 1440, 0.004px at 375, independently re-measured by parsing the drawn
   `<path d>`, matching Task 8.1's own figures.
-- [ ] `.contact__title { text-wrap: balance }`, so "YOU" no longer sits alone at 375.
+- [x] `.contact__title { text-wrap: balance }`, so "YOU" no longer sits alone at 375. Checked at
+  375, 390 and 1440: at 375/390 the headline balances to four lines ("NOTHING" / "HAPPENS" /
+  "UNTIL YOU" / "SUBSCRIBE."), pairing YOU with UNTIL; at 1440 it still wraps to three lines,
+  just distributed more evenly than the unbalanced greedy wrap, with no orphan and no overflow.
 - [ ] `/dev/signal` deleted, and with it `createSvgSignal`'s `pageLayer` option, which only the
   harness turned off. The build reports 2 pages.
 - [ ] `mountHeroClock()` is idempotent: a second call cancels the first one's timer and

@@ -206,6 +206,11 @@ const enctype = endpoint.startsWith('mailto:') ? 'text/plain' : undefined;
     line-height: 0.96;
     letter-spacing: -0.02em;
     text-transform: uppercase;
+    /* At 375 the last line was "YOU" alone (Decisions, 2026-09-26). Chromium balances up
+       to a few lines, which covers this headline; Safari and Firefox both support the
+       property too, so the fallback below (the browser's ordinary greedy wrap) is unused
+       everywhere it matters in practice. */
+    text-wrap: balance;
   }
 
   /* The verb is the call to action, and large text: --signal is allowed (§7.1). */
