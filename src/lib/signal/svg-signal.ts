@@ -15,7 +15,7 @@
  * The curve is pinned to the page's sections: each `SECTION_SPANS` seam lands on the top of
  * the element carrying `data-signal-section="<id>"`, and the curve scales linearly between
  * them (see `anchors.ts`). A seam with no such element falls back to the whole-box linear
- * position, which is what a page with no sections — `/dev/signal` — gets throughout.
+ * position, which is what a page with no sections — `/websites` — gets throughout.
  *
  * No framework: the `<svg>` and `<path>` are built with `document.createElementNS` and
  * torn down explicitly in `destroy()`. Geometry is sampled once from `path.ts` at
@@ -48,28 +48,11 @@ import { publishSignalCurve, publishSignalTip } from './tip';
 // with the section islands that follow the line, so they re-measure on the same beat.
 import { RESIZE_DEBOUNCE_MS } from './draw';
 
-export interface SvgSignalOptions {
-  /**
-   * The mount is the page-height `#signal-layer` rather than an isolated box. On by
-   * default. It turns on the two behaviours that only mean anything against a page:
-   *
-   * - the dim rule — a page's text crosses the line, and full strength under text fails AA;
-   * - the playhead reveal (`playhead.ts`) — the tip follows the viewport, and its page `y`
-   *   is published through `tip.ts`.
-   *
-   * `/dev/signal` turns it off: its mount is a fixed box, there is no text to protect, a
-   * harness drawn at 15% cannot be debugged, and its `?t=` screenshots want the plain
-   * length-fraction reveal.
-   */
-  pageLayer?: boolean;
-}
-
 export interface SvgSignal {
   /**
    * Reveals the curve for `t`, where `t` is progress across the **whole document**,
-   * 0..1 — the value `onPageProgress` reports, not a section-local one. On the page layer
-   * the line is drawn down to the playhead (see `playhead.ts`); in an isolated mount, to
-   * the fraction `t` of its length.
+   * 0..1 — the value `onPageProgress` reports, not a section-local one. The line is
+   * drawn down to the playhead (see `playhead.ts`).
    */
   setProgress(t: number): void;
   destroy(): void;
@@ -163,9 +146,7 @@ const GUTTER_FROM_SECTION = 'work';
 
 let gradientCount = 0;
 
-export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = {}): SvgSignal {
-  const pageLayer = options.pageLayer ?? true;
-
+export function createSvgSignal(mount: HTMLElement): SvgSignal {
   // Deliberately not `reducedMotion()` from ../motion/scroll: that module imports gsap
   // and lenis at module scope, so importing it here would pull ~50 KB gzip into the 2D
   // fallback's own graph and couple it to the motion layer. A local matchMedia is the
@@ -181,13 +162,14 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   svg.style.width = '100%';
   svg.style.height = '100%';
   // The curve's first point lands on this box's top edge wherever the page has no hero
-  // anchor, and, on a page with no measured terminus (`/dev/signal`), its last point lands
-  // on the box's bottom edge too — a round cap is a disc centred on the point, so the UA
-  // stylesheet's `svg:root { overflow: hidden }` slices it in half wherever that happens.
-  // Verified by pixel: without this, paint starts or stops abruptly at the box's edge.
-  // Since Task 9.1 the real page's terminus (the footer's bar) sits well inside the box,
-  // clear of the bottom edge, but the rule stays: it costs nothing, and a hero-less page
-  // or the harness still put an end exactly on an edge.
+  // anchor (`/websites`), and, on a page with no measured terminus — one that renders no
+  // `[data-signal-terminus]` element — its last point lands on the box's bottom edge too —
+  // a round cap is a disc centred on the point, so the UA stylesheet's `svg:root {
+  // overflow: hidden }` slices it in half wherever that happens. Verified by pixel: without
+  // this, paint starts or stops abruptly at the box's edge. Since Task 9.1 the real page's
+  // terminus (the footer's bar) sits well inside the box, clear of the bottom edge, but the
+  // rule stays: it costs nothing, and a hero-less page or one without a footer bar still
+  // puts an end exactly on an edge.
   //
   // Safe because the mount is inset by half the stroke (see #signal-layer in
   // global.css): whatever overflows at either edge paints inside the document rather than
@@ -209,23 +191,20 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   // The dim rule's paint server and the probe that measures the gutter. userSpaceOnUse
   // with y1 0 and y2 the box height, so a stop's offset is simply its pixel y / height.
   const gradient = document.createElementNS(SVG_NS, 'linearGradient');
-  let gutterProbe: HTMLElement | undefined;
-  if (pageLayer) {
-    const defs = document.createElementNS(SVG_NS, 'defs');
-    const gradientId = `signal-strength-${++gradientCount}`;
-    gradient.id = gradientId;
-    gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
-    gradient.setAttribute('x1', '0');
-    gradient.setAttribute('x2', '0');
-    gradient.setAttribute('y1', '0');
-    defs.appendChild(gradient);
-    svg.insertBefore(defs, path);
-    path.style.stroke = `url(#${gradientId})`;
+  const defs = document.createElementNS(SVG_NS, 'defs');
+  const gradientId = `signal-strength-${++gradientCount}`;
+  gradient.id = gradientId;
+  gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
+  gradient.setAttribute('x1', '0');
+  gradient.setAttribute('x2', '0');
+  gradient.setAttribute('y1', '0');
+  defs.appendChild(gradient);
+  svg.insertBefore(defs, path);
+  path.style.stroke = `url(#${gradientId})`;
 
-    gutterProbe = document.createElement('div');
-    gutterProbe.className = 'signal-gutter-probe';
-    mount.appendChild(gutterProbe);
-  }
+  const gutterProbe = document.createElement('div');
+  gutterProbe.className = 'signal-gutter-probe';
+  mount.appendChild(gutterProbe);
 
   let currentT = 0;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -247,16 +226,11 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
     const total = lengthTable.length > 0 ? lengthTable[lengthTable.length - 1] : 0;
     if (total <= 0) return;
 
-    let drawn: number;
-    if (pageLayer) {
-      const playhead = playheadPageY(currentT, docHeight, viewportHeight) - boxTopInPage;
-      drawn = lengthAtY(pixelPoints, lengthTable, playhead);
-      const first = pixelPoints[0].y;
-      const last = pixelPoints[pixelPoints.length - 1].y;
-      publishSignalTip(boxTopInPage + Math.min(last, Math.max(first, playhead)));
-    } else {
-      drawn = currentT * total;
-    }
+    const playhead = playheadPageY(currentT, docHeight, viewportHeight) - boxTopInPage;
+    const drawn = lengthAtY(pixelPoints, lengthTable, playhead);
+    const first = pixelPoints[0].y;
+    const last = pixelPoints[pixelPoints.length - 1].y;
+    publishSignalTip(boxTopInPage + Math.min(last, Math.max(first, playhead)));
 
     if (drawn >= total) {
       path.style.strokeDasharray = 'none';
@@ -282,9 +256,8 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
 
   /**
    * The footer's completion bar's centre line, in the `<svg>`'s own coordinates — the
-   * curve's terminus (Footer.astro). `null` on a page with no such element (`/dev/signal`),
-   * which leaves `resolveSeamPixels` to fall back to the box's bottom edge exactly as
-   * before.
+   * curve's terminus (Footer.astro). `null` on a page that renders no such element, which
+   * leaves `resolveSeamPixels` to fall back to the box's bottom edge exactly as before.
    */
   function measureTerminus(): number | null {
     const bar = document.querySelector('[data-signal-terminus]');
@@ -315,7 +288,7 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
    * definition of it. `null` when the page has no section that reserves one.
    */
   function measureGutter(gutterTop: number | null): GutterRegion | null {
-    if (!gutterProbe || gutterTop === null) return null;
+    if (gutterTop === null) return null;
     const probeStyle = getComputedStyle(gutterProbe);
     const probeLeft = gutterProbe.getBoundingClientRect().left - svg.getBoundingClientRect().left;
     return {
@@ -376,22 +349,18 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
     // The curve's page x at a page y, for the work section's branches (tip.ts). Published
     // on every re-measure, after the points it reads are final, so a listener that asks
     // straight away gets the line as it is now drawn.
-    if (pageLayer) {
-      publishSignalCurve(pageCurveLookup(pixelPoints, boxRect.left + window.scrollX, boxTopInPage));
-    }
+    publishSignalCurve(pageCurveLookup(pixelPoints, boxRect.left + window.scrollX, boxTopInPage));
 
     // Before the reduced-motion early return on purpose: dimming is contrast, not motion.
-    if (pageLayer) {
-      const gutterIndex = SECTION_SPANS.findIndex((span) => span.id === GUTTER_FROM_SECTION);
-      applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
-    }
+    const gutterIndex = SECTION_SPANS.findIndex((span) => span.id === GUTTER_FROM_SECTION);
+    applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
 
     if (reduceMotion) {
       // Fully drawn, permanently. No dasharray at all rather than a dasharray equal to
       // the length, so no length measurement can ever leave a sliver undrawn.
       path.style.strokeDasharray = 'none';
       path.style.strokeDashoffset = '0';
-      if (pageLayer) publishSignalTip(boxTopInPage + pixelPoints[pixelPoints.length - 1].y);
+      publishSignalTip(boxTopInPage + pixelPoints[pixelPoints.length - 1].y);
       return;
     }
 
@@ -413,7 +382,7 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
   resizeObserver.observe(svg);
   // The playhead also depends on the viewport's height, which can change without the
   // layer changing size at all (a browser's toolbar, a window dragged taller).
-  if (pageLayer) window.addEventListener('resize', scheduleRemeasure);
+  window.addEventListener('resize', scheduleRemeasure);
 
   // Draw synchronously on creation rather than waiting for the observer's first
   // (asynchronous) callback, so a caller that calls setProgress() immediately after
@@ -435,7 +404,7 @@ export function createSvgSignal(mount: HTMLElement, options: SvgSignalOptions = 
       resizeTimer = undefined;
     }
     svg.remove();
-    gutterProbe?.remove();
+    gutterProbe.remove();
   }
 
   return { setProgress, destroy };

@@ -1102,8 +1102,9 @@ the reduced-motion opt-out: each opt-out is local and commented, which is enough
   375, 390 and 1440: at 375/390 the headline balances to four lines ("NOTHING" / "HAPPENS" /
   "UNTIL YOU" / "SUBSCRIBE."), pairing YOU with UNTIL; at 1440 it still wraps to three lines,
   just distributed more evenly than the unbalanced greedy wrap, with no orphan and no overflow.
-- [ ] `/dev/signal` deleted, and with it `createSvgSignal`'s `pageLayer` option, which only the
-  harness turned off. The build reports 2 pages.
+- [x] `/dev/signal` deleted, and with it `createSvgSignal`'s `pageLayer` option, which only the
+  harness turned off. The build reports 2 pages. See Known Gaps ("Closed by Task 9.2") for the
+  full verification and the JS delta (61,500 gzip, −347 against 61,847).
 - [ ] `mountHeroClock()` is idempotent: a second call cancels the first one's timer and
   listener.
 
@@ -1472,8 +1473,26 @@ decision was made; this section records *what it is*.
   renderer — there is no real page to mount a section on until Phase 4 builds the shell.
   It accepts `?t=0..1` to set progress directly for screenshotting, and falls back to a
   raw scroll listener otherwise. Scaffolding: delete it before the Phase 9 ship.
+  **Closed by Task 9.2:** deleted, along with the now-empty `src/pages/dev/`.
 - **The `/dev/signal` harness (`src/pages/dev/signal.astro`) must be deleted before the Phase 9
   ship.** It is `noindex` but it is scaffolding, and it is why the build now reports 3 pages.
+  **Closed by Task 9.2:** deleted. `createSvgSignal`'s `pageLayer` option (which existed only
+  so the harness could turn off the dim rule, the playhead reveal and the tip publishing) went
+  with it — every `if (pageLayer)` branch is now unconditional page-layer behaviour, and the
+  isolated-mount length-fraction reveal in `applyReveal` is gone. Every comment naming the
+  harness or `/dev/signal` (`anchors.ts`, `svg-signal.ts`, `motion/scroll.ts`,
+  `tests/motion.test.ts`) now names the real case instead — a page with no hero anchor or no
+  section anchors (`/websites`) and, hypothetically, a page rendering no
+  `[data-signal-terminus]` element. The build now reports **2 pages**, and `dist/sitemap-0.xml`
+  lists only `/` and `/websites/`. Re-verified after the teardown, with a genuine wheel-driven
+  scroll through Lenis (a raw `window.scrollTo()` does not update GSAP's ScrollTrigger, which
+  only recalculates on Lenis's own `scroll` event — a test-methodology trap, not a code issue):
+  on both `/` and `/websites`, scrolled to the bottom, `strokeDasharray` is `'none'` (fully
+  drawn) and the curve's last point matches the footer bar's centre to within 0.00025px.
+  Reduced motion still draws the line fully at once with no scroll. Shipped JS on `/`:
+  **61,500 gzip (−347 against 61,847)** — folding `svg-signal.js` into the `BaseLayout` chunk
+  (no more separate request) plus small, deterministic shrinks across every other chunk from
+  Rollup's chunk-splitting graph having one fewer entry point to plan around.
 - **RESOLVED 2026-09-22 (was: decision owed before Phase 4) — the signal is one whole-curve,
   page-height layer.** `createSvgSignal`'s per-section API and `toSvgPath`'s global coordinate
   space were incompatible: `toSvgPath` maps the normalised curve over the *whole* box it is given

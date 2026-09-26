@@ -45,7 +45,7 @@ export const SEAM_CURVE_Y: readonly number[] = [
  * `sectionTops[i]` is the measured top of `SECTION_SPANS[i]`'s element, in the box's
  * coordinates, or `null` when the page has no such element. A missing anchor falls back to
  * the old whole-box linear position for that seam, so a page with no sections at all
- * (`/dev/signal`) draws exactly what it always drew.
+ * (`/websites`) draws exactly what it always drew.
  *
  * The curve's last knot is `terminus` when the page has one — the footer's completion bar
  * — measured the same way as a section top. Without one (or a non-finite measurement) it

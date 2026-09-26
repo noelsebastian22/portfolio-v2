@@ -73,8 +73,9 @@ export function progressFromScroll(
   innerHeight: number,
 ): number {
   const scrollableHeight = scrollHeight - innerHeight;
-  // A page no taller than the viewport — the /dev/signal harness before content loads —
-  // has nothing to scroll through. 0 rather than a division by zero or a negative ratio.
+  // A page no taller than the viewport — nothing has loaded yet, or the content is
+  // genuinely shorter than the screen — has nothing to scroll through. 0 rather than a
+  // division by zero or a negative ratio.
   if (scrollableHeight <= 0) return 0;
 
   const raw = scrollY / scrollableHeight;

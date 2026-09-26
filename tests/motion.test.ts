@@ -19,7 +19,8 @@ describe('progressFromScroll', () => {
   });
 
   it('is 0, not NaN or Infinity, when the page is no taller than the viewport', () => {
-    // The /dev/signal harness before content loads: scrollHeight === innerHeight.
+    // Nothing loaded yet, or the page is genuinely shorter than the screen: scrollHeight
+    // === innerHeight.
     expect(progressFromScroll(0, 800, 800)).toBe(0);
     expect(progressFromScroll(100, 800, 800)).toBe(0);
   });
