@@ -3,9 +3,10 @@
  * `|` completion bar into the footer"). The form's own behaviour is `contact-form.ts`,
  * which `/websites` will mount without any of this.
  *
- * The emission sits on a track below the section's content, at a `y` fixed by layout. As
- * served it is lit and centred, over the footer's bar, so with JS off (no line at all) the
- * page still ends `●` then `|`. This adds what Section 05's nodes get (`stack.ts`):
+ * The emission sits on a track below the section's content, at a `y` fixed by layout,
+ * directly above — not on — the footer's bar (72px centre to centre, Task 9.1). As served
+ * it is lit and centred, so with JS off (no line at all) the page still ends `●` then `|`,
+ * close together. This adds what Section 05's nodes get (`stack.ts`):
  *
  * 1. **It lands on the curve.** The node moves along its track to the drawn curve's `x` at
  *    the track's centre line (`signalXAtPageY`). `transform` only, re-placed whenever the

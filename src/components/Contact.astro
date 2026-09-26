@@ -19,8 +19,11 @@
  * **The line.** The contact span settles through the middle of the page, so it runs behind
  * the form's panel (opaque `--ground-lift`, like the ring's cards) and, dimmed, across the
  * head and the direct routes. Below the content it reaches the final emission, which
- * `contact.ts` places on the curve and fills as the tip arrives; the footer's `|` closes it.
- * Served lit and centred over that bar, so with JS off the page still ends `●` then `|`.
+ * `contact.ts` places on the curve and fills as the tip arrives, directly above the
+ * footer's `|` that closes it. The two sit `--emission`/2 + `--s-8` apart (72px) — close
+ * enough to read as one sequence, where before Task 9.1 moved the bar a whole footer's
+ * height sat between them. Served lit and centred over that bar, so with JS off the page
+ * still ends `●` then `|`.
  *
  * Layout is the content box every section from 03 down shares (see SelectedWork.astro).
  */
@@ -148,9 +151,10 @@ const enctype = endpoint.startsWith('mailto:') ? 'text/plain' : undefined;
     </div>
   </div>
 
-  {/* The final emission. Full-bleed, so its served centre is the page's centre — where
-      the curve ends and the footer's bar sits. Decorative: the section's words carry
-      everything it says. */}
+  {/* The final emission. Full-bleed, so its served centre is the page's centre, directly
+      above the footer's bar — the curve itself does not end here, it runs on another
+      72px to end at the bar (Task 9.1). Decorative: the section's words carry everything
+      it says. */}
   <div class="contact__emission" data-final-emission aria-hidden="true">
     <span class="final-emission" data-final-emission-node>
       <span class="final-emission__fill" data-final-emission-fill></span>
