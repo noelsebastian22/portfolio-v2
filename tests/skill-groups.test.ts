@@ -25,6 +25,24 @@ function resumeSkills(): { name: string; items: string[] }[] {
 const PROFICIENCY = /\s*\((Expert|Advanced|Intermediate|Beginner|Freelance)\)$/;
 
 /**
+ * The one exception to the mirror (Decisions, 2026-09-26): the site is written in RxJS, so
+ * the Stack names it, but the resume does not. Each entry goes in after `after` in its group.
+ */
+const SITE_ONLY_ITEMS = [{ group: 'Architecture', item: 'RxJS', after: 'Angular Signals' }] as const;
+
+/** A resume row as the Stack should show it: labels dropped, site-only items inserted. */
+function expectedItems(row: { name: string; items: string[] }): string[] {
+  const items = row.items.map((item) => item.replace(PROFICIENCY, ''));
+  for (const extra of SITE_ONLY_ITEMS) {
+    if (extra.group !== row.name) continue;
+    const anchor = items.indexOf(extra.after);
+    expect(anchor, `${extra.after} is not in ${row.name}`).toBeGreaterThanOrEqual(0);
+    items.splice(anchor + 1, 0, extra.item);
+  }
+  return items;
+}
+
+/**
  * RxJS's operators and creation functions (v7). A group's identifier composed in `pipe()`
  * must never shadow one: `core()` is a user-defined operator, `share()` would be a lie.
  */
@@ -62,10 +80,15 @@ describe('skillGroups', () => {
     expect(skillGroups.map((group) => group.name)).toEqual(resume.map((row) => row.name));
   });
 
-  it('carries every resume item, in order, with proficiency labels dropped', () => {
+  it('carries every resume item, in order, plus the site-only exceptions', () => {
     skillGroups.forEach((group, i) => {
-      expect(group.items).toEqual(resume[i].items.map((item) => item.replace(PROFICIENCY, '')));
+      expect(group.items).toEqual(expectedItems(resume[i]));
     });
+  });
+
+  it('retires an exception once the resume carries the item itself', () => {
+    const resumeItems = resume.flatMap((row) => row.items.map((item) => item.replace(PROFICIENCY, '')));
+    for (const extra of SITE_ONLY_ITEMS) expect(resumeItems).not.toContain(extra.item);
   });
 
   it('has no proficiency field and no proficiency label anywhere', () => {

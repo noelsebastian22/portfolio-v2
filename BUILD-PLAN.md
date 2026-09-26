@@ -1092,9 +1092,12 @@ the reduced-motion opt-out: each opt-out is local and commented, which is enough
 
 ### Task 9.2 — Rulings and teardown
 
-- [ ] RxJS goes into `architecture()` after Angular Signals. `tests/skill-groups.test.ts` keeps
+- [x] RxJS goes into `architecture()` after Angular Signals. `tests/skill-groups.test.ts` keeps
   the resume mirror and names RxJS as its one exception. It also fails if RxJS ever appears on
-  the resume, so the exception retires itself.
+  the resume, so the exception retires itself. Checked at 1440 and 375: the row wraps cleanly
+  (two lines at 375, one at 1440), no glyph sits on the node, and the node still lands on the
+  curve — max Δ 0.005px at 1440, 0.004px at 375, independently re-measured by parsing the drawn
+  `<path d>`, matching Task 8.1's own figures.
 - [ ] `.contact__title { text-wrap: balance }`, so "YOU" no longer sits alone at 375.
 - [ ] `/dev/signal` deleted, and with it `createSvgSignal`'s `pageLayer` option, which only the
   harness turned off. The build reports 2 pages.
@@ -1684,7 +1687,13 @@ before then.
 - **RxJS is not on the resume.** The site is built on RxJS operators, but neither the Skills
   table nor the experience lists RxJS (the old `skillGroups` and marquee did). The rule is that
   every Stack item traces to the resume, so it is not in the chain. Noel's call: add it to the
-  resume, and the test lets it into the chain.
+  resume, and the test lets it into the chain. **Resolved 2026-09-26 (Noel, Decisions):** the
+  resume and the PDF do not change; RxJS is the one documented exception. **Closed by Task 9.2:**
+  `content.ts`'s `architecture()` items gain `'RxJS'` after `'Angular Signals'`.
+  `tests/skill-groups.test.ts` names the exception (`SITE_ONLY_ITEMS`) and asserts it against
+  the resume transcript on both sides — it inserts RxJS into the expected list at the right
+  slot, and a second test fails if RxJS ever appears in the resume itself, so the exception
+  retires on its own the day Noel adds it there.
 - **The shared `follow` helper is its own 282-byte chunk and one more request.** Rollup splits it
   because its importers (Ring, Stack) differ from `tip`'s. Duplicating the wiring instead measured
   59,821 gzip, 100 bytes less, with no extra request. Fold it into the `tip` chunk with a

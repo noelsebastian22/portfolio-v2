@@ -62,7 +62,7 @@ export const skillGroups: SkillGroup[] = [
   {
     name: 'Architecture',
     op: 'architecture',
-    items: ['Nx Monorepos', 'Angular Signals', 'NgRx', 'NGXS', 'Micro-frontends'],
+    items: ['Nx Monorepos', 'Angular Signals', 'RxJS', 'NgRx', 'NGXS', 'Micro-frontends'],
   },
   {
     name: 'Testing',
