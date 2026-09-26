@@ -124,7 +124,11 @@ const srcset = (urls: Record<string, string>) =>
                 href={card.site}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-labelledby={`${card.titleId} ${card.hostId}`}
+                {/* Host first, title second: that is the visual reading order (the chrome
+                    bar sits above the frame, the title below it), and axe's
+                    label-content-name-mismatch flagged the reverse — the computed name
+                    read "title host" while the visible text reads "host … title". */}
+                aria-labelledby={`${card.hostId} ${card.titleId}`}
                 aria-describedby="ring-new-tab"
               >
                 <div class="card__chrome">
