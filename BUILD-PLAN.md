@@ -1074,18 +1074,21 @@ lowest-density fill. The ring's 9px drop at 375. The split meeting a dim line. A
 the reduced-motion opt-out: each opt-out is local and commented, which is enough. The
 `font-bricolage` strings and dead Tailwind on `/websites`, which is Phase 14's restyle.
 
-### Task 9.1 — The line ends above the footer
+### Task 9.1 — The line ends above the footer ✅ Done
 
-- [ ] `resolveSeamPixels(sectionTops, height, terminus?)`: a measured terminus replaces the
+- [x] `resolveSeamPixels(sectionTops, height, terminus?)`: a measured terminus replaces the
   box's bottom edge as the curve's last knot. Fallback seams scale to the terminus, not to the
   box, and no seam passes it. TDD in `tests/signal-anchors.test.ts`.
-- [ ] `Footer.astro`: the `|` bar moves from the footer's last pixel to its top edge, centred,
+- [x] `Footer.astro`: the `|` bar moves from the footer's last pixel to its top edge, centred,
   and carries `data-signal-terminus`. `svg-signal.ts` measures the bar's centre line and passes
   it in.
-- [ ] `Contact.astro`: the emission sits directly above the bar. Target: the emission's centre
-  is at most 96px from the bar's centre at every width, and it sits on the curve.
-- [ ] Comments and spec wording that place the terminus "at the document's bottom" are
-  corrected (`Footer.astro`, `anchors.ts`, `contact.ts`, the spec if it says so).
+- [x] `Contact.astro`: the emission sits directly above the bar. Target: the emission's centre
+  is at most 96px from the bar's centre at every width, and it sits on the curve. **Measured
+  72px at every width** (half `--emission` + `--s-8`), already under target from Step 2 alone —
+  no spacing token changed, only the comments describing the old ~400px gap.
+- [x] Comments and spec wording that place the terminus "at the document's bottom" are
+  corrected (`Footer.astro`, `anchors.ts`, `contact.ts`). The spec itself never said "document's
+  bottom" or "last pixel" (`grep -n -i` for both turned up nothing) — nothing to change there.
 
 ### Task 9.2 — Rulings and teardown
 
@@ -1647,6 +1650,21 @@ before then.
   "terminates in a final emission" is looser than it could be. Tighter would mean the emission in
   the footer, or a shorter footer; Phase 9's polish pass or Noel. **Resolved 2026-09-26 (Noel):**
   the bar moves to the top of the footer, under the emission, and the line ends there. Phase 9.
+  **Closed by Task 9.1:** `resolveSeamPixels` takes a measured terminus (the bar's centre line,
+  `Footer.astro`'s `[data-signal-terminus]`) in place of the box's bottom edge, and the bar
+  itself moved to be the footer's first child, centred on the footer's top hairline via a
+  margin calc that adds nothing to the footer's height. Measured at 1024/1440/1920/2560/375:
+  the curve's drawn last point lands on the bar's centre within 0.001px at every width, and the
+  emission-to-bar gap is a flat **72px** everywhere (well under the 96px target) purely as a
+  side effect of the bar's move — Contact.astro's spacing tokens were not touched. Verified live
+  with real-time CDP (not `--virtual-time-budget`): a font-swap forced by holding the two woff2
+  responses open (Fetch domain) shows the terminus tracking the bar through a 92px document-
+  height change at 1440, via the existing ResizeObserver on `#signal-layer` — no
+  `document.fonts.ready` hook was needed. A real resize while scrolled to the bottom keeps the
+  tip on the bar. JS-off screenshots at 1440 and 375, zoomed 4×, show the footer's 1px hairline
+  passing through the dead centre of the 4px bar at both widths. Shipped JS on `/` **61,847
+  gzip (+57 against 61,790)** — `measureTerminus()` alone, in `svg-signal.js`; every other
+  chunk byte-for-byte unchanged. 75.5% of the 80 KB budget, 20,073 bytes left.
 - **The success state is a status line.** On a 200 the form resets and the status reads "Sent.
   Thank you — I will reply by email." Nothing else changes. That is enough for a single-purpose
   form; a larger confirmation would be island-rendered content, so it was not built.
