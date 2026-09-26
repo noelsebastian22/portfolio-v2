@@ -69,38 +69,21 @@ const OUT_FILE = path.join(ROOT, 'public', 'og-image.png');
 const CARD = { width: 1200, height: 630 };
 
 /**
- * The signal glyph's box. K and SCALE name the favicon's own fit (favicon.svg: a 24-unit
- * box, 24 sample points, at its 32px overall size) so this card can state its relationship
- * to that fit instead of re-guessing numbers: same t-range (years + work, the curve's two
- * most legible gestures at small size), scaled up for a card glyph instead of a 16px
- * favicon. N follows SCALE for the same reason a raster gets scaled at constant DPI — more
- * sample points hold the same point-to-pixel density, so the curve stays exactly as smooth
- * relative to its own size, not smoother or coarser. STROKE follows it too, at the same
- * ratio as the favicon's stroke-width 3 at K=24.
- *
- * SCALE is 9, not the favicon-derived 11 the old og-image.svg used: that card's <text>
- * never actually set font-stretch, so the browser rendered "NOEL SEBASTIAN" at normal
- * width despite the "Expanded" name in its font-family list — narrower than the real cut.
- * This card renders the actual static Expanded ExtraBold outlines (the point of Step 1),
- * which run wider: the name reaches x≈931 at this size and tracking. SCALE 9 plus
- * originX 950 (up from the old card's 792) is the smallest/rightmost combination that
- * keeps the curve's rendered stroke clear of the name by ~20px in every row they share —
- * measured against the rendered PNG, not derived from the control points, because the
- * stroke's rounded joins bulge past the raw path in a way the sample points alone don't
- * predict.
+ * Layout is computed from these, not from pixels measured off a render: a font swap or a
+ * copy change must shrink the name or shrink the glyph, on its own, rather than silently
+ * re-crowding the card the way the previous hand-tuned position could.
  */
-const SIGNAL = {
-  tStart: 0.14,
-  tEnd: 0.54,
-  K: 24,
-  SCALE: 9,
-  originX: 950,
-  originY: 140,
-  opacity: 0.92,
-};
-SIGNAL.box = SIGNAL.K * SIGNAL.SCALE; // 216
-SIGNAL.points = SIGNAL.K * SIGNAL.SCALE; // 216 sample points: same K→points ratio as the favicon, scaled
-SIGNAL.stroke = 2 * SIGNAL.SCALE; // 18
+const MARGIN = 80; // left margin = right margin, both sides of the card
+const GLYPH_GAP = 64; // minimum clear space between the name's right edge and the glyph's box
+const GLYPH_BOX_MIN = 200; // smallest the signal glyph may render at and still read as a glyph
+const NAME_FONT_SIZE = 78; // preferred size (the old card's); shrinks only if the layout demands it
+const NAME_LETTER_SPACING_EM = -3 / 78; // the old card's tracking, as a fraction of its own size, so it scales with the font
+
+const NAME_Y = 268;
+const ROLE_Y = 326;
+const MONO_Y = 392;
+const DOMAIN_Y = 533;
+const BAR = { y: 500, width: 4, height: 44 };
 
 const rgb = ([r, g, b]) => `rgb(${r}, ${g}, ${b})`;
 
@@ -139,10 +122,11 @@ async function loadFont(relativePath) {
 }
 
 /**
- * One string, in one font, as a single SVG path's `d` — see the header comment for why
- * this walks glyphs by hand instead of asking opentype.js or Pango to lay the text out.
- * `letterSpacing` is added after every glyph including the last (nothing here ever needs
- * the exact trailing width), matching the tracking the hand-authored og-image.svg used.
+ * One string, in one font, as a single SVG path's `d`, plus the line's total advance width
+ * — see the header comment for why this walks glyphs by hand instead of asking opentype.js
+ * or Pango to lay the text out. `letterSpacing` (px, already scaled to this call's fontSize
+ * by the caller) is added after every glyph including the last, so `width` is exactly the
+ * space this line occupies from `x`, usable to lay out whatever sits next to it.
  */
 function buildTextPath(font, text, x, y, fontSize, letterSpacing = 0) {
   const scale = fontSize / font.unitsPerEm;
@@ -157,21 +141,66 @@ function buildTextPath(font, text, x, y, fontSize, letterSpacing = 0) {
     }
     cursor += advance;
   }
-  return d;
+  return { d, width: cursor - x };
+}
+
+/**
+ * The name's size and the glyph's box, solved together instead of picked: the name wants
+ * NAME_FONT_SIZE, the glyph wants at least GLYPH_BOX_MIN, and GLYPH_GAP must separate them
+ * inside the MARGIN..CARD.width-MARGIN span. Both advance widths and kerning scale linearly
+ * with fontSize (and letterSpacing is defined as a fraction of it, above), so the name's
+ * width at any size is exactly proportional to its width at NAME_FONT_SIZE — no search, one
+ * division. Only shrinks the name if it has to; otherwise the glyph just takes whatever
+ * room is left.
+ */
+function solveNameAndGlyphLayout(archivoDisplay, name) {
+  const preferred = buildTextPath(
+    archivoDisplay,
+    name,
+    MARGIN,
+    NAME_Y,
+    NAME_FONT_SIZE,
+    NAME_LETTER_SPACING_EM * NAME_FONT_SIZE
+  );
+  const spaceForGlyph = CARD.width - 2 * MARGIN - GLYPH_GAP - preferred.width;
+
+  if (spaceForGlyph >= GLYPH_BOX_MIN) {
+    return { name: preferred, fontSize: NAME_FONT_SIZE, boxSize: spaceForGlyph };
+  }
+
+  const boxSize = GLYPH_BOX_MIN;
+  const targetWidth = CARD.width - 2 * MARGIN - GLYPH_GAP - boxSize;
+  const fontSize = NAME_FONT_SIZE * (targetWidth / preferred.width);
+  const shrunk = buildTextPath(archivoDisplay, name, MARGIN, NAME_Y, fontSize, NAME_LETTER_SPACING_EM * fontSize);
+  return { name: shrunk, fontSize, boxSize };
 }
 
 async function buildSvg({ ground, signal, type, typeDim }) {
-  const points = sampleSignalRange(SIGNAL.tStart, SIGNAL.tEnd, SIGNAL.points);
-  const signalPath = fitSignalPath(points, SIGNAL.box, SIGNAL.originX, SIGNAL.originY);
-
   const archivoDisplay = await loadFont('archivo/ArchivoExpanded-ExtraBold.ttf');
   const archivoBody = await loadFont('archivo/Archivo-Regular.ttf');
   const mono = await loadFont('jetbrains-mono/JetBrainsMono-Regular.ttf');
 
-  const namePath = buildTextPath(archivoDisplay, 'NOEL SEBASTIAN', 80, 268, 78, -3);
-  const rolePath = buildTextPath(archivoBody, 'Senior Web Engineer & Angular Specialist', 80, 326, 30);
-  const monoPath = buildTextPath(mono, 'SYDNEY, AU · OPEN TO SENIOR FRONTEND ROLES', 80, 392, 19, 3);
-  const domainPath = buildTextPath(mono, 'www.noel-sebastian.com', 104, 533, 20);
+  const { name, boxSize } = solveNameAndGlyphLayout(archivoDisplay, 'NOEL SEBASTIAN');
+  const originX = CARD.width - MARGIN - boxSize; // the glyph's box sits against the right margin
+
+  // Centred on the text block, name top to mono line's bottom — both edges read off the
+  // fonts' own ascender/descender metrics at the sizes actually used, not eyeballed.
+  const nameAscent = (archivoDisplay.ascender / archivoDisplay.unitsPerEm) * NAME_FONT_SIZE;
+  const monoFontSize = 19;
+  const monoDescent = (Math.abs(mono.descender) / mono.unitsPerEm) * monoFontSize;
+  const textBlockTop = NAME_Y - nameAscent;
+  const textBlockBottom = MONO_Y + monoDescent;
+  const originY = (textBlockTop + textBlockBottom) / 2 - boxSize / 2;
+
+  const points = Math.round(boxSize); // one sample point per rendered pixel, so smoothness scales with size
+  const strokeWidth = boxSize / 12; // the ratio the old card's glyph used (stroke 2 at box 24)
+
+  const signalPoints = sampleSignalRange(0.14, 0.54, points);
+  const signalPath = fitSignalPath(signalPoints, boxSize, originX, originY);
+
+  const rolePath = buildTextPath(archivoBody, 'Senior Web Engineer & Angular Specialist', MARGIN, ROLE_Y, 30).d;
+  const monoPath = buildTextPath(mono, 'SYDNEY, AU · OPEN TO SENIOR FRONTEND ROLES', MARGIN, MONO_Y, monoFontSize, 3).d;
+  const domainPath = buildTextPath(mono, 'www.noel-sebastian.com', MARGIN + 24, DOMAIN_Y, 20).d;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CARD.width} ${CARD.height}" width="${CARD.width}" height="${CARD.height}">
   <!--
@@ -194,19 +223,19 @@ async function buildSvg({ ground, signal, type, typeDim }) {
     d="${signalPath}"
     fill="none"
     stroke="${rgb(signal)}"
-    stroke-width="${SIGNAL.stroke}"
+    stroke-width="${strokeWidth}"
     stroke-linecap="round"
     stroke-linejoin="round"
-    opacity="${SIGNAL.opacity}"
+    opacity="0.92"
   />
 
-  <path d="${namePath}" fill="${rgb(type)}"/>
+  <path d="${name.d}" fill="${rgb(type)}"/>
   <path d="${rolePath}" fill="${rgb(typeDim)}"/>
   <path d="${monoPath}" fill="${rgb(typeDim)}"/>
   <path d="${domainPath}" fill="${rgb(type)}"/>
 
   <!-- The completion bar, as it terminates the signal in the footer (spec §6). -->
-  <rect x="80" y="500" width="4" height="44" fill="${rgb(signal)}"/>
+  <rect x="${MARGIN}" y="${BAR.y}" width="${BAR.width}" height="${BAR.height}" fill="${rgb(signal)}"/>
 </svg>`;
 }
 
