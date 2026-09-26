@@ -9,7 +9,8 @@
  * 2. **Arrow keys** move focus between the cards' primary links. A shortcut, not a
  *    roving-tabindex trap: every link stays in the Tab order. Focus, by any key, also
  *    snaps a partly hidden card fully into the rail (`mountFocusSnap`).
- * 3. **Re-measuring** on the renderer's re-measure and on the same debounced resize.
+ * 3. **Re-measuring** on the renderer's re-measure and on the same debounced resize
+ *    (`follow.ts`, shared with section 05).
  *
  * The meeting point is read off the curve (`signalXAtPageY`) at the track's centre line,
  * which is where the renderer pins the curve's split point. This never assumes the centre
@@ -19,14 +20,9 @@
  * `scaleY` on the drops, `scale` on the emissions).
  */
 
-import {
-  RESIZE_DEBOUNCE_MS,
-  easeEmission,
-  easeLine,
-  tipFraction,
-  unit,
-} from '../lib/signal/draw';
-import { onSignalCurve, onSignalTip, signalTipY, signalXAtPageY } from '../lib/signal/tip';
+import { easeEmission, easeLine, tipFraction, unit } from '../lib/signal/draw';
+import { followSignal, prefersReducedMotion } from '../lib/signal/follow';
+import { signalXAtPageY } from '../lib/signal/tip';
 
 /**
  * How far the tip travels past the track while the split draws, in px of page height.
@@ -57,10 +53,7 @@ export function mountRing(): void {
   if (scroller) mountFocusSnap(scroller);
 
   if (!track || !left || !right) return;
-  // A local matchMedia rather than `reducedMotion()` from ../lib/motion/scroll, for the
-  // reason svg-signal.ts gives: that module imports gsap and lenis at module scope, and
-  // this island needs neither. Importing it split the motion layer's chunk in two.
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduce = prefersReducedMotion();
 
   // ── The meeting point ─────────────────────────────────────────────────────────────
 
@@ -105,27 +98,10 @@ export function mountRing(): void {
     paint(tipFraction(tipY, trackY, SPLIT_DRAW_PX));
   }
 
-  measure();
-  onSignalCurve(() => {
-    measure();
-    if (!reduce) paintFromTip(signalTipY());
-  });
-
   // Reduced motion: the split stays exactly as the server drew it. Otherwise the first
   // tip the renderer publishes moves it back to undrawn (the section is far below the
-  // fold on load) and every later one scrubs it. With no renderer at all, no tip ever
-  // arrives and the split stays drawn — never stranded half-way.
-  if (!reduce) onSignalTip(paintFromTip);
-
-  let resizeTimer: ReturnType<typeof setTimeout> | undefined;
-  window.addEventListener('resize', () => {
-    if (resizeTimer !== undefined) clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      resizeTimer = undefined;
-      measure();
-      if (!reduce) paintFromTip(signalTipY());
-    }, RESIZE_DEBOUNCE_MS);
-  });
+  // fold on load) and every later one scrubs it (`followSignal`).
+  followSignal({ measure, paint: paintFromTip }, reduce);
 }
 
 /**
