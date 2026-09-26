@@ -68,7 +68,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 5 | Sections 01–02 — Hero, Nine Years | **complete** | Tasks 5.1–5.3. First two islands; Stats.astro retired into NineYears |
 | 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2, reviewed clean, no fix round. Split drawn as a track the curve is pinned to; Gallery retired |
-| 8 | Sections 05–06 — Stack, Contact | not started | |
+| 8 | Sections 05–06 — Stack, Contact | **in progress** | Tasks 8.1–8.2. About + Marquee retired; Stack keeps the weave |
 | **9** | **SHIPPABLE — 2D site complete** | not started | **Real finish line. Deploy here.** |
 | 10 | WebGL — gate + signal tube | not started | |
 | 11 | WebGL — particle portrait | not started | |
@@ -987,6 +987,33 @@ Headline: **"Nothing happens until you subscribe."**
 to `mailto:` when unset. Native constraint validation, errors announced to screen readers,
 no React in the built output (`grep -r "react" dist/` is clean).
 
+**Task-level expansion (added 2026-09-26).** Briefs are in `.superpowers/sdd/BUILD-PLAN/`.
+About and the Marquee retire (see Decisions), so the page runs Ring → Stack → Contact.
+
+### Task 8.1 — Section 05: `Stack.astro` + `src/islands/stack.ts`
+
+- [ ] `About.astro`, `Marquee.astro`, `Skills.astro` deleted, and `aboutCols`, `marqueeItems` and
+  the proficiency `Level` with them. `#stack` carries `data-signal-section="stack"`. Nav reads
+  Work · Shipped · Stack · Contact.
+- [ ] `skillGroups` rebuilt from the resume's five groups (Core, Architecture, Testing, AI
+  tooling, Also). No proficiency labels.
+- [ ] Five operator rows inside a mono `pipe(` … `)`. Each row sits on a hairline rule, and the
+  row's node is drawn on the rule at the curve's own `x` (`signalXAtPageY`), so a node never
+  sits on a glyph. The curve's weave is unchanged; between rules it passes behind the rows,
+  dimmed.
+- [ ] `stack.ts`: each node fills as the tip passes its rule. Server-rendered lit, so JS-off and
+  reduced-motion visitors see the finished chain.
+
+### Task 8.2 — Section 06: `Contact.astro` + `src/islands/contact-form.ts`
+
+- [ ] `Contact.astro` replaces the interim `#contact` block in `index.astro` and takes over
+  `data-signal-section="contact"`. Headline "Nothing happens until you subscribe."
+- [ ] The form posts natively to Formspree, so it works with JS off. The island adds
+  constraint messages, announced errors and an in-place sent/failed state. The endpoint is
+  `PUBLIC_FORMSPREE_ENDPOINT`, else the live default; if neither is a usable URL, `mailto:`.
+- [ ] Email, socials, CV, and one line on freelance availability linking to `/websites`.
+- [ ] The final emission on the line, drawn as the tip reaches it, above the footer's `|`.
+
 ## PHASE 9 — SHIPPABLE: 2D Site Complete
 
 **Deliverable:** a complete, fast, accessible portfolio, live. **This is the finish line
@@ -1244,6 +1271,27 @@ decision was made; this section records *what it is*.
   mandatory` then re-snaps to the nearest position, which is 0, leaving the card and its focus ring
   clipped. `ring.ts` scrolls a focused, partly hidden card to its own snap position on `focusin`, by
   Tab or arrow alike. Instant, like native focus scrolling.
+- **2026-09-26 (Noel)** — **About and the Marquee retire.** Spec §5's page order has no About.
+  Its portrait is already the Hero's, its metrics are in Nine Years and Work, its stack columns
+  duplicate the skill groups, and its small-business line becomes Contact's link to `/websites`.
+  §9.05 folds the marquee into the Stack. So the ring's hold ends at Stack's top.
+- **2026-09-26 (Noel)** — **The Stack keeps the weave.** The stack span's three bends stay as
+  authored, and the line is not re-routed to the gutter. The five operator rows sit on hairline
+  rules, and each row's node is drawn where the curve crosses its rule, so the nodes step left and
+  right with the weave and never sit on a glyph. Between rules the line runs behind the rows, dimmed
+  by the existing rule. In 2D the "transform" is the node lighting as the tip passes. §9.05's colour
+  and thickness change on the line itself waits for `TubeSignal` (Phase 10), where it is a
+  per-vertex attribute rather than a second renderer.
+- **2026-09-26 (controller)** — **Skill groups mirror the resume's five.** `content.ts` had four
+  groups arranged by the old site plus an AI node. The resume's Skills table has exactly five
+  (Core, Architecture, Testing, AI tooling, Also), which gives the five operators without inventing
+  a grouping, and every item traces to it.
+- **2026-09-26 (controller)** — **The contact form works without JS and falls back to `mailto:`
+  only when there is no usable endpoint.** The old form hard-coded the live Formspree ID as a
+  default, and production sets no env var. Falling back to `mailto:` whenever the variable is
+  unset would therefore have quietly turned off the live form. The endpoint resolves at build
+  time: `PUBLIC_FORMSPREE_ENDPOINT`, else the live default. The form's `action` is that URL, so a
+  native POST works with JS off. Only a missing or placeholder value makes the action `mailto:`.
 
 ## Known Gaps
 
