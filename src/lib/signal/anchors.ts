@@ -47,24 +47,32 @@ export const SEAM_CURVE_Y: readonly number[] = [
  * the old whole-box linear position for that seam, so a page with no sections at all
  * (`/dev/signal`) draws exactly what it always drew.
  *
- * The first and last seams are clamped into the box, and the terminus always lands on the
- * box's bottom edge: the box is already inset by half the stroke (see `#signal-layer`), so
- * clamping keeps the end caps inside the document rather than past it. Every anchor is also
- * held at or below the one before it, so a fallback seam can never fold the line back up
- * the page.
+ * The curve's last knot is `terminus` when the page has one — the footer's completion bar
+ * — measured the same way as a section top. Without one (or a non-finite measurement) it
+ * falls back to the box's bottom edge, exactly as before. Fallback seams scale to whichever
+ * of the two is in force, so a page with a terminus but a missing section top still ends
+ * where the terminus is rather than overshooting to the box.
+ *
+ * The first seam is clamped to the box's top and every seam, including the terminus, is
+ * clamped at or below `end` and at or above the one before it — so a fallback can neither
+ * fold the line back up the page nor run past where it ends, whether that end is the
+ * terminus or the box bottom.
  */
 export function resolveSeamPixels(
   sectionTops: readonly (number | null | undefined)[],
   height: number,
+  terminus?: number | null,
 ): number[] {
+  const hasTerminus = typeof terminus === 'number' && Number.isFinite(terminus);
+  const end = hasTerminus ? Math.min(height, Math.max(0, terminus)) : height;
   const seams: number[] = new Array(SEAM_CURVE_Y.length);
   const lastIndex = SEAM_CURVE_Y.length - 1;
   for (let i = 0; i < SEAM_CURVE_Y.length; i++) {
-    const measured = i < lastIndex ? sectionTops[i] : height;
+    const measured = i < lastIndex ? sectionTops[i] : end;
     const hasMeasurement = typeof measured === 'number' && Number.isFinite(measured);
-    const raw = hasMeasurement ? measured : SEAM_CURVE_Y[i] * height;
+    const raw = hasMeasurement ? measured : SEAM_CURVE_Y[i] * end;
     const floor = i === 0 ? 0 : seams[i - 1];
-    seams[i] = Math.min(height, Math.max(floor, raw));
+    seams[i] = Math.min(end, Math.max(floor, raw));
   }
   return seams;
 }

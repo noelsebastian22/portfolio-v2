@@ -85,6 +85,33 @@ describe('resolveSeamPixels', () => {
     expect(seams[5]).toBe(HEIGHT);
     expect(seams[6]).toBe(HEIGHT);
   });
+
+  it('lands the terminus on a measured terminus instead of the box bottom', () => {
+    const seams = resolveSeamPixels(TOPS, HEIGHT, 8100);
+    expect(seams).toEqual([...TOPS, 8100]);
+  });
+
+  it('scales fallback seams to the terminus, not to the box', () => {
+    const seams = resolveSeamPixels([null, null, null, null, null, null], 1000, 800);
+    seams.forEach((px, i) => expect(px).toBeCloseTo(SEAM_CURVE_Y[i] * 800, 9));
+  });
+
+  it('never lets a seam run past the terminus', () => {
+    // `contact` measured at 7700, but the terminus is above it.
+    const seams = resolveSeamPixels(TOPS, HEIGHT, 7000);
+    expect(seams[5]).toBe(7000);
+    expect(seams[6]).toBe(7000);
+    for (let i = 1; i < seams.length; i++) expect(seams[i]).toBeGreaterThanOrEqual(seams[i - 1]);
+  });
+
+  it('falls back to the box bottom for a missing or non-finite terminus', () => {
+    expect(resolveSeamPixels(TOPS, HEIGHT, null)).toEqual([...TOPS, HEIGHT]);
+    expect(resolveSeamPixels(TOPS, HEIGHT, Number.NaN)).toEqual([...TOPS, HEIGHT]);
+  });
+
+  it('clamps the terminus into the box', () => {
+    expect(resolveSeamPixels(TOPS, HEIGHT, HEIGHT + 500)[6]).toBe(HEIGHT);
+  });
 });
 
 describe('mapCurveY', () => {
