@@ -1033,6 +1033,8 @@ span 0.26px at 1440 (whole curve 0.66px, unchanged). CLS 0. The form was exercis
 interception only — 200, 422, 500 and a network failure; nothing reached Formspree. Shipped JS on
 `/` **61,790 gzip (+1,869)**: the Contact chunk 1,873. 75.4% of the 80 KB budget. `index.html`
 17,179 → 17,913 gzip. No `react-dom`, `jsx-runtime`, `react-hook-form` or `zod` in `dist/`.
+`resend` is removed: nothing imported it, and it was the last thing pulling `react` and
+`react-dom` into `node_modules` (through `@react-email/render`), 19 packages in all.
 
 ## PHASE 9 — SHIPPABLE: 2D Site Complete
 
