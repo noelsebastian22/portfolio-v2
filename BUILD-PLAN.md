@@ -1041,16 +1041,108 @@ interception only — 200, 422, 500 and a network failure; nothing reached Forms
 **Deliverable:** a complete, fast, accessible portfolio, live. **This is the finish line
 that matters.**
 
-- [ ] Full Lighthouse run, mobile — Performance ≥ 95, Accessibility 100
-- [ ] Every budget in Global Constraints measured and recorded in `docs/SESSIONS.md`
-- [ ] Keyboard-only pass through the entire page
-- [ ] Screen reader pass on the timeline and the ring rail
-- [ ] JS disabled — every word still readable
-- [ ] `prefers-reduced-motion` — no animation anywhere
-- [ ] Deploy
-
 Do not begin Phase 10 until this phase is signed off. The value of a shipped 2D site
 exceeds the value of a half-finished 3D one.
+
+**Task-level expansion (added 2026-09-26).** Briefs are in `.superpowers/sdd/BUILD-PLAN/`.
+Tasks 9.1–9.4 change the site, 9.5 is the audit that proves it and fixes what the audit finds,
+and 9.6 is the deploy, which the controller runs with Noel and no subagent. The order matters.
+9.1 moves the terminus, which changes the page's height, so 9.4's figures and 9.5's audit have
+to run after it. 9.4 comes before 9.5 because Lighthouse should grade the final chunking.
+
+**Review Focus.** These are the five conditions most likely to bite a real visitor that no unit
+test pins. Each is checked in the task named:
+
+1. **The footer moves after the line is drawn:** fonts swap in, a late image lands, or the
+   viewport resizes. The terminus must follow the bar, because a stale terminus leaves the line
+   ending in mid-air (9.1: re-measure after `document.fonts.ready` and on resize, and check the
+   bar against the curve's end at five widths).
+2. **JS off:** no line at all, yet the page still has to end `●` then `|`, centred and close
+   together, with every word readable (9.1 for the ending, 9.5 for the whole page).
+3. **Reduced motion:** the line is fully drawn to the new terminus at once, the emission is lit,
+   and nothing animates anywhere (9.1 for the ending, 9.5 for the page).
+4. **A share crawler fetching `og:image`:** it gets an absolute URL to a 1200×630 PNG served as
+   `image/png`, set in the brand faces rather than a fallback sans (9.3, then checked again on
+   the preview deploy in 9.6).
+5. **A first visit on throttled mobile:** no render-blocking request the budget does not allow,
+   and the LCP element is text painted in the preloaded face (9.4 for the requests, 9.5 for the
+   Lighthouse figures).
+
+**Deliberately not in Phase 9.** Everything under "Deferred by Noel — 2026-09-26" (the Stack's
+nodes, the sharp turns at points 7–10, the work spine's breaths). The scatter's
+lowest-density fill. The ring's 9px drop at 375. The split meeting a dim line. A shared class for
+the reduced-motion opt-out: each opt-out is local and commented, which is enough. The
+`font-bricolage` strings and dead Tailwind on `/websites`, which is Phase 14's restyle.
+
+### Task 9.1 — The line ends above the footer
+
+- [ ] `resolveSeamPixels(sectionTops, height, terminus?)`: a measured terminus replaces the
+  box's bottom edge as the curve's last knot. Fallback seams scale to the terminus, not to the
+  box, and no seam passes it. TDD in `tests/signal-anchors.test.ts`.
+- [ ] `Footer.astro`: the `|` bar moves from the footer's last pixel to its top edge, centred,
+  and carries `data-signal-terminus`. `svg-signal.ts` measures the bar's centre line and passes
+  it in.
+- [ ] `Contact.astro`: the emission sits directly above the bar. Target: the emission's centre
+  is at most 96px from the bar's centre at every width, and it sits on the curve.
+- [ ] Comments and spec wording that place the terminus "at the document's bottom" are
+  corrected (`Footer.astro`, `anchors.ts`, `contact.ts`, the spec if it says so).
+
+### Task 9.2 — Rulings and teardown
+
+- [ ] RxJS goes into `architecture()` after Angular Signals. `tests/skill-groups.test.ts` keeps
+  the resume mirror and names RxJS as its one exception. It also fails if RxJS ever appears on
+  the resume, so the exception retires itself.
+- [ ] `.contact__title { text-wrap: balance }`, so "YOU" no longer sits alone at 375.
+- [ ] `/dev/signal` deleted, and with it `createSvgSignal`'s `pageLayer` option, which only the
+  harness turned off. The build reports 2 pages.
+- [ ] `mountHeroClock()` is idempotent: a second call cancels the first one's timer and
+  listener.
+
+### Task 9.3 — The OG image as a raster
+
+- [ ] `scripts/og-image.mjs` imports `path.ts` and draws the card's line from the canonical
+  curve (no duplicated `d`). It takes colours from `tokens.css`, renders with sharp to a
+  committed 1200×630 `public/og-image.png`, and is added to `npm run images`.
+- [ ] The card's text is set in Archivo and JetBrains Mono. sharp's renderer cannot read the
+  site's WOFF2 files (tested 2026-09-26: everything fell back to a sans). Build-only static
+  TTFs with their OFL licence go in `scripts/og/fonts/`, reached through a scoped
+  `FONTCONFIG_FILE`, and never under `public/`.
+- [ ] `public/og-image.svg` deleted. `BaseLayout` points at the PNG and emits `og:image:width`,
+  `og:image:height`, `og:image:type` and `og:image:alt`. This closes Phase 4 minor (5).
+
+### Task 9.4 — The critical path, and a budget that measures itself
+
+- [ ] `scripts/budget.mjs` (`npm run budget`): for each built page, every script the page loads
+  before interaction is gzipped and summed: external module scripts, their static import graph,
+  inline module scripts and `is:inline` blocks. Dynamic `import()` is excluded. The run fails
+  above 80 KB. Its pure parts are in `scripts/lib/budget.mjs` and tested.
+- [ ] The three critical-path items, fixed together. Render-blocking CSS: inline it, or justify
+  keeping the link with Lighthouse numbers. The renderer chunk's missing `modulepreload`, and the
+  chunking, including folding the 282-byte `follow` chunk. Also re-measure the 29 KiB of
+  "unused JavaScript".
+- [ ] Before and after, recorded: the budget script's figure, the page's request chain, and a
+  Lighthouse mobile run.
+
+### Task 9.5 — The ship audit
+
+- [ ] Lighthouse mobile, three runs with the median recorded: Performance ≥ 95, Accessibility
+  100, LCP ≤ 2.0s, CLS < 0.02, and TBT as INP's lab proxy.
+- [ ] A keyboard-only pass through the whole page. A screen-reader pass on the timeline, the
+  ring rail and the form. A JS-off pass, where every word is readable. A reduced-motion pass,
+  where nothing animates.
+- [ ] Phase 4 minors fixed: (2) `role="list"`, (7) the redundant `if (layer)`, and (1) the inert
+  sound toggle, made honest per Noel's ruling (Decisions, 2026-09-26). (3) "Back to top" is not
+  restored, because the nav is persistent; recorded as a Decision.
+- [ ] Every Global Constraints budget measured and recorded under "Measured after Phase 9" and
+  in `docs/SESSIONS.md`.
+
+### Task 9.6 — Deploy (controller with Noel, no subagent)
+
+- [ ] Push `feat/signal-path-rebuild` **only on Noel's word**. Verify the Vercel preview: the
+  pages, the OG card fetched from the preview URL, the form's `action`, and Lighthouse against
+  the real network.
+- [ ] Merge to `master` for production **only on Noel's word**, then smoke-check
+  `https://www.noel-sebastian.com`. Phase 9 is marked complete only after that check.
 
 ## PHASE 10 — WebGL: Gate + Signal Tube
 
@@ -1338,6 +1430,27 @@ decision was made; this section records *what it is*.
   emission lives in its own island (`contact.ts`), so `/websites` can mount `contact-form.ts`
   without it. The island reads only the served `action`: the server alone decides the endpoint.
 
+- **2026-09-26 (Noel)** — **RxJS joins the Stack in `architecture()`, beside Angular Signals.**
+  The whole site is written in RxJS operators, so a Stack without it is the one omission a tech
+  lead would notice. It is a documented exception to "the groups mirror the resume": the resume's
+  Skills table stays as it is, and the PDF is not being changed. The exception covers this one
+  item only. Every other Stack entry still traces to the resume, and "never invent a number"
+  (metrics) is untouched.
+- **2026-09-26 (Noel)** — **The line ends above the footer, not under it.** The order is the
+  final emission `●`, then the `|` completion bar directly below it at the top of the footer, then
+  the footer's content, after the line has ended. That is spec §4's order ("a final emission,
+  then a `|` completion bar into the footer"). The curve's last control point stops being the
+  document's last pixel, so `anchors.ts`'s bottom anchor and `Footer.astro`'s comment change with it.
+- **2026-09-26 (Noel)** — **The Contact headline uses `text-wrap: balance`.** CSS only, which
+  fixes "YOU" sitting alone on the last line at 375.
+- **2026-09-26 (Noel)** — **The sound toggle stays in the nav until Phase 13, and says plainly
+  that it is not ready.** It is a focusable button with `aria-disabled="true"`, not a `disabled`
+  one, so it can be reached and announced. Its visible text says sound is coming, so the state
+  is not only in a hover `title`. Activating it does nothing.
+- **2026-09-26 (Noel)** — **The four unreferenced gallery masters stay** (`directline`,
+  `qburst`, `srtmarine`, `winning`; 312 KB in all). "Problems, solved" may be reworked, and they
+  are its source material.
+
 ## Known Gaps
 
 - No test framework existed before Phase 0. Vitest covers pure modules only —
@@ -1520,9 +1633,9 @@ before then.
   an uneven, dirty line rather than as attachment points. Straightening them is a `path.ts` edit.
   Re-run the continuity and chord tests, and re-check the branch origins in `work.ts`, which
   read the curve's `x`.
-- **Two questions still open from Phase 8:** whether RxJS joins the Stack (it is absent from the
-  resume's Skills table), and whether the ~395px gap between the final emission and the footer's
-  `|` should close.
+- **The two open Phase 8 questions were answered on 2026-09-26** (see Decisions): RxJS goes into
+  `architecture()` on the site only, and the `|` moves to the top of the footer, directly under
+  the final emission. Both are Phase 9 work.
 
 ### Opened by Task 8.2 — 2026-09-26
 
@@ -1532,7 +1645,8 @@ before then.
   They read as one sequence — one mark on the line, then the bar it ends in, both near the centre
   (the emission 17–37px left of the bar, where the curve is still settling) — but §6's
   "terminates in a final emission" is looser than it could be. Tighter would mean the emission in
-  the footer, or a shorter footer; Phase 9's polish pass or Noel.
+  the footer, or a shorter footer; Phase 9's polish pass or Noel. **Resolved 2026-09-26 (Noel):**
+  the bar moves to the top of the footer, under the emission, and the line ends there. Phase 9.
 - **The success state is a status line.** On a 200 the form resets and the status reads "Sent.
   Thank you — I will reply by email." Nothing else changes. That is enough for a single-purpose
   form; a larger confirmation would be island-rendered content, so it was not built.
