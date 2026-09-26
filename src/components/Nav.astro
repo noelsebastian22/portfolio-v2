@@ -23,7 +23,7 @@ import { nav } from '../data/content';
       <span class="site-nav__name">Noel Sebastian</span>
     </a>
 
-    <ul class="site-nav__links">
+    <ul class="site-nav__links" role="list">
       {nav.map((link) => (
         <li>
           <a class="site-nav__link" href={link.href}>{link.label}</a>

@@ -59,7 +59,7 @@ const year = new Date().getFullYear();
     <div class="site-footer__meta">
       <p class="site-footer__copy">© {year} Noel Sebastian · Available for freelance</p>
       {showSocials && (
-        <ul class="site-footer__socials">
+        <ul class="site-footer__socials" role="list">
           {socials.map((social) => (
             <li>
               <a class="site-footer__link" href={social.href} target="_blank" rel="noopener noreferrer">
