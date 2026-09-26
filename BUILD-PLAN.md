@@ -1116,14 +1116,20 @@ clock's stop function (item 4) adds back +40 to the inline module script. See
 
 ### Task 9.3 — The OG image as a raster
 
-- [ ] `scripts/og-image.mjs` imports `path.ts` and draws the card's line from the canonical
+- [x] `scripts/og-image.mjs` imports `path.ts` and draws the card's line from the canonical
   curve (no duplicated `d`). It takes colours from `tokens.css`, renders with sharp to a
-  committed 1200×630 `public/og-image.png`, and is added to `npm run images`.
-- [ ] The card's text is set in Archivo and JetBrains Mono. sharp's renderer cannot read the
+  committed 1200×630 `public/og-image.png` (33.6 kB), and is added to `npm run images`.
+- [x] The card's text is set in Archivo and JetBrains Mono. sharp's renderer cannot read the
   site's WOFF2 files (tested 2026-09-26: everything fell back to a sans). Build-only static
-  TTFs with their OFL licence go in `scripts/og/fonts/`, reached through a scoped
-  `FONTCONFIG_FILE`, and never under `public/`.
-- [ ] `public/og-image.svg` deleted. `BaseLayout` points at the PNG and emits `og:image:width`,
+  TTFs with their OFL licence go in `scripts/og/fonts/`. **Not** reached through
+  `FONTCONFIG_FILE` in the end: on this machine, sharp/libvips' Pango has only a CoreText
+  backend compiled in — no env var reaches it, and forcing the fontconfig backend segfaults
+  (matches `lovell/sharp#4577`). Instead `opentype.js` shapes each line into glyph-outline
+  `<path>`s directly from the TTFs, so sharp never resolves a font by name at all — see
+  `scripts/og-image.mjs`'s header comment for the full finding. Verified by eye against a
+  Chrome render of the old SVG at 11× zoom: genuinely wider/bolder name, genuinely
+  monospaced mono line, not a fallback sans.
+- [x] `public/og-image.svg` deleted. `BaseLayout` points at the PNG and emits `og:image:width`,
   `og:image:height`, `og:image:type` and `og:image:alt`. This closes Phase 4 minor (5).
 
 ### Task 9.4 — The critical path, and a budget that measures itself
@@ -1561,7 +1567,9 @@ decision was made; this section records *what it is*.
   dropped without a decision record, on a 9,163px document; (4) the desktop signal layer is
   full-opacity and the footer is the one place Phase 4 lays text across the curve's path — latent,
   since the centre column is mostly empty; (5) `og-image.svg` duplicates the generated `d` with no
-  regeneration command of its own, so it can go stale silently; (6) **24 lowercase
+  regeneration command of its own, so it can go stale silently — **RESOLVED 2026-09-26 by Task
+  9.3:** `og-image.svg` is deleted; `scripts/og-image.mjs` bakes `public/og-image.png` from
+  `sampleSignalRange()` directly, so there is no `d` left to duplicate; (6) **24 lowercase
   `font-bricolage` class strings survive in `src/`** — the Phase 4 ruling's grep was
   case-sensitive and missed exactly the hole it was written to close, though they are inert
   Tailwind names on components Phases 5–8 rewrite; (7) `BaseLayout.astro`'s `if (layer)` silently
@@ -1571,9 +1579,11 @@ decision was made; this section records *what it is*.
   registers a trigger yet — expected to amortise across Phases 5–8, but verify rather than assume);
   a render-blocking 1.9 KB `_astro/index.css` link worth ~150ms; and no `modulepreload` for the
   1.6 KB `svg-signal` chunk, which `BaseLayout`'s chunk statically imports — one extra round trip.
-- **The OG image is still an SVG**, which Twitter/X, Facebook, LinkedIn and Slack do not render, so
-  the share card currently shows nowhere. Pre-existing; spec §10 already schedules a build-time
-  `sharp` raster. Phase 9 at the latest.
+- **RESOLVED 2026-09-26 by Task 9.3 — the OG image is a build-time PNG.** Original: **the OG image
+  is still an SVG**, which Twitter/X, Facebook, LinkedIn and Slack do not render, so the share card
+  currently shows nowhere. Pre-existing; spec §10 already schedules a build-time `sharp` raster.
+  Now: `scripts/og-image.mjs` renders a committed `public/og-image.png` (1200×630, 33.6 kB),
+  `BaseLayout` points at it with the four `og:image:*` tags a crawler expects.
 
 ### Opened by Task 5.1 — 2026-09-23
 
