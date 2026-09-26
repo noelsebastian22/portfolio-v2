@@ -151,11 +151,11 @@ const collectionPageSchema = {
       // Order matters: initScroll() starts the shared ticker the trigger runs on.
       initScroll();
 
-      const layer = document.getElementById('signal-layer');
-      if (layer) {
-        const signal = createSvgSignal(layer);
-        onPageProgress((t) => signal.setProgress(t));
-      }
+      // No `if (layer)` guard: this element is rendered eleven lines above, by this same
+      // component, on every page that uses it. A build that somehow lost it is broken, and
+      // should throw here rather than silently ship a page with no signal at all.
+      const signal = createSvgSignal(document.getElementById('signal-layer')!);
+      onPageProgress((t) => signal.setProgress(t));
     </script>
   </body>
 </html>
