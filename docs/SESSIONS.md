@@ -7,6 +7,39 @@ This is not a changelog; git does that. It records intent, dead ends, and open t
 
 <!-- newest first -->
 
+## 2026-09-26 · claude-code · Phase 8 stack contact
+
+**Did**
+- Expanded Phase 8 into Tasks 8.1–8.2 in `BUILD-PLAN.md`. Briefs are `task-8.{1,2}-brief.md`.
+- 8.1: deleted `About.astro`, `Marquee.astro`, `Skills.astro`, `aboutCols`, `marqueeItems` and `Level`. Added `Stack.astro` and `islands/stack.ts`, with the five resume groups as `pipe( core(), architecture(), testing(), aiTooling(), also() )`. Each node sits on its row's rule at `signalXAtPageY`. The ring and stack islands now share their tip and curve wiring in `lib/signal/follow.ts`. Nav is Work · Shipped · Stack · Contact.
+- 8.2: added `Contact.astro`, `islands/contact-form.ts` (bound by a data hook so `/websites` can reuse it), `islands/contact.ts` (the final emission) and `lib/contact-form.ts` (endpoint resolution, `mailto:` builder, messages, 11 tests). Removed `resend`, the last thing pulling `react` into `node_modules`.
+- Both tasks were reviewed inline, no fix rounds. Trailers normalised: 6d3ff3e..b11fd20 became 92bcc22..bd9f108 (same trees).
+- Build green, 139 tests (from 123). Shipped JS on `/`: 61,790 gzip, +2,721 over Phase 7 (Stack +852, Contact +1,869). That is 75.4% of the budget, with 20,130 left. `index.html` 18,955 → 17,913 gzip. No `react-dom`, `jsx-runtime` or `zod` in `dist/`.
+
+**Decided**
+- Noel: About and the Marquee retire, because spec §5 has no About. The Stack keeps the curve's weave, with nodes on hairline rules. The line's own colour and thickness change waits for Phase 10.
+- Skill groups mirror the resume's Skills table (five groups, no proficiency labels).
+- The form posts natively to `PUBLIC_FORMSPREE_ENDPOINT`, or failing that the live default `xpqgynyw`. It uses `mailto:` only when neither is a usable URL. Production sets no env var, so "mailto when unset" would have turned the live form off. Field names are kept (`lookingFor`) so Formspree's columns stay stable.
+
+**Didn't work**
+- The first Stack sketch, which Noel picked, showed a zig-zag of nodes. Built, they form one S, because the stack span's left bend falls in the heading, above the rows. Pinning control point 41 to row 1 would fix it; that is deferred.
+- `data-emission` for Contact's emission collided with Nine Years' hook. It was renamed `data-final-emission`.
+- A failure link built in the island missed Astro's scoped styles and rendered browser-blue. It is styled now.
+
+**Open**
+- Noel deferred these until implementation is done (`BUILD-PLAN.md` → "Deferred by Noel — 2026-09-26"):
+  - Stack nodes stay as built.
+  - Sharp, cone-like turns in the line: the start of `02 — scan()` and the turn after it (control points 7–10 reverse over 0.017 `y`). The per-span anchor scaling is also suspect and unmeasured.
+  - The work spine should be straight: control points 22–26 carry "breaths".
+- Unanswered: RxJS in the Stack (absent from the resume's Skills), and the ~395px gap from the final emission to the footer's `|`.
+- `follow.ts` ships as its own 282-byte chunk. Fold it into the `tip` chunk in Phase 9. The 375 Contact headline orphans "YOU".
+- Carried: `mountHeroClock()` idempotency, OG image raster, `/dev/signal` deletion, the four unused gallery masters, branch unpushed. The `astro dev` on :4321 and Chrome on :9344 are still running.
+
+**Next**
+Phase 9, the shippable pass. Expand it into tasks with `writing-plans`. Start with deleting `/dev/signal`, the OG raster and the Phase 4 critical-path trio (CSS link, `modulepreload`, chunking incl. `follow.ts`). Then run Lighthouse mobile, the keyboard, screen reader, JS-off and reduced-motion passes, and measure every script the page loads. Leave the deferred curve items alone until after Phase 9, per Noel.
+
+**Touched** — `src/components/{Stack,Contact}.astro`, `src/islands/{stack,contact,contact-form,ring}.ts`, `src/lib/signal/follow.ts`, `src/lib/contact-form.ts`, `src/data/content.ts`, `src/pages/index.astro`, `src/env.d.ts`, `.env.example`, `package.json`, `tests/`, `BUILD-PLAN.md`, spec §9.05–§9.06; deleted `About`, `Marquee`, `Skills`.
+
 ## 2026-09-25 · claude-code · Phase 7 ring rail
 
 **Did**

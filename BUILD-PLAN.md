@@ -1497,6 +1497,33 @@ decision was made; this section records *what it is*.
   on-concept, but it was inherited rather than decided, and the same `·` renders round in the mono
   voice (the status rail, the `01 · of('Noel Sebastian')` caption). Noel's call.
 
+### Deferred by Noel — 2026-09-26 (revisit after implementation is complete)
+
+Noel's instruction: record these, finish the implementation, then revisit. Do not act on them
+before then.
+
+- **The Stack's nodes are left as built.** Across the rows they form one smooth S, not the
+  zig-zag in the sketch Noel chose, because the stack span's left bend falls in the heading. Noel
+  may change the Stack after everything is done. Pinning control point 41 to row 1 would give a
+  zig-zag through renderer scaling alone, with no coordinate change, but it is not to be done now.
+- **The line is not always smooth: some turns are sharp enough to read as corners, not a curve.**
+  Named instance: the start of `02 — scan()` and the turn after it. Control points 7–10
+  (`x` −0.38 → −0.58 → −0.68 → −0.46) reverse direction over only 0.017 of `y`, and uniform
+  Catmull-Rom over unevenly spaced points tightens exactly such reversals into cusps.
+  **Unverified second suspect:** `anchors.ts` scales `y` linearly and separately between each
+  pair of anchors, so the curve's slope in pixels jumps at every seam and in-section anchor. That
+  would turn a smooth normalised curve into visible corners wherever two neighbouring spans get
+  different scale factors. Measure the pixel tangent on both sides of each anchor before changing
+  any geometry.
+- **The work spine (`Problems, solved`) should be straight.** Control points 22–26 carry
+  deliberate "outward breaths" (`x` −0.72, −0.76, −0.74, −0.77, −0.75), and to Noel they read as
+  an uneven, dirty line rather than as attachment points. Straightening them is a `path.ts` edit.
+  Re-run the continuity and chord tests, and re-check the branch origins in `work.ts`, which
+  read the curve's `x`.
+- **Two questions still open from Phase 8:** whether RxJS joins the Stack (it is absent from the
+  resume's Skills table), and whether the ~395px gap between the final emission and the footer's
+  `|` should close.
+
 ### Opened by Task 8.2 — 2026-09-26
 
 - **The final emission and the `|` are 392–396px apart on desktop, 526px at 375, and the line
