@@ -25,7 +25,7 @@
  * section stays in its head.
  */
 import { caseStudies } from '../data/content';
-import { yearsElapsed } from '../lib/career';
+import { yearsElapsed, isDecadeOrMore } from '../lib/career';
 import type { CaseStudyDiagram } from '../lib/diagrams/types';
 import { frametimeGeometry } from '../lib/diagrams/frametime';
 import { scatterGeometry } from '../lib/diagrams/scatter';
@@ -125,6 +125,11 @@ const studies = caseStudies.map((study, i) => {
 });
 
 const viewBox = `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`;
+
+// Spec §9.02: from ten years the lede says "a decade" instead of a number that would need
+// finding and re-editing every year past ten (isDecadeOrMore, src/lib/career.ts).
+const years = yearsElapsed();
+const careerSpan = isDecadeOrMore(years) ? 'a decade' : `${years} years`;
 ---
 
 <section class="work" id="work" data-work data-signal-section="work">
@@ -133,7 +138,7 @@ const viewBox = `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`;
       <p class="work__marker">03 — switchMap()</p>
       <h2 class="work__title">Problems, solved</h2>
       <p class="work__lede">
-        Four engagements from {yearsElapsed()} years of shipping, each as problem, approach
+        Four engagements from {careerSpan} of shipping, each as problem, approach
         and result — with the result drawn from the numbers it claims.
       </p>
     </header>

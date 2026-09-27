@@ -11,3 +11,14 @@ export function yearsElapsed(now: Date = new Date()): number {
   if (beforeAnniversary) years -= 1;
   return years;
 }
+
+/**
+ * Spec §9.02: from ten years the copy should say "a decade" rather than a number that
+ * would need finding and re-editing every year past ten. Every place that states the span
+ * in words (not the numeral stat, which keeps counting) branches on this. Takes the year
+ * count `yearsElapsed()` already produced, not a Date, so it stays a one-line boundary
+ * check with nothing of its own to get wrong about anniversaries.
+ */
+export function isDecadeOrMore(years: number): boolean {
+  return years >= 10;
+}

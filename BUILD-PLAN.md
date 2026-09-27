@@ -1582,8 +1582,25 @@ decision was made; this section records *what it is*.
   everything else (final review, I1). Fixed to `overflow-x:clip`; the nav now persists at every
   width, so the decision's reasoning holds as written from this point on.
 
+- **2026-09-27 (Noel)** — **The year count: monthly rebuild, and "a decade" from ten years.**
+  Final review finding I2 — a static build freezes `yearsElapsed()`, so a deploy made in the
+  week before 1 Oct 2026 would ship "9+ years" past the tenth anniversary. Two parts, both
+  implemented. (1) `isDecadeOrMore(years)` (`src/lib/career.ts`, TDD'd in `tests/career.test.ts`)
+  is the one place the ">= 10" boundary lives; `SelectedWork.astro` and `BaseLayout.astro` — the
+  two places that state the span in words rather than as the numeral stat — read "a decade"
+  once it is true, and their current below-ten wording otherwise (spec §9.02). `content.ts`'s
+  `stats` numeral counter is untouched by Noel's ruling: it keeps counting past ten rather than
+  freezing at "a decade" as a number. (2) `.github/workflows/scheduled-rebuild.yml` re-triggers
+  a Vercel deploy monthly (`0 0 1 * *`, plus `workflow_dispatch`) via `VERCEL_DEPLOY_HOOK`, so
+  the count self-corrects without a manual push. See Known Gaps for what is still needed before
+  that job can do anything.
+
 ## Known Gaps
 
+- **The scheduled rebuild needs Noel to create a Vercel Deploy Hook and save it as the
+  `VERCEL_DEPLOY_HOOK` repo secret; until then the count only moves on a push.**
+  `.github/workflows/scheduled-rebuild.yml` exists and runs monthly, but with no secret set it
+  logs a `::warning::` and exits 0 rather than calling anything (2026-09-27, I2).
 - No test framework existed before Phase 0. Vitest covers pure modules only —
   `career.ts`, `signal/path.ts`, and later `audio/engine.ts` scheduling. Motion and visual
   work is verified by hand; this is a deliberate limit, not an oversight.

@@ -10,7 +10,12 @@
  * canonical URLs and OG/Twitter tags were correct and are not part of the rebuild.
  */
 import '../styles/global.css';
-import { yearsElapsed } from '../lib/career';
+import { yearsElapsed, isDecadeOrMore } from '../lib/career';
+
+// Spec §9.02: from ten years the description says "a decade" instead of a number that
+// would need finding and re-editing every year past ten (isDecadeOrMore, src/lib/career.ts).
+const years = yearsElapsed();
+const careerSpan = isDecadeOrMore(years) ? 'a decade' : `${years}+ years`;
 
 interface Props {
   title?: string;
@@ -35,7 +40,7 @@ interface Props {
 
 const {
   title = 'Noel Sebastian — Senior Web Engineer & Angular Specialist',
-  description = `I build high-scale frontends for companies — and fast, reliable websites for growing businesses. ${yearsElapsed()}+ years, deep in the Angular ecosystem, and available for freelance.`,
+  description = `I build high-scale frontends for companies — and fast, reliable websites for growing businesses. ${careerSpan}, deep in the Angular ecosystem, and available for freelance.`,
   ogImage = '/og-image.png',
   collectionSchema = true,
   personJobTitle = 'Senior Web Engineer & Angular Specialist',

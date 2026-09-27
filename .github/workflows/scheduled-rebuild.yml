@@ -1,0 +1,33 @@
+name: Scheduled rebuild
+
+# The site is a static build: yearsElapsed() (src/lib/career.ts) runs once, at build time,
+# and freezes until the next deploy. Push-only deploys would leave the career-span copy
+# silently stale for however long the branch sits between pushes — most visibly across
+# 1 Oct, when the tenth anniversary ticks the count over (BUILD-PLAN.md, I2). This job
+# re-triggers a build monthly so the count self-corrects without anyone remembering to
+# push on the day. 00:00 UTC on the 1st is 10:00/11:00 in Sydney (AEST/AEDT), i.e. after
+# the 1 Oct anniversary has already ticked over there, not before it.
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+# Nothing here touches repo contents or the Actions API — it only calls an external URL.
+permissions: {}
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy hook
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          # A fork has no access to this repo's secrets, and the hook does not exist until
+          # Noel creates it in Vercel and saves it here (BUILD-PLAN.md Known Gaps). Neither
+          # case is a workflow failure — there is just nothing to call yet.
+          if [ -z "$VERCEL_DEPLOY_HOOK" ]; then
+            echo "::warning::VERCEL_DEPLOY_HOOK is not set — skipping the deploy-hook call. See BUILD-PLAN.md Known Gaps."
+            exit 0
+          fi
+          curl -fsS -X POST "$VERCEL_DEPLOY_HOOK"

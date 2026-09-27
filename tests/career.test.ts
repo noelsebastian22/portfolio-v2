@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { yearsElapsed, CAREER_START } from '../src/lib/career';
+import { yearsElapsed, isDecadeOrMore, CAREER_START } from '../src/lib/career';
 
 describe('yearsElapsed', () => {
   it('starts from October 2016', () => {
@@ -17,5 +17,19 @@ describe('yearsElapsed', () => {
 
   it('does not tick early in the anniversary month', () => {
     expect(yearsElapsed(new Date('2027-09-30T00:00:00Z'))).toBe(10);
+  });
+});
+
+describe('isDecadeOrMore', () => {
+  it('is false below ten years', () => {
+    expect(isDecadeOrMore(9)).toBe(false);
+  });
+
+  it('is true at exactly ten years', () => {
+    expect(isDecadeOrMore(10)).toBe(true);
+  });
+
+  it('is true above ten years', () => {
+    expect(isDecadeOrMore(11)).toBe(true);
   });
 });
