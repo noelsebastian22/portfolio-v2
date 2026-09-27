@@ -41,8 +41,10 @@ deleting them is Phase 0 work.
   a bug — it breaks the zero-JS readability requirement.
 - **One canonical curve.** `src/lib/signal/path.ts` is the only place the signal's geometry
   is defined. Adding a renderer must never mean redefining the curve.
-- **Never invent a number.** Every metric on the site traces to `public/noel-sebastian.pdf`.
-  Derive elapsed years from `CAREER_START`; never hard-code a year count.
+- **Never invent a number.** Every metric on the site traces to `docs/resume-transcript.md`
+  (the transcription of `Resume.pdf`, plus confirmed notes added to it under its own
+  "Confirmed notes" heading — see that file's header for the rule). Derive elapsed years
+  from `CAREER_START`; never hard-code a year count.
 - **Performance is the pitch.** The budget in `BUILD-PLAN.md` → Global Constraints is a
   commitment. Any change that moves the JS bundle gets recorded with its number.
 - **The scroll is the transport.** Nothing animates on a timer except the audio drone and

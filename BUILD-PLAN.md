@@ -49,8 +49,10 @@ the spec.
   render-blocking JS above the fold.
 - **Accessibility:** WCAG 2.2 AA. Every word server-rendered and readable with JS disabled.
   `prefers-reduced-motion` turns choreography into instant state changes.
-- **Content truth:** `Resume.pdf` is the source for all metrics and dates. Never invent a
-  number. Derive elapsed years from a constant, never hard-code.
+- **Content truth:** `docs/resume-transcript.md` (the transcription of `Resume.pdf`, plus
+  confirmed notes added to it under its own "Confirmed notes" heading) is the source for all
+  metrics and dates. Never invent a number. Derive elapsed years from a constant, never
+  hard-code.
 
 ---
 
@@ -1594,6 +1596,18 @@ decision was made; this section records *what it is*.
   a Vercel deploy monthly (`0 0 1 * *`, plus `workflow_dispatch`) via `VERCEL_DEPLOY_HOOK`, so
   the count self-corrects without a manual push. See Known Gaps for what is still needed before
   that job can do anything.
+- **2026-09-27 (Noel)** — **"Industry-first" stays in the Winning Group case study
+  (`content.ts:103`), confirmed.** Final review finding I3: the word is not in `Resume.pdf`
+  (transcribed as `docs/resume-transcript.md`), only in the older `public/noel-sebastian.pdf`
+  (the March 2026 CV) — the newer resume dropped it when the bullet was rewritten. Noel
+  confirmed the claim itself is true, so the word stays; `docs/resume-transcript.md` records the
+  confirmation under a new "Confirmed notes" heading, separate from the verbatim transcription.
+- **2026-09-27** — **Reconciled: `docs/resume-transcript.md` is the content-truth rule, not
+  either PDF by name.** `AGENTS.md` said `public/noel-sebastian.pdf`; this file's Global
+  Constraints said `Resume.pdf`. Two files each naming a different PDF directly is exactly how
+  I3 happened — a claim true of one and not the other, with nothing recording which one counts.
+  The rule was already `docs/resume-transcript.md` (2026-09-20's decision, above) plus any
+  confirmed notes added to it since; both files now say that, identically.
 
 ## Known Gaps
 

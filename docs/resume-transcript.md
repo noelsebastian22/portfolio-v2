@@ -145,3 +145,15 @@ Both are correct and belong to different employers: **90%+** is Winning Group's 
 headline Skills figure), **85%** is SRT Marine. A controller addendum previously called this an
 internal contradiction and asked for it to be reconciled. That was wrong — nothing needs
 reconciling, and neither number should be changed or dropped.
+
+## Confirmed notes (not in the verbatim transcription)
+
+This file's own rule is "if a claim is not in this file, it does not go on the site." The one
+exception is a note added under this heading, confirmed directly by Noel — never an edit to the
+transcription above, which stays a faithful record of `Resume.pdf` alone.
+
+- **Confirmed by Noel on 2026-09-27:** the Angular v20 migration at Winning Group is described on
+  the site as industry-first (`content.ts:103`). It appears in the March 2026 CV
+  (`public/noel-sebastian.pdf`: "Led the industry-first migration to Angular v20…") and not in
+  this file's source, the September 2026 `Resume.pdf` ("Led the migration to Angular v20…") — the
+  newer resume dropped the word when the bullet was rewritten. The claim stays on the site.
