@@ -57,7 +57,13 @@ import ContactForm from './ContactForm.astro';
               <ul class="contact__socials" role="list">
                 {socials.map((social) => (
                   <li>
-                    <a class="contact__link" href={social.href} target="_blank" rel="noopener noreferrer">
+                    <a
+                      class="contact__link"
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-describedby="new-tab-note"
+                    >
                       {social.label}
                     </a>
                   </li>

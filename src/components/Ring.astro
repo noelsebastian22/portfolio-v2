@@ -129,7 +129,7 @@ const srcset = (urls: Record<string, string>) =>
                     label-content-name-mismatch flagged the reverse — the computed name
                     read "title host" while the visible text reads "host … title". */}
                 aria-labelledby={`${card.hostId} ${card.titleId}`}
-                aria-describedby="ring-new-tab"
+                aria-describedby="new-tab-note"
               >
                 <div class="card__chrome">
                   <span class="card__host" id={card.hostId}>{card.host}</span>
@@ -166,7 +166,7 @@ const srcset = (urls: Record<string, string>) =>
                     href={card.repo}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-describedby="ring-new-tab"
+                    aria-describedby="new-tab-note"
                   >
                     Source on GitHub<span class="card__sr"> for {card.title}</span>
                   </a>
@@ -177,10 +177,6 @@ const srcset = (urls: Record<string, string>) =>
         </ul>
       </div>
     </div>
-
-    {/* Referenced by every card link's description; `hidden` keeps it out of the reading
-        order while the reference still resolves. */}
-    <span id="ring-new-tab" hidden>opens in a new tab</span>
   </div>
 </section>
 

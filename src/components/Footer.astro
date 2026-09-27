@@ -62,7 +62,13 @@ const year = new Date().getFullYear();
         <ul class="site-footer__socials" role="list">
           {socials.map((social) => (
             <li>
-              <a class="site-footer__link" href={social.href} target="_blank" rel="noopener noreferrer">
+              <a
+                class="site-footer__link"
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-describedby="new-tab-note"
+              >
                 {social.label}
               </a>
             </li>

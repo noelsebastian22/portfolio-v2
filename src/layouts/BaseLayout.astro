@@ -148,6 +148,12 @@ const collectionPageSchema = {
          word it illustrates is in the content it sits behind. -->
     <div id="signal-layer" aria-hidden="true"></div>
 
+    <!-- Shared by every target="_blank" link on the site (final review, M9) —
+         `aria-describedby="new-tab-note"` — one page-level note rather than a copy per
+         component. `hidden` keeps it out of the reading order while the reference still
+         resolves, same pattern the ring cards used before this existed. -->
+    <span id="new-tab-note" hidden>opens in a new tab</span>
+
     <slot />
 
     <!--
