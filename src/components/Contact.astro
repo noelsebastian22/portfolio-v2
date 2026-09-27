@@ -128,9 +128,9 @@ import ContactForm from './ContactForm.astro';
     letter-spacing: -0.02em;
     text-transform: uppercase;
     /* At 375 the last line was "YOU" alone (Decisions, 2026-09-26). Chromium balances up
-       to a few lines, which covers this headline; Safari and Firefox both support the
-       property too, so the fallback below (the browser's ordinary greedy wrap) is unused
-       everywhere it matters in practice. */
+       to a few lines, which covers this headline, and Safari and Firefox both support the
+       property too — there is no browser left here that falls back to ordinary greedy
+       wrap and re-orphans it. */
     text-wrap: balance;
   }
 

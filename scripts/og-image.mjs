@@ -180,12 +180,15 @@ async function buildSvg({ ground, signal, type, typeDim }) {
   const archivoBody = await loadFont('archivo/Archivo-Regular.ttf');
   const mono = await loadFont('jetbrains-mono/JetBrainsMono-Regular.ttf');
 
-  const { name, boxSize } = solveNameAndGlyphLayout(archivoDisplay, 'NOEL SEBASTIAN');
+  const { name, fontSize: nameFontSize, boxSize } = solveNameAndGlyphLayout(archivoDisplay, 'NOEL SEBASTIAN');
   const originX = CARD.width - MARGIN - boxSize; // the glyph's box sits against the right margin
 
   // Centred on the text block, name top to mono line's bottom — both edges read off the
   // fonts' own ascender/descender metrics at the sizes actually used, not eyeballed.
-  const nameAscent = (archivoDisplay.ascender / archivoDisplay.unitsPerEm) * NAME_FONT_SIZE;
+  // nameFontSize, not NAME_FONT_SIZE: "NOEL SEBASTIAN" never shrinks today, so the two are
+  // numerically equal here, but the solved size is the one that stays right if a longer
+  // name ever forces solveNameAndGlyphLayout's shrink branch to run.
+  const nameAscent = (archivoDisplay.ascender / archivoDisplay.unitsPerEm) * nameFontSize;
   const monoFontSize = 19;
   const monoDescent = (Math.abs(mono.descender) / mono.unitsPerEm) * monoFontSize;
   const textBlockTop = NAME_Y - nameAscent;

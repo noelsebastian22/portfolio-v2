@@ -292,9 +292,11 @@ const PORTRAIT_BASE = '/images/portrait/portrait';
     width: 100%;
     max-width: 600px;
     height: auto;
-    /* The page grain (`body::after`) sits at z-index -2, behind all content, so an
-       opaque element punches a grain-free hole in it. Measured on this page: the ground
-       reads 15,14,13 with grain and the portrait's dissolved corners 10,9,7 without it.
+    /* The page grain (`body::after`) paints above content (`--z-grain`, moved there
+       2026-09-24 — see global.css), so an opaque element still punches a grain-free hole
+       in it: the grain layer covers the viewport, but the portrait's own pixels win
+       wherever it sits on top. Measured on this page: the ground reads 15,14,13 with
+       grain and the portrait's dissolved corners 10,9,7 without it.
        Small, but it is a hard-edged rectangle in a dark field, which is the one kind of
        difference the eye finds reliably — and a boundary around an asset Task 5.1 built
        to have none.

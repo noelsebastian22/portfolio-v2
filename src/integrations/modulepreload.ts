@@ -3,9 +3,10 @@
  * imports it has been fetched and parsed — one extra round trip per shared chunk, on every
  * page load. Vite injects `modulepreload` links automatically when it owns the HTML entry
  * point, but Astro's static build renders page HTML itself and hands Vite only the client
- * script graph, so that automatic injection never runs (confirmed: no Vite build option
- * reaches into Astro-rendered HTML after the fact — this integration is the documented
- * fix, Task 9.4).
+ * script graph, so that automatic injection never runs. Checked Vite's `build.modulePreload`
+ * option and Astro's own integration hooks: neither rewrites HTML Astro has already
+ * written to disk, so this integration does it directly, as an `astro:build:done` pass
+ * (Task 9.4).
  *
  * `astro:build:done` runs after every page's HTML is on disk. For each page, this walks the
  * static import closure of its entry scripts (the same `pageScripts` / `staticImports` /

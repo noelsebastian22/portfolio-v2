@@ -171,19 +171,10 @@ const year = new Date().getFullYear();
     color: var(--shipped);
   }
 
-  /* Centred (x 0 is the signal layer's centre) and sitting astride the footer's own
-     top-edge hairline, because that is where `svg-signal.ts` measures this element's
-     centre line as the curve's terminus (`measureTerminus`, `resolveSeamPixels`) — the
-     two meet here by measurement, not because both happen to be at the same fixed edge.
-     Without this box, the flow cursor entering `.site-footer__inner` sits one
-     hairline below the footer's own top edge (the border, with no padding on
-     `.site-footer` before it). Pulling the bar up by half its own height plus that
-     hairline (margin-block-start) centres it exactly on the footer's top edge, astride
-     the border; pushing margin-block-end back down by the same hairline, less that
-     same half-height, cancels the net height this box would otherwise add to the
-     flow. The two margins are unequal but sum with the height to zero for any stroke
-     or hairline width, so `.site-footer__inner` starts, and the footer ends, exactly
-     where they would if this bar were not here. */
+  /* `svg-signal.ts` measures this element's centre as the curve's terminus, so it has to
+     sit astride the footer's top-edge hairline exactly, not just visually near it. The
+     unequal margin-block pair centres it there while summing to zero net height, so the
+     bar adds no space of its own to the footer's flow. */
   .site-footer__complete {
     width: var(--s-9);
     height: var(--signal-stroke);
