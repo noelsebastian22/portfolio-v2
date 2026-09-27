@@ -1576,7 +1576,11 @@ decision was made; this section records *what it is*.
   `qburst`, `srtmarine`, `winning`; 312 KB in all). "Problems, solved" may be reworked, and they
   are its source material.
 - **2026-09-26 (controller)** — no back-to-top link: the persistent nav already reaches every
-  section, and the skip link covers the top.
+  section, and the skip link covers the top. **Amended 2026-09-27:** the premise was false when
+  written — `#top`'s inline `overflow-x:hidden` made it a scroll container of its own, so Nav's
+  `position: sticky` stuck to that div instead of the viewport, and the nav scrolled away like
+  everything else (final review, I1). Fixed to `overflow-x:clip`; the nav now persists at every
+  width, so the decision's reasoning holds as written from this point on.
 
 ## Known Gaps
 

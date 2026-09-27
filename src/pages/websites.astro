@@ -99,7 +99,9 @@ const eyebrowClass = 'mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text
   <script type="application/ld+json" is:inline set:html={JSON.stringify(serviceSchema)} slot="head" />
   <script type="application/ld+json" is:inline set:html={JSON.stringify(faqSchema)} slot="head" />
 
-  <div id="top" style="overflow-x:hidden">
+  <!-- overflow-x:clip, not hidden — see index.astro's #top for why hidden turns this into
+       a scroll container that a sticky child sticks to instead of the viewport. -->
+  <div id="top" style="overflow-x:clip">
     <WebsitesNav />
 
     {/* tabindex="-1": see index.astro's #main-content for why the skip link needs this. */}

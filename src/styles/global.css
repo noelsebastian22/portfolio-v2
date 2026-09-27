@@ -18,9 +18,23 @@
 
 html {
   /* Sticky nav clearance for anchor jumps. Not motion — Lenis owns the smoothing and
-     `scroll-behavior: smooth` fights it, so it is deliberately absent. */
+     `scroll-behavior: smooth` fights it, so it is deliberately absent. --s-9 (96px) clears
+     the nav's own measured height at every width but the narrowest: 67px (1440), 91px
+     (768 and 390), 133px (320) — see the media step below for that last one. */
   scroll-padding-top: var(--s-9);
   -webkit-text-size-adjust: 100%;
+}
+
+@media (max-width: 360px) {
+  html {
+    /* Below 390px the nav's actions row (sound toggle + CV) runs out of room beside the
+       links and wraps onto a third line, measured at 133px tall — taller than --s-9. No
+       Nav.astro breakpoint marks this: it is ordinary flex-wrap finding less room, not a
+       step the nav takes on purpose, so there is no nav-owned custom property to read
+       instead of a width guard here. --s-9 + --s-7 (96 + 48 = 144px) clears the measured
+       133px with headroom, built from the existing ramp rather than a new literal. */
+    scroll-padding-top: calc(var(--s-9) + var(--s-7));
+  }
 }
 
 body {

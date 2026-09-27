@@ -11,7 +11,11 @@ import Footer from '../components/Footer.astro';
 ---
 
 <BaseLayout>
-  <div id="top" style="overflow-x:hidden">
+  <!-- overflow-x:clip, not hidden: `hidden` forces the paired axis (overflow-y) to compute
+       to `auto`, which makes this div a scroll container of its own — Nav's
+       `position: sticky` then sticks to it instead of the viewport. `clip` still stops the
+       ring's wide scroller from opening up horizontal page scroll, without creating one. -->
+  <div id="top" style="overflow-x:clip">
     <Nav />
     <!-- tabindex="-1": #main-content has no natural focus target of its own, so without
          this the skip link's href="#main-content" only scrolls — document.activeElement
