@@ -1,0 +1,125 @@
+---
+/**
+ * 404 — final review, M2. Astro emits this as dist/404.html, which Vercel serves
+ * automatically for any unmatched route; nothing routes to it directly.
+ *
+ * Same shell as the root page (BaseLayout, the real Nav, the real Footer) so a mistyped
+ * or dead link still looks like the site rather than a platform default. `noindex` via
+ * the head slot, and excluded from the sitemap (astro.config.mjs's sitemap `filter`).
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout title="404 — Noel Sebastian" collectionSchema={false}>
+  <meta name="robots" content="noindex" slot="head" />
+
+  <div id="top" style="overflow-x:clip">
+    <Nav />
+    <main id="main-content" tabindex="-1">
+      <section class="not-found">
+        <div class="not-found__inner">
+          <p class="not-found__marker">404 — throwError()</p>
+          <h1 class="not-found__title">This route never emitted.</h1>
+          <p class="not-found__lede">
+            The page you were after doesn't exist, or moved. Try the homepage, or grab the CV
+            directly.
+          </p>
+          <div class="not-found__actions">
+            <a class="not-found__home" href="/">Back to the homepage</a>
+            <a class="not-found__cv" href="/noel-sebastian.pdf" download>Download CV</a>
+          </div>
+        </div>
+      </section>
+    </main>
+    <Footer />
+  </div>
+</BaseLayout>
+
+<style>
+  .not-found {
+    display: flex;
+    align-items: center;
+    min-height: 60vh;
+    padding-block: var(--section-y);
+  }
+
+  .not-found__inner {
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--s-5);
+  }
+
+  .not-found__marker {
+    margin: 0;
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .not-found__title {
+    max-width: 16ch;
+    margin: var(--s-4) 0;
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: clamp(32px, 4.2vw, 62px);
+    font-stretch: 125%;
+    font-weight: 700;
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+
+  .not-found__lede {
+    max-width: 52ch;
+    margin: 0;
+    color: var(--type-dim);
+    font-size: clamp(15px, 1.15vw, 17px);
+    line-height: 1.6;
+  }
+
+  .not-found__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-5);
+    margin-top: var(--s-7);
+  }
+
+  /* Same treatment as the nav's CV link: --signal on a CTA is what §7.1 reserves it for. */
+  .not-found__home,
+  .not-found__cv {
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+
+  .not-found__home {
+    border: 1px solid color-mix(in srgb, var(--type) 24%, transparent);
+    color: var(--type);
+  }
+
+  .not-found__home:hover {
+    border-color: var(--type);
+  }
+
+  .not-found__cv {
+    background: var(--signal);
+    color: var(--ground);
+  }
+
+  .not-found__cv:hover {
+    background: var(--type);
+  }
+
+  .not-found__cv:focus-visible {
+    outline-color: var(--type);
+  }
+</style>
