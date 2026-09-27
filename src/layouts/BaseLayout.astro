@@ -6,11 +6,16 @@
  * page body. Nav and Footer are composed by the pages themselves, because /websites
  * needs a different nav and a trimmed footer.
  *
- * The SEO block below is carried over unchanged from the cream direction — the schema,
- * canonical URLs and OG/Twitter tags were correct and are not part of the rebuild.
+ * The SEO block below is mostly carried over unchanged from the cream direction — the
+ * Person schema, canonical URLs and OG/Twitter tags were correct and are not part of the
+ * rebuild. The CollectionPage schema's `itemListElement` is the one exception (final
+ * review, M3): it now builds itself from `caseStudies`, having drifted into listing
+ * PLUMBER. (not a case study at all) and pointing three of its four `url`s at the
+ * homepage, with Direct Line Group missing entirely.
  */
 import '../styles/global.css';
 import { yearsElapsed, isDecadeOrMore } from '../lib/career';
+import { caseStudies } from '../data/content';
 
 // Spec §9.02: from ten years the description says "a decade" instead of a number that
 // would need finding and re-editing every year past ten (isDecadeOrMore, src/lib/career.ts).
@@ -77,12 +82,17 @@ const collectionPageSchema = {
   url: 'https://www.noel-sebastian.com',
   mainEntity: {
     '@type': 'ItemList',
-    itemListElement: [
-      { '@type': 'Article', name: 'Winning Group', url: 'https://www.noel-sebastian.com', description: 'E-commerce frontend at scale — Angular v20, Nx monorepo migration.' },
-      { '@type': 'Article', name: 'PLUMBER.', url: 'https://plumber.noel-sebastian.com/', description: 'Single-page marketing site for a New York-based plumbing & handyman company.' },
-      { '@type': 'Article', name: 'SRT Marine', url: 'https://www.noel-sebastian.com', description: 'Real-time marine control UI at 60fps.' },
-      { '@type': 'Article', name: 'QBurst', url: 'https://www.noel-sebastian.com', description: 'Analytics dashboards with D3.js and sub-second latency.' },
-    ],
+    // caseStudies (content.ts) is Section 03's actual list, so this can no longer list a
+    // site that isn't one (PLUMBER., a ring project) or omit one that is (Direct Line
+    // Group). Each study's `<li>` in SelectedWork.astro has no `id` of its own today, so
+    // there is no anchor to link to yet — every url is the page itself, the brief's
+    // fallback for exactly that case.
+    itemListElement: caseStudies.map((study) => ({
+      '@type': 'Article',
+      name: study.name,
+      url: 'https://www.noel-sebastian.com',
+      description: `${study.role}: ${study.problem}`,
+    })),
   },
 };
 ---
