@@ -12,6 +12,7 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import WebsitesNav from '../components/WebsitesNav.astro';
+import ContactForm from '../components/ContactForm.astro';
 import Footer from '../components/Footer.astro';
 import {
   websitesHero as hero,
@@ -400,7 +401,11 @@ const eyebrowClass = 'mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text
           </p>
         </div>
 
-        <!-- Quote form rebuilt in Phase 14 -->
+        <!-- Same ContactForm.astro Contact.astro uses (final review, I4) — reuses the
+             working Formspree wiring rather than a second, drifting quote form. Left
+             unwrapped: Phase 14 owns this page's restyle, and today's page has no
+             Tailwind CSS behind its `max-w-*`/`mx-auto` classes for a wrapper to match. -->
+        <ContactForm lookingFor="project" />
       </section>
     </main>
 
@@ -418,3 +423,11 @@ const eyebrowClass = 'mb-3.5 font-mono text-[12px] uppercase tracking-[2px] text
     display: none;
   }
 </style>
+
+<script>
+  // Same island Contact.astro mounts — contact-form.ts binds every form[data-contact-form]
+  // on the page, not by id, so it already covered this page's quote form by name.
+  import { mountContactForms } from '../islands/contact-form';
+
+  mountContactForms();
+</script>
