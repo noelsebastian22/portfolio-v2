@@ -1344,6 +1344,8 @@ only, no particle portrait, no ring, no WebGL, no audio (spec §14).
 **Verification:** the page no longer references Tailwind. Its distinct SEO targeting for
 local-business search is preserved.
 
+- [ ] Remove the `/websites` redirect from `vercel.json`, the sitemap filter, and restore Contact's `/websites` link.
+
 ## PHASE 15 — Preloader + Final Polish
 
 **Deliverable:** the preloader — built last, because the curtain needs the stage to exist —
@@ -1609,8 +1611,15 @@ decision was made; this section records *what it is*.
   The rule was already `docs/resume-transcript.md` (2026-09-20's decision, above) plus any
   confirmed notes added to it since; both files now say that, identically.
 
+- **2026-09-27 (Noel)** — **`/websites` redirects (307) to `/#contact` until Phase 14.** Its
+  unrestyled state would have replaced production's working page on merge; the recruiter site
+  ships now. `vercel.json` holds the redirect, the sitemap filter drops the URL, and Contact's
+  freelance line points at the form instead of the page.
+
 ## Known Gaps
 
+- **The `/websites` redirect is only verifiable on a Vercel deployment** (`astro preview`
+  ignores `vercel.json`).
 - **The scheduled rebuild needs Noel to create a Vercel Deploy Hook and save it as the
   `VERCEL_DEPLOY_HOOK` repo secret; until then the count only moves on a push.**
   `.github/workflows/scheduled-rebuild.yml` exists and runs monthly, but with no secret set it

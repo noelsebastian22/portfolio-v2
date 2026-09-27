@@ -4,7 +4,8 @@
  *
  * The terminal operator: nothing runs until you subscribe, so the headline is the CTA. The
  * form, then the direct routes (email, CV, socials), then one line for freelance clients,
- * which inherits the retired About's small-business sentence and points at `/websites`.
+ * which inherits the retired About's small-business sentence. Task 9.7 redirects `/websites`
+ * to this section; its link is restored in Phase 14 when the restyle ships.
  *
  * **The form itself is `ContactForm.astro`** (extracted for the final review's I4, so
  * `/websites`'s quote form is the same markup rather than a second, drifting copy) — see
@@ -73,7 +74,7 @@ import ContactForm from './ContactForm.astro';
           </div>
         </dl>
         <p class="contact__freelance">
-          Need a website for your business? <a class="contact__link" href="/websites">I build those too.</a>
+          Need a website for your business? I build those too — pick "A project" in the form.
         </p>
       </div>
     </div>

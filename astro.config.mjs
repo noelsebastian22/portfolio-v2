@@ -5,7 +5,13 @@ import modulePreload from './src/integrations/modulepreload';
 export default defineConfig({
   site: 'https://www.noel-sebastian.com',
   output: 'static',
-  integrations: [sitemap(), modulePreload()],
+  integrations: [
+    sitemap({
+      // Task 9.7: exclude /websites until the restyle in Phase 14
+      filter: (page) => !page.startsWith('https://www.noel-sebastian.com/websites'),
+    }),
+    modulePreload(),
+  ],
   build: {
     // Two render-blocking stylesheet round trips (5,341 + 1,806 = 7,147 bytes gzip, two
     // separate responses) become zero: the CSS lands in the HTML response instead. Measured
