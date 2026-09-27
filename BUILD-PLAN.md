@@ -71,7 +71,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2, reviewed clean, no fix round. Split drawn as a track the curve is pinned to; Gallery retired |
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired, the Stack's nodes sit on the weave; Contact's form works with JS off, and the line ends in a final emission over the footer's bar |
-| **9** | **SHIPPABLE — 2D site complete** | in progress | Tasks 9.1–9.5 done. Base-path JS 61,364 gzip (74.9% of budget), 0 render-blocking resources, Lighthouse mobile Performance 97 / Accessibility 100, **LCP 2,404ms — over the 2.0s budget, diagnosed, no local fix moved it; re-check against the real Vercel deploy in 9.6.** **Real finish line. Deploy here.** Task 9.6 remains |
+| **9** | **SHIPPABLE — 2D site complete** | in progress | Tasks 9.1–9.5 and 9.7 done; final whole-branch review done, its fix wave reviewed clean. Branch pushed; merge blocked on Noel (text CV PDF, preview bypass, VoiceOver). Base-path JS 61,490 gzip (75.1%), 0 render-blocking, Lighthouse mobile 97 / A11y 100, **LCP 2,404ms simulated (798ms real throttling) — decided on the Vercel preview in 9.6.** `/websites` redirects to `/#contact` until Phase 14. **Real finish line. Deploy here.** |
 | 10 | WebGL — gate + signal tube | not started | |
 | 11 | WebGL — particle portrait | not started | |
 | 12 | WebGL — 3D ring | not started | |
@@ -1267,9 +1267,32 @@ clock's stop function (item 4) adds back +40 to the inline module script. See
 
 - [ ] Push `feat/signal-path-rebuild` **only on Noel's word**. Verify the Vercel preview: the
   pages, the OG card fetched from the preview URL, the form's `action`, and Lighthouse against
-  the real network.
+  the real network. *Pushed 2026-09-27 on Noel's word (68f2c78; later commits local). The preview
+  builds, but Vercel Deployment Protection 302s every route to the login, so verification waits on
+  a Protection Bypass for Automation secret from Noel. Add to the checks: the `/websites` → `/#contact`
+  307 (Task 9.7) — `astro preview` ignores `vercel.json`, so only a Vercel deploy can show it.*
+- [ ] **Before the merge (Noel):** a text-based export of the September resume replaces
+  `public/noel-sebastian.pdf` (the served CV is the March one; `Resume.pdf` has no text layer, so ATS
+  cannot read it); a 5-minute VoiceOver pass on the preview (checklist in `task-9.5-report.md`).
+  After the merge: the `VERCEL_DEPLOY_HOOK` repo secret for the monthly rebuild.
 - [ ] Merge to `master` for production **only on Noel's word**, then smoke-check
   `https://www.noel-sebastian.com`. Phase 9 is marked complete only after that check.
+
+### Final whole-branch review — 2026-09-27
+
+Opus, over `6a4bac7..68f2c78`: ready with fixes — 0 Critical, 4 Important, 9 Minor
+(`.superpowers/sdd/BUILD-PLAN/final-review-report.md`). The one fix wave (`c02fc7c..8918fc2`) was
+reviewed clean. The fixes: the nav is sticky again (`overflow-x: clip`); the decade copy plus the monthly rebuild; "industry-first" kept and
+recorded; `/websites` given the Contact form (`ContactForm.astro`); a `robots.txt` sitemap URL; a 404 page;
+JSON-LD from `caseStudies`; the portrait source moved out of `public/`; a shared new-tab note. Parked:
+M5, the hero clock's per-second tick, as Noel's design call.
+
+### Task 9.7 — `/websites` redirects to Contact until Phase 14 (added 2026-09-27)
+
+- [x] `vercel.json`: `/websites` and `/websites/:path*` → `/#contact`, 307. The sitemap filter drops
+  the URL. Contact's freelance line points at the form instead of the page. Found in the final
+  review's re-check: without Tailwind, `/websites` renders essentially unstyled, and merging would
+  have replaced production's working page (Decisions, 2026-09-27).
 
 ## PHASE 10 — WebGL: Gate + Signal Tube
 
