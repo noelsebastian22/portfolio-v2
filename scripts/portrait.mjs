@@ -1,5 +1,5 @@
 /**
- * Bake the duotone still portrait from public/images/noel-sebastian.jpeg.
+ * Bake the duotone still portrait from gallery-masters/noel-sebastian.jpeg.
  *
  * Phase 11 turns this photograph into ~40,000 GPU particles, but the particle
  * portrait is the enhancement, not the baseline: mobile, reduced-motion and any
@@ -54,10 +54,13 @@ import sharp from 'sharp';
 import { readTokens, readTone } from './lib/tokens.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = path.join(ROOT, 'public', 'images', 'noel-sebastian.jpeg');
+// Tracked, but outside public/: nothing serves this 2.7 MB source directly (final review,
+// M8) — only this script reads it, to bake the six derivatives public/images/portrait/
+// actually ships.
+const SRC = path.join(ROOT, 'gallery-masters', 'noel-sebastian.jpeg');
 const OUT_DIR = path.join(ROOT, 'public', 'images', 'portrait');
 
-/** Spec §9.01. Anything else means the wrong file is in public/images/. */
+/** Spec §9.01. Anything else means the wrong file is in gallery-masters/. */
 const SOURCE_SIZE = 3960;
 
 /** 1x for a ~600px portrait panel, 2x for the same panel on a retina display. */
