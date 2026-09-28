@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "images": "node scripts/optimise-gallery.mjs && node scripts/portrait.mjs && node scripts/og-image.mjs",
-    "budget": "node scripts/budget.mjs"
+    "budget": "node scripts/budget.mjs",
+    "fonts": "node scripts/fonts.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.0.0",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@types/three": "^0.186.0",
     "opentype.js": "^2.0.0",
+    "subset-font": "^2.9.0",
     "vitest": "^5.0.1"
   }
 }
