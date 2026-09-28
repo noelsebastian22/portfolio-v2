@@ -71,7 +71,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2, reviewed clean, no fix round. Split drawn as a track the curve is pinned to; Gallery retired |
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired, the Stack's nodes sit on the weave; Contact's form works with JS off, and the line ends in a final emission over the footer's bar |
-| **9** | **SHIPPABLE — 2D site complete** | in progress | Tasks 9.1–9.5 and 9.7 done; final whole-branch review done, its fix wave reviewed clean. Branch pushed; merge blocked on Noel (text CV PDF, preview bypass, VoiceOver). Base-path JS 61,490 gzip (75.1%), 0 render-blocking, Lighthouse mobile 97 / A11y 100, **LCP 2,404ms simulated (798ms real throttling) — decided on the Vercel preview in 9.6.** `/websites` redirects to `/#contact` until Phase 14. **Real finish line. Deploy here.** |
+| 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | Merged to `master` (`c2b0e46`, ff), live on www.noel-sebastian.com; old site tagged `v1-letterpress` (`6a4bac7`). Task 9.8 subset the fonts (130,508 → 95,660 B preloaded). Preview Lighthouse ×3: Perf 94/99/99, A11y 100, **LCP median 1,988ms** (was 2,500). Production ×1: Perf 97, A11y/BP/SEO 100, LCP 2,165. Base-path JS 61,490 gzip (75.1%). Post-launch for Noel: September CV PDF, VoiceOver pass. |
 | 10 | WebGL — gate + signal tube | not started | |
 | 11 | WebGL — particle portrait | not started | |
 | 12 | WebGL — 3D ring | not started | |
@@ -1265,18 +1265,34 @@ clock's stop function (item 4) adds back +40 to the inline module script. See
 
 ### Task 9.6 — Deploy (controller with Noel, no subagent)
 
-- [ ] Push `feat/signal-path-rebuild` **only on Noel's word**. Verify the Vercel preview: the
+- [x] Push `feat/signal-path-rebuild` **only on Noel's word**. Verify the Vercel preview: the
   pages, the OG card fetched from the preview URL, the form's `action`, and Lighthouse against
   the real network. *Pushed 2026-09-27 on Noel's word (68f2c78; later commits local). The preview
   builds, but Vercel Deployment Protection 302s every route to the login, so verification waits on
   a Protection Bypass for Automation secret from Noel. Add to the checks: the `/websites` → `/#contact`
   307 (Task 9.7) — `astro preview` ignores `vercel.json`, so only a Vercel deploy can show it.*
-- [ ] **Before the merge (Noel):** a text-based export of the September resume replaces
+- [ ] **After the merge (Noel ruled 2026-09-29 — neither blocks shipping):** a text-based export of the September resume replaces
   `public/noel-sebastian.pdf` (the served CV is the March one; `Resume.pdf` has no text layer, so ATS
   cannot read it); a 5-minute VoiceOver pass on the preview (checklist in `task-9.5-report.md`).
-  After the merge: the `VERCEL_DEPLOY_HOOK` repo secret for the monthly rebuild.
-- [ ] Merge to `master` for production **only on Noel's word**, then smoke-check
-  `https://www.noel-sebastian.com`. Phase 9 is marked complete only after that check.
+  After the merge: the `VERCEL_DEPLOY_HOOK` repo secret for the monthly rebuild. *Done 2026-09-29:
+  hook `scheduled-rebuild` on `master`, secret set, a manual `workflow_dispatch` run returned Vercel's
+  `PENDING` job.*
+- [x] Merge to `master` for production **only on Noel's word**, then smoke-check
+  `https://www.noel-sebastian.com`. Phase 9 is marked complete only after that check. *2026-09-29:
+  preview verified with the bypass header (`.env.local` `VERCEL_AUTOMATION_BYPASS_SECRET`); found and
+  fixed (Task 9.8) the `/websites/` trailing-slash gap and LCP over 2.0s. Tagged `v1-letterpress` on
+  `6a4bac7`, `master` fast-forwarded to `c2b0e46`. Smoke check on the live domain: `/` 200, apex → www
+  308, `/websites` and `/websites/` 307 → `/#contact`, 404 page, `og-image.png` `image/png`, PDF,
+  `robots.txt`, sitemap, form `action` all correct; no `x-robots-tag`.*
+
+### Task 9.8 — Latin-subset the fonts; `/websites/` redirect gap (added 2026-09-29) ✅ Done
+
+- [x] Preview LCP median was 2,500ms (`p.hero__lede`, all render delay), so the recorded ruling
+  applied. `scripts/fonts.mjs` (`npm run fonts`, `subset-font`) writes `public/fonts/` from the
+  masters in `font-masters/`; it fails on a dropped used codepoint, a lost axis/feature, or a
+  `font-stretch` outside the kept range. Archivo 90,104 → 57,188 B, JetBrains Mono 40,404 → 38,472 B.
+  `vercel.json` gains an explicit `/websites/` source (`/websites/:path*` does not match the empty
+  path). Report: `task-9.8-report.md`.
 
 ### Final whole-branch review — 2026-09-27
 
@@ -1638,15 +1654,30 @@ decision was made; this section records *what it is*.
   unrestyled state would have replaced production's working page on merge; the recruiter site
   ships now. `vercel.json` holds the redirect, the sitemap filter drops the URL, and Contact's
   freelance line points at the form instead of the page.
+- **2026-09-29** — **Archivo's `wdth` axis is cut to 100–125.** The site only sets 100%, 112% and
+  125%; the originals were already Google's Latin subset, so codepoints saved ~4% and the axis cut
+  saved the rest (90 → 57 KB). `tokens.css` declares `font-stretch: 100% 125%`, and
+  `scripts/fonts.mjs` fails the run if the build ever sets a width outside it. A narrower width
+  means widening the axis in the script first. JetBrains Mono keeps `calt` (dropping it would give
+  20 KB but changes the ligatures — Noel's call, not taken).
+- **2026-09-29 (Noel)** — **The September CV PDF and the VoiceOver pass are post-launch, not merge
+  blockers.** The PDF is a static download that no content reads; swapping it is a file replace.
+- **2026-09-29** — **Rollback path:** Vercel Instant Rollback to the `6a4bac7` deployment for the
+  live site (note it disables auto-promotion of new `master` deploys until undone); the tag
+  `v1-letterpress` for the code.
 
 ## Known Gaps
 
 - **The `/websites` redirect is only verifiable on a Vercel deployment** (`astro preview`
-  ignores `vercel.json`).
-- **The scheduled rebuild needs Noel to create a Vercel Deploy Hook and save it as the
-  `VERCEL_DEPLOY_HOOK` repo secret; until then the count only moves on a push.**
-  `.github/workflows/scheduled-rebuild.yml` exists and runs monthly, but with no secret set it
-  logs a `::warning::` and exits 0 rather than calling anything (2026-09-27, I2).
+  ignores `vercel.json`). Verified on preview and production 2026-09-29.
+- **CLOSED 2026-09-29 —** the scheduled rebuild's `VERCEL_DEPLOY_HOOK` secret is set and a manual
+  run reached Vercel. First scheduled run: 1 Oct 00:00 UTC, which should flip the copy to "a decade".
+- **Served CV is still the March PDF** (`public/noel-sebastian.pdf`); replace with a text-based
+  export of the September resume. VoiceOver pass still owed (checklist in `task-9.5-report.md`).
+- **LCP has ~0 headroom.** Preview median 1,988ms, one run 2,645; production single run 2,165.
+  Next lever: drop the JetBrains Mono preload (the LCP element is set in Archivo).
+- **The `→` in "Bundle size, 100% → 40%" renders in a fallback face** — neither font has U+2192.
+  Allowlisted in `scripts/fonts.mjs`; the copy could say "to" instead.
 - No test framework existed before Phase 0. Vitest covers pure modules only —
   `career.ts`, `signal/path.ts`, and later `audio/engine.ts` scheduling. Motion and visual
   work is verified by hand; this is a deliberate limit, not an oversight.
