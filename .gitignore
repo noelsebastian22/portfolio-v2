@@ -22,11 +22,17 @@ pnpm-debug.log*
 # macOS
 .DS_Store
 
-# agent skill directories
-.agents/
+# agent skill directories — ignored, except the session-handoff skill every agent shares
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/session-handoff/
 .commandcode/
 .impeccable/
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/session-handoff
 
 # editor
 .vscode/extensions.json
