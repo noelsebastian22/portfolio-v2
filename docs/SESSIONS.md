@@ -22,7 +22,7 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 **Open**
 - The final-review minors the last entry deferred are now a Known Gap ("Final-review minors, deferred").
-- `.agents/` is gitignored (`.gitignore:26`), so the skill and `check.mjs` have no history. Noel to decide whether to track `.agents/skills/session-handoff/`.
+- Resolved in-session (Noel): `.agents/skills/session-handoff/` and the `.claude/skills/session-handoff` symlink are now tracked; the original `SKILL.md` is in `626c471`, the rework in `5c7d4e1`.
 - `feat/signal-path-rebuild` and `master` are at the same commit; decide which branch Phase 10 works from.
 
 **Next**
