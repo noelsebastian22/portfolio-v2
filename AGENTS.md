@@ -11,13 +11,14 @@ last session entry, the phase status, and the git state, and tells you where thi
 .claude/skills/session-handoff  →  .agents/skills/session-handoff/SKILL.md
 ```
 
-## The three documents
+## The documents
 
 | File | Job | Changes |
 |---|---|---|
 | `docs/superpowers/specs/2026-09-19-signal-path-design.md` | The design. What we are building and why. | Rarely |
 | `BUILD-PLAN.md` | Current state — phase status, decisions, known gaps. **Source of truth.** | Every session |
-| `docs/SESSIONS.md` | Chronological log — what happened, what failed, what is open. | Every session |
+| `docs/SESSIONS.md` | Chronological log — what happened, what failed, what is open. The last three entries. | Every session |
+| `docs/archive/` | Finished phases, closed gaps, older log entries — moved verbatim, append-only. Read by `grep`, not whole. | When the live docs are trimmed |
 
 If the plan and the spec disagree, the spec is wrong and must be updated in the same commit
 as the code that contradicts it.

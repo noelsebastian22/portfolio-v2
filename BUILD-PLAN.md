@@ -2,7 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:subagent-driven-development`
 > or `superpowers:executing-plans` to implement a phase task-by-task. Steps use checkbox
-> (`- [ ]`) syntax. **Phases 3–15 carry phase-level detail only** — expand the phase you are
+> (`- [ ]`) syntax. **Phases 10–15 carry phase-level detail only** — expand the phase you are
+> starting into task-level steps with `superpowers:writing-plans` before implementing it.
 > starting into task-level steps with `superpowers:writing-plans` before implementing it.
 
 **Goal:** Rebuild noel-sebastian.com as "Signal Path" — a dark, animation-led portfolio
@@ -24,6 +25,10 @@ plan. The plan argues from the spec; where they disagree, the spec is wrong and 
 updated in the same commit.
 
 **Session log:** `docs/SESSIONS.md`, written by the `session-handoff` skill.
+
+**Archive:** `docs/archive/` holds what this file no longer needs to carry — finished phases
+(`plan-phases.md`), closed gaps (`plan-closed-gaps.md`) and old session entries (`sessions.md`).
+Moved verbatim, append-only, never deleted. This file is current state only.
 
 ---
 
@@ -54,6 +59,7 @@ the spec.
   metrics and dates. Never invent a number. Derive elapsed years from a constant, never
   hard-code.
 
+
 ---
 
 ## Phase Status
@@ -69,9 +75,9 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 4 | Shell — layout, nav, footer | **complete** | Tasks 4.1–4.5, reviewed clean after 1 fix round. First JS since Phase 0 |
 | 5 | Sections 01–02 — Hero, Nine Years | **complete** | Tasks 5.1–5.3. First two islands; Stats.astro retired into NineYears |
 | 6 | Section 03 — Selected Work + diagrams | **complete** | Tasks 6.1–6.3, one fix round each. Curve pinned to sections; gutter derived |
-| 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2, reviewed clean, no fix round. Split drawn as a track the curve is pinned to; Gallery retired |
-| 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired, the Stack's nodes sit on the weave; Contact's form works with JS off, and the line ends in a final emission over the footer's bar |
-| 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | Merged to `master` (`c2b0e46`, ff), live on www.noel-sebastian.com; old site tagged `v1-letterpress` (`6a4bac7`). Task 9.8 subset the fonts (130,508 → 95,660 B preloaded). Preview Lighthouse ×3: Perf 94/99/99, A11y 100, **LCP median 1,988ms** (was 2,500). Production ×1: Perf 97, A11y/BP/SEO 100, LCP 2,165. Base-path JS 61,490 gzip (75.1%). Post-launch for Noel: September CV PDF, VoiceOver pass. |
+| 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2. The split is a track the curve is pinned to; Gallery retired |
+| 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired; Contact's form works with JS off |
+| 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
 | 10 | WebGL — gate + signal tube | not started | |
 | 11 | WebGL — particle portrait | not started | |
 | 12 | WebGL — 3D ring | not started | |
@@ -79,182 +85,49 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
 
-### Measured baseline — 2026-09-19, before Phase 0
+### Current figures — 2026-09-29
 
-The site as it stands today, so Phase 0 can be measured rather than guessed at:
+Replace values here when a session re-measures; do not add a new "Measured after" section.
 
-| | Value |
-|---|---|
-| Build | green, 2 pages, 717ms |
-| `dist/` | 5.2 MB |
-| Shipped JS | **73,854 bytes gzip (72 KB)** |
-| — of which React | `client…js` 44,041 + `types…js` 22,965 = **67 KB, 93% of the total** |
+| Global Constraints budget | Target | Latest | Measured |
+|---|---|---|---|
+| Lighthouse mobile Performance | ≥ 95 | preview ×3: 94 / 99 / 99 · production ×1: 97 | 2026-09-29 |
+| LCP | ≤ 2.0s | preview median **1,988ms** (runs 2,645 / 1,941 / 1,988) · production ×1: 2,165ms | 2026-09-29 |
+| Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
+| CLS | < 0.02 | 0 | Task 9.5 |
+| TBT (lab proxy for INP) | report | 0 | Task 9.5 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` **61,490 (75.1%)** | 2026-09-29 |
+| Enhanced WebGL chunk gzip | ≤ 250KB | not built — Phase 10 | — |
+| Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
+| Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
+| Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
+| Tests | — | 155 passing | 2026-09-29 |
 
-### Measured after Phases 0–2 — 2026-09-20
+### Measurement history — shipped JS on `/`, gzip
 
-| | Value |
-|---|---|
-| Build | green, 3 pages (the third is the `/dev/signal` harness) |
-| Shipped JS — the two public pages (`/`, `/websites`) | **0 bytes. Neither references an `_astro/*.js` chunk at all.** |
-| Shipped JS — total emitted | 4,139 raw / **2,039 gzip**, one chunk, referenced only by `/dev/signal` |
-| Tests | 11 passing across 2 files |
-| Fonts on the critical path | 130,508 bytes (Archivo 90,104 + JetBrains Mono 40,404) |
+Add one row when a phase completes or a task moves the number. Full snapshots per phase, and
+the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 
-### Measured after Phase 3 — 2026-09-22
+| When | JS on `/` | Budget | Tests |
+|---|---|---|---|
+| Baseline 2026-09-19 (old React site) | 73,854 | — | — |
+| Phases 0–2 · 2026-09-20 | 0 (2,039 only on `/dev/signal`) | 0% | 11 |
+| Phase 3 · 2026-09-22 | 0 (unchanged) | 0% | 18 |
+| Phase 4 · 2026-09-23 | 52,332 | 63.9% | 18 |
+| Phase 5 · 2026-09-24 | 53,241 | 65.0% | 18 |
+| Phase 6 · 2026-09-25 | 57,756 | 70.5% | 103 |
+| Task 7.2 · 2026-09-25 | 59,069 | 72.1% | — |
+| Task 8.1 · 2026-09-26 | 59,921 | 73.1% | — |
+| Task 8.2 · 2026-09-26 | 61,790 | 75.4% | — |
+| Task 9.1 · 2026-09-26 | 61,847 | 75.5% | — |
+| Task 9.4 · 2026-09-26 (`npm run budget` from here) | 61,370 | 74.9% | — |
+| Task 9.8 · 2026-09-29 (live) | 61,490 | 75.1% | 155 |
 
-| | Value |
-|---|---|
-| Build | green, 3 pages |
-| Shipped JS | **unchanged — 4,139 raw / 2,039 gzip, still only `/dev/signal`** |
-| Tests | 18 passing across 3 files |
+### How to measure
 
-### Measured after Phase 4 — 2026-09-23
-
-The first real movement against the budget since Phase 0 emptied it.
-
-| | Value |
-|---|---|
-| Build | green, 3 pages, 490ms |
-| `dist/` | 5.2 MB |
-| **Shipped JS on `/`** | **52,332 bytes gzip** — `BaseLayout` chunk 50,719 + `svg-signal` 1,613 |
-| Against the 80 KB budget | **63.9% spent, 29,588 bytes gzip left** for Phases 5–9 |
-| Delta from Phase 3 | **+50,293** (2,039 → 52,332) |
-| Tests | 18 passing across 3 files — none added; motion stays hand-verified |
-| Lighthouse desktop `/` | Perf **100** · A11y 96 · BP **100** · SEO **100** · LCP 0.6s · CLS **0** · TBT **0ms** |
-| Lighthouse mobile `/` | Perf 94 · A11y 96 · BP **100** · SEO **100** · LCP 3.0s · CLS **0** · TBT **0ms** |
-
-The motion bill landed almost exactly where Phase 3 predicted — ~54.6 KB forecast, 50.3 KB actual.
-Both Lighthouse deductions trace to components Phase 4 was told not to touch: accessibility 96 is
-a single `aria-hidden-focus` audit whose five offending nodes are all `div.gallery-card` in
-`Gallery.astro`, and mobile Perf 94 / LCP 3.0s has the **old** hero's `<h1 class="font-bricolage">`
-as its LCP element. CLS and TBT are the two budget lines Phase 4 could actually move; both are
-clean. Phase 9 re-measures on the finished site.
-
-Phase 3 added GSAP, ScrollTrigger and Lenis to `src/lib/motion/` but **nothing imports them yet**,
-so they are not in any bundle and the delta is genuinely 0. The ~54.6 KB gzip motion bill lands in
-**Phase 4**, the moment the shell calls `initScroll()`. Re-measure there and expect the first real
-movement against the 80 KB budget since Phase 0 emptied it.
-
-Removing React did not reduce the bundle, it eliminated it: no `client:*` islands remain, so
-neither public page loads a script. The one chunk Vite does emit belongs to the `/dev/signal`
-harness, whose `<script>` imports a module and is therefore bundled rather than inlined; it goes
-when the harness goes. The full 80 KB base-path budget is unspent
-going into Phase 3, which will claim ~54.6 KB of it (gsap 28,356 + ScrollTrigger 17,988 + lenis
-8,254), leaving ~25 KB for the signal renderer and every section island in Phases 4–9.
-
-The base-path budget is 80 KB gzip. Removing React in Phase 0 therefore frees almost the
-entire budget, and the whole GSAP + Lenis + signal-renderer layer has to fit in roughly
-what React costs today. Re-measure with the same command after Task 0.1 and record the
-delta in `docs/SESSIONS.md`.
-
-**Phase 9 is the milestone that matters.** Everything through it produces a complete,
-fast, accessible site that can go live. Phases 10–15 are enhancement on a working product.
-If time runs out, stopping at 9 leaves something genuinely good rather than half-built.
-
----
-
-### Measured after Phase 5 — 2026-09-24
-
-The first two islands, and the first sections built on the dark system.
-
-| | Value |
-|---|---|
-| Build | green, 3 pages |
-| **Shipped JS on `/`** | **53,241 bytes gzip** — `timeline` chunk 50,657 + `svg-signal` 1,613 + two entry chunks 737 + the hero island, inlined into the HTML |
-| Against the 80 KB budget | **65.0% spent, 28,679 bytes gzip left** for Phases 6–9 |
-| Delta from Phase 4 | **+909** (52,332 → 53,241) — the hero +244, section 02 the rest |
-| Tests | 18 passing across 3 files — none added |
-
-Two islands cost under a kilobyte because Vite hoisted gsap and Lenis into a shared
-`timeline.*.js` chunk the moment a second entry imported the motion layer. The library
-bill was already paid by Phase 4; sections now draw against it rather than adding to it,
-which is the shape the budget was forecast on.
-
-**Measurement methodology, so Phase 9 reproduces these.** `gzip -c <path>` — by name, so the
-filename header is included. Reading the same bytes from stdin measures ~60 bytes smaller and
-`zlib.gzipSync` ~130 larger. Chunk-summing alone also understates: the hero island is small
-enough that Astro inlines it into `index.html` rather than emitting a chunk, so it appears in
-no `_astro/*.js` listing while still shipping.
-
-### Measured after Phase 6 — 2026-09-25
-
-| | Value |
-|---|---|
-| Build | green, 3 pages |
-| **Shipped JS on `/`** | **57,756 bytes gzip**: `timeline` 50,662 + `svg-signal` 3,627 + `SelectedWork` island 2,187 + `NineYears` 506 + `BaseLayout` 243 + `tip` 242 + the hero island inlined into the HTML (289) |
-| Against the 80 KB budget | **70.5% spent, 24,164 bytes gzip left** for Phases 7–9 |
-| Delta from Phase 5 | **+4,515** (53,241 → 57,756). Section anchors, dim rule and playhead in `svg-signal` +2,014; the section 03 island +2,187; the shared `tip` channel +242 |
-| HTML | the four inline diagram SVGs add 8,559 bytes gzip to `index.html`, 6,502 of it the scatter |
-| Tests | 103 passing across 8 files (was 18 across 3) |
-
-`svg-signal` more than doubled because it now owns three things that used to be implicit: where each section is, where the line may be lit, and where its tip is. All three are pure modules the renderer calls (`anchors.ts`, `gutter.ts`, `playhead.ts`), so the growth is the renderer's glue code rather than duplicated geometry.
-
-### Measured after Phase 9 — 2026-09-26
-
-Task 9.5, the ship audit. Every figure is a median of 3 runs, `npm run build && npx astro
-preview` (never the dev server), `npx lighthouse` default mobile emulation and simulated
-throttling — the same methodology Task 9.4 used, so the numbers are comparable.
-
-| Global Constraints budget | Target | Measured — `/` | Measured — `/websites` | Status |
-|---|---|---|---|---|
-| Lighthouse mobile Performance | ≥ 95 | 97 | 98 | **PASS** both |
-| Accessibility | 100 | 100 | 96 | **PASS** `/`, **FAIL** `/websites` (finding — `target-size`, dead-Tailwind nav/FAQ, Phase 14) |
-| LCP (simulated 4G mobile) | ≤ 2.0s | 2,404.3ms | 2,477.4ms | **FAIL** both — see LCP diagnosis below |
-| CLS | < 0.02 | 0 | 0 | **PASS** both |
-| TBT (lab proxy for INP < 200ms) | report | 0 | 0 | **PASS** both (field INP still needs real users) |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 (80 KB) | 61,364 (74.9%) | 55,606 (67.9%) | **PASS** both |
-| Enhanced WebGL chunk gzip, post-interactive | ≤ 250KB | not built — Phase 10 | not built — Phase 10 | N/A |
-| Render-blocking requests above the fold | 0 | 0 | 0 | **PASS** both |
-| Keyboard: reachable, ordered, no trap, visible focus | pass | 35 stops, 1440 and 375, no traps, 2px `--signal`/`--type` ring at every stop | not audited (Phase 9 scope is `/`; `/websites` inherits the same global focus CSS) | **PASS** `/` |
-| JS off: every word present, page ends `●` then `\|` | pass | Confirmed both widths; only diff is the hero clock's live digits vs. the served "local time" placeholder, by design (`Hero.astro`) | not audited | **PASS** `/` |
-| `prefers-reduced-motion`: instant states, nothing on a timer | pass | 0 of ~350 sampled transform/opacity/dashoffset properties changed across 6 fixed scroll positions × 6 real-time samples; line fully drawn (`stroke-dasharray: none`) at every position; hero clock still ticks (allowed) | not audited | **PASS** `/` |
-
-**LCP diagnosis.** The LCP element on `/` is `header#hero > … > p.hero__lede` — body text,
-set in Archivo (the preloaded face), not an image and not a late font swap. Review Focus 5
-is met: nothing to fix there. Lighthouse's own diagnostics (`font-display-insight`,
-`render-blocking-insight`, `document-latency-insight`, `network-dependency-tree-insight`,
-`modern-http-insight`, `cache-insight`, `legacy/duplicated-javascript-insight`,
-`image-delivery-insight`) all report **zero recoverable savings** on the current build —
-there is nothing left that Lighthouse itself identifies as fixable.
-
-`lcp-breakdown-insight` (median of 3, same simulated-throttling runs as the score above):
-time-to-first-byte 3.2ms, element-render-delay 47.8ms, resource-load-delay/duration both 0
-(a text node has no resource to load). These do not sum to the reported 2,404ms — a
-documented Lighthouse characteristic, not a measurement error: under `throttlingMethod:
-simulate` (the default, used for every run above and in Task 9.4), the "Insights" audits
-are computed from the trace as captured — unthrottled, since simulate never actually slows
-the browser — while only the headline metric (LCP's `numericValue`) is Lantern's simulated
-estimate for a throttled mobile connection. The two numbers come from different models and
-are not additive.
-
-To get a breakdown computed on the *same* timeline as its own headline number, three more
-runs used `--throttling-method=devtools` (real CPU/network throttling applied during
-capture): median LCP **797.9ms** — comfortably under budget — with TTFB 3.4ms and
-element-render-delay 794.5ms, still nothing but the render delay itself. Two candidate
-fixes were tried and measured, neither committed because neither moved the number:
-
-- **`fetchpriority="low"` on the six per-section entry `<script type="module">` tags**, to
-  stop them competing with the fonts at the browser's default "High" priority for that tag.
-  Blocked immediately: any attribute beyond a bare `<script>` makes Astro stop bundling it
-  — the tag loses `type="module"` entirely and ships a raw `import` statement, a build that
-  looks fine and throws `SyntaxError` in the browser. Reverted before it was ever built into
-  a commit.
-- **Low-priority `modulepreload` hints for those same six entries** (extending Task 9.4's
-  integration, which deliberately preloads only shared chunks, not entries) — a
-  build-time-only change, no `<script>` tag touched. Three-run median: FCP 785.4ms (down
-  from 1,054.6ms, but noisy — one run read 1,211ms), **LCP 2,404.7ms, unchanged**. Not kept;
-  it moves a metric outside the gate without moving the gated one.
-- **Reordering `<head>`** (fonts before the OG/Twitter block) — three-run median FCP and LCP
-  both unchanged to the millisecond. Not kept.
-
-**Proposal, not applied — needs a ruling.** The gap between the graded 2,404ms (`simulate`)
-and the diagnostic 798ms (`devtools`, same build, same host) is wide enough that the
-`simulate` figure may be dominated by Lantern's local-preview model (this repo's `astro
-preview` serves plain HTTP/1.1, not the HTTP/2 the production Vercel deploy will use) rather
-than by anything wrong with the page. Recommend Task 9.6 re-run Lighthouse against the real
-Vercel preview before treating 2.0s as unmet — that is already on 9.6's checklist
-("Lighthouse against the real network"), so this is a note to weight that number over the
-local one if they disagree, not a new task.
+Lighthouse: median of 3 runs, `npm run build && npx astro preview` (never the dev server) or the
+Vercel preview, `npx lighthouse` default mobile emulation and simulated throttling. JS: `npm run
+budget`, which counts every script a page runs before interaction.
 
 ## File Structure
 
@@ -295,1020 +168,35 @@ tests/                   Vitest — pure modules only
 
 ---
 
-# PHASE 0 — Foundation & Teardown
+# PHASES 0–9 — Complete
 
-**Deliverable:** a building Astro site on the new palette and typography, with React,
-Tailwind and the retired brand docs removed. Nothing visual is finished; everything
-compiles.
+All ten are done and live. Their task-level steps, per-task measurements, the Phase 9 Review
+Focus and the final whole-branch review are archived verbatim in `docs/archive/plan-phases.md`.
+For the interfaces those phases produced, the code is the source of truth (`src/lib/signal/`,
+`src/lib/motion/`).
 
-**Files:**
-- Modify: `package.json`, `astro.config.mjs`
-- Create: `src/styles/tokens.css`, `vitest.config.ts`, `public/fonts/`
-- Delete: `PRODUCT.md`, `DESIGN.md`, `tailwind.config.mjs`,
-  `src/components/react/ContactForm.tsx`, `src/components/react/ClientQuoteForm.tsx`
+**Carried forward** — the only parts of Phases 0–9 still owed:
 
-**Interfaces produced:** the CSS custom properties in `tokens.css`, consumed by every
-later phase.
+- **Deliberately not in Phase 9.** Everything under "Deferred by Noel — 2026-09-26" (the Stack's
+  nodes, the sharp turns at points 7–10, the work spine's breaths). The scatter's
+  lowest-density fill. The ring's 9px drop at 375. The split meeting a dim line. A shared class for
+  the reduced-motion opt-out: each opt-out is local and commented, which is enough. The
+  `font-bricolage` strings and dead Tailwind on `/websites`, which is Phase 14's restyle.
 
-### Task 0.1 — Dependency swap
-
-- [ ] **Step 1: Remove the framework dependencies**
-
-```bash
-npm uninstall react react-dom @astrojs/react @types/react @types/react-dom \
-  react-hook-form @hookform/resolvers zod @astrojs/tailwind tailwindcss
-```
-
-- [ ] **Step 2: Add the new ones**
-
-```bash
-npm install three gsap lenis
-npm install -D vitest @types/three
-```
-
-- [ ] **Step 3: Strip the integrations from `astro.config.mjs`**
-
-Leave only `sitemap()`. The file becomes:
-
-```js
-import { defineConfig } from 'astro/config';
-import sitemap from '@astrojs/sitemap';
-
-export default defineConfig({
-  site: 'https://www.noel-sebastian.com',
-  output: 'static',
-  integrations: [sitemap()],
-});
-```
-
-- [ ] **Step 4: Delete the React components and the retired brand docs**
-
-```bash
-rm -rf src/components/react tailwind.config.mjs PRODUCT.md DESIGN.md
-```
-
-`PRODUCT.md` and `DESIGN.md` describe the retired "Technical Letterpress" direction and
-actively contradict the spec. They go — the spec supersedes them and git retains them.
-
-- [ ] **Step 5: Verify the tree still builds**
-
-Run: `npm run build`
-Expected: FAILS — `index.astro` still imports `ContactForm` and every component still uses
-Tailwind classes. This failure is expected and is fixed across Phases 4–8. Record the error
-list in the session log; it is the Phase 4–8 worklist.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add -A && git commit -m "chore: remove React, Tailwind and retired brand docs"
-```
-
-### Task 0.2 — Self-hosted fonts
-
-- [ ] **Step 1: Fetch the variable WOFF2 files**
-
-Download Archivo (variable, with the `wdth` axis) and JetBrains Mono from Google Fonts'
-repository, subset to Latin, into `public/fonts/`. Target filenames:
-`archivo-var.woff2`, `jetbrains-mono-var.woff2`.
-
-- [ ] **Step 2: Declare the faces in `tokens.css`** — see Task 0.3, which includes them.
-
-- [ ] **Step 3: Verify no external font request remains**
-
-```bash
-grep -rn "fonts.googleapis\|fonts.gstatic" src/ && echo "FAIL: CDN reference remains" || echo "OK"
-```
-Expected: `OK` once `BaseLayout.astro` is rewritten in Phase 4. Until then this will fail —
-note it and carry it to Phase 4.
-
-### Task 0.3 — Design tokens
-
-- [ ] **Step 1: Create `src/styles/tokens.css`**
-
-```css
-@font-face {
-  font-family: 'Archivo';
-  src: url('/fonts/archivo-var.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-stretch: 62.5% 125%;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'JetBrains Mono';
-  src: url('/fonts/jetbrains-mono-var.woff2') format('woff2-variations');
-  font-weight: 100 800;
-  font-display: swap;
-}
-
-:root {
-  /* Colour — spec §7.1. Do not substitute a cool grey for --ground. */
-  --ground:      #0A0908;
-  --ground-lift: #131110;
-  --type:        #F2EFE7;
-  --type-dim:    #8A857C;
-  --signal:      #FF4B54;
-  --shipped:     #FFC01E;
-
-  /* Type */
-  --font-display: 'Archivo', system-ui, sans-serif;
-  --font-body:    'Archivo', system-ui, sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
-
-  /* Spacing ramp — spec §7.3 */
-  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
-  --s-5: 24px;  --s-6: 32px;  --s-7: 48px;  --s-8: 64px;
-  --s-9: 96px;  --s-10: 128px; --s-11: 192px;
-
-  --section-y: clamp(96px, 12vw, 200px);
-  --container: 1440px;
-
-  /* The signal's reserved left column — spec §7.3 */
-  --signal-gutter: clamp(48px, 6vw, 96px);
-}
-
-@media (max-width: 768px) {
-  /* No room for a reserved column; the line goes behind content instead. */
-  :root { --signal-gutter: 0px; }
-}
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add -A && git commit -m "feat: add design tokens and self-hosted variable fonts"
-```
-
----
-
-# PHASE 1 — Content Model Rewrite
-
-**Deliverable:** `src/data/content.ts` rebuilt from `Resume.pdf`, with elapsed years derived
-rather than hard-coded, and a passing test proving the derivation.
-
-**Files:**
-- Create: `src/lib/career.ts`, `tests/career.test.ts`
-- Rewrite: `src/data/content.ts`
-- Reconcile: `Resume.pdf` vs `public/noel-sebastian.pdf`
-
-**Interfaces produced:**
-```ts
-// src/lib/career.ts
-export const CAREER_START: Date;                    // 2016-10-01
-export function yearsElapsed(now?: Date): number;   // whole years, floor
-```
-
-### Task 1.1 — Derived career length (TDD)
-
-The spec (§9.02) requires the year count be derived from a start date, because "9+ years"
-is already wrong — October 2026 is ten years.
-
-- [ ] **Step 1: Write the failing test** — `tests/career.test.ts`
-
-```ts
-import { describe, it, expect } from 'vitest';
-import { yearsElapsed, CAREER_START } from '../src/lib/career';
-
-describe('yearsElapsed', () => {
-  it('starts from October 2016', () => {
-    expect(CAREER_START.getUTCFullYear()).toBe(2016);
-    expect(CAREER_START.getUTCMonth()).toBe(9); // 0-indexed October
-  });
-
-  it('is 9 the day before the tenth anniversary', () => {
-    expect(yearsElapsed(new Date('2026-09-30T00:00:00Z'))).toBe(9);
-  });
-
-  it('ticks to 10 on the tenth anniversary', () => {
-    expect(yearsElapsed(new Date('2026-10-01T00:00:00Z'))).toBe(10);
-  });
-
-  it('does not tick early in the anniversary month', () => {
-    expect(yearsElapsed(new Date('2027-09-30T00:00:00Z'))).toBe(10);
-  });
-});
-```
-
-- [ ] **Step 2: Run it and watch it fail**
-
-Run: `npx vitest run tests/career.test.ts`
-Expected: FAIL — `Cannot find module '../src/lib/career'`
-
-- [ ] **Step 3: Implement** — `src/lib/career.ts`
-
-```ts
-/** Noel's first professional role: Analyst, Ernst & Young, Kakkanad — 10/2016. */
-export const CAREER_START = new Date(Date.UTC(2016, 9, 1));
-
-/** Whole years elapsed since CAREER_START. Never hard-code this number. */
-export function yearsElapsed(now: Date = new Date()): number {
-  let years = now.getUTCFullYear() - CAREER_START.getUTCFullYear();
-  const beforeAnniversary =
-    now.getUTCMonth() < CAREER_START.getUTCMonth() ||
-    (now.getUTCMonth() === CAREER_START.getUTCMonth() &&
-     now.getUTCDate() < CAREER_START.getUTCDate());
-  if (beforeAnniversary) years -= 1;
-  return years;
-}
-```
-
-- [ ] **Step 4: Run it and watch it pass**
-
-Run: `npx vitest run tests/career.test.ts`
-Expected: PASS, 4 tests.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/lib/career.ts tests/career.test.ts vitest.config.ts
-git commit -m "feat: derive career length from a start date constant"
-```
-
-### Task 1.2 — Rewrite `content.ts`
-
-- [ ] **Step 1: Write the timeline export**
-
-Exact data, from `Resume.pdf`. Do not paraphrase the roles or invent dates.
-
-```ts
-export type EmissionState = 'live' | 'shipped' | 'historical';
-
-export interface TimelineEntry {
-  from: string;          // 'YYYY-MM'
-  to: string | null;     // null = present
-  role: string;
-  company: string;
-  city: string;
-  country: string;
-  state: EmissionState;
-}
-
-export const timeline: TimelineEntry[] = [
-  { from: '2016-10', to: '2020-05', role: 'Analyst',                   company: 'Ernst & Young',           city: 'Kakkanad', country: 'India',     state: 'historical' },
-  { from: '2020-05', to: '2022-02', role: 'Senior Engineer',           company: 'QBurst',                  city: 'Kakkanad', country: 'India',     state: 'historical' },
-  { from: '2022-02', to: '2023-12', role: 'Senior Angular Developer',  company: 'SRT Marine Systems PLC',  city: 'Cardiff',  country: 'UK',        state: 'historical' },
-  { from: '2023-12', to: '2025-06', role: 'Senior Engineer',           company: 'Direct Line Group',       city: 'Leeds',    country: 'UK',        state: 'historical' },
-  { from: '2025-09', to: null,      role: 'Frontend Developer',        company: 'Winning Group',           city: 'Sydney',   country: 'Australia', state: 'live' },
-];
-```
-
-- [ ] **Step 2: Add the status rail data**
-
-Work rights go in the hero (spec §9.01) because recruiters screen on them early.
-
-```ts
-export const status = {
-  city: 'Sydney',
-  timezone: 'Australia/Sydney',
-  workRights: 'Australian Permanent Resident',
-  availability: 'Open to senior frontend roles',
-} as const;
-```
-
-- [ ] **Step 3: Rewrite the case studies with the full resume metrics**
-
-Four studies only — EY stays on the timeline, not here (spec §9.02). Each must carry every
-metric the resume claims, including the ones currently missing from the site: $15k/year
-technical debt eliminated, the 10,000+ daily transaction order management system, 20%
-runtime memory improvement, mentoring 6 developers for +20% sprint velocity, 25% YoY
-production bug reduction, and 15% shorter code review cycles.
-
-- [ ] **Step 4: Add the AI tooling group to the stack data**
-
-MCP servers, Figma Code Connect, AI-assisted review. Spec §9.05 gives this its own node.
-
-- [ ] **Step 5: Delete `freelanceCaseStudy`, `services`, `processSteps`, `testimonials`,
-      and the `levelColor` / proficiency labels**
-
-All retired by spec §3 and §9.05. TopDel survives only as a ring card.
-
-- [ ] **Step 6: Reconcile the CV**
-
-`Resume.pdf` (root, untracked) and `public/noel-sebastian.pdf` (served) differ. Move the
-current resume into `public/`, delete the root copy, and confirm the nav download points at
-the surviving file. Only one CV should exist.
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add -A && git commit -m "feat: rebuild content model from resume, add EY and AI tooling"
-```
-
----
-
-# PHASE 2 — Signal Path Core (2D)
-
-**Deliverable:** the canonical curve, a pure tested sampling API, and an SVG renderer that
-draws it against a progress value. This is the load-bearing module of the whole build —
-spec §6.
-
-**Files:**
-- Create: `src/lib/signal/path.ts`, `src/lib/signal/svg-signal.ts`, `tests/signal-path.test.ts`
-
-**Interfaces produced — later phases depend on these exact names:**
-
-```ts
-// src/lib/signal/path.ts
-export type SectionId = 'hero' | 'years' | 'work' | 'ring' | 'stack' | 'contact';
-
-export interface SignalPoint { x: number; y: number; z: number; }
-
-export interface SectionSpan { id: SectionId; tStart: number; tEnd: number; }
-
-export const SECTION_SPANS: readonly SectionSpan[];
-
-/** Position along the curve at normalised progress t (0..1). Clamps out of range. */
-export function sampleSignal(t: number): SignalPoint;
-
-/** `steps` evenly spaced points between t0 and t1 inclusive. */
-export function sampleSignalRange(t0: number, t1: number, steps: number): SignalPoint[];
-
-/** Local 0..1 progress within a section, given global progress. Clamps. */
-export function sectionProgress(id: SectionId, globalT: number): number;
-
-/** An SVG `d` attribute for the given points, scaled to a viewBox. */
-export function toSvgPath(points: SignalPoint[], width: number, height: number): string;
-```
-
-```ts
-// src/lib/signal/svg-signal.ts
-export interface SvgSignal { setProgress(t: number): void; destroy(): void; }
-export function createSvgSignal(mount: HTMLElement, section: SectionId): SvgSignal;
-```
-
-### Task 2.1 — Curve sampling (TDD)
-
-- [ ] **Step 1: Write the failing test** — `tests/signal-path.test.ts`
-
-```ts
-import { describe, it, expect } from 'vitest';
-import { sampleSignal, sampleSignalRange, sectionProgress, SECTION_SPANS } from '../src/lib/signal/path';
-
-describe('sampleSignal', () => {
-  it('clamps below 0 and above 1', () => {
-    expect(sampleSignal(-1)).toEqual(sampleSignal(0));
-    expect(sampleSignal(2)).toEqual(sampleSignal(1));
-  });
-
-  it('advances monotonically down the page', () => {
-    expect(sampleSignal(0.9).y).toBeGreaterThan(sampleSignal(0.1).y);
-  });
-
-  it('is continuous — no jumps between adjacent samples', () => {
-    for (let t = 0; t < 1; t += 0.01) {
-      const a = sampleSignal(t), b = sampleSignal(t + 0.01);
-      expect(Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z)).toBeLessThan(0.2);
-    }
-  });
-});
-
-describe('sampleSignalRange', () => {
-  it('returns exactly `steps` points, inclusive of both ends', () => {
-    const pts = sampleSignalRange(0, 1, 10);
-    expect(pts).toHaveLength(10);
-    expect(pts[0]).toEqual(sampleSignal(0));
-    expect(pts[9]).toEqual(sampleSignal(1));
-  });
-});
-
-describe('SECTION_SPANS', () => {
-  it('covers 0..1 with no gaps or overlaps', () => {
-    expect(SECTION_SPANS[0].tStart).toBe(0);
-    expect(SECTION_SPANS[SECTION_SPANS.length - 1].tEnd).toBe(1);
-    for (let i = 1; i < SECTION_SPANS.length; i++) {
-      expect(SECTION_SPANS[i].tStart).toBe(SECTION_SPANS[i - 1].tEnd);
-    }
-  });
-});
-
-describe('sectionProgress', () => {
-  it('is 0 at a section start and 1 at its end', () => {
-    const span = SECTION_SPANS.find(s => s.id === 'ring')!;
-    expect(sectionProgress('ring', span.tStart)).toBeCloseTo(0);
-    expect(sectionProgress('ring', span.tEnd)).toBeCloseTo(1);
-  });
-
-  it('clamps outside its span', () => {
-    expect(sectionProgress('ring', 0)).toBe(0);
-    expect(sectionProgress('hero', 1)).toBe(1);
-  });
-});
-```
-
-- [ ] **Step 2: Run and watch it fail**
-
-Run: `npx vitest run tests/signal-path.test.ts`
-Expected: FAIL — module not found.
-
-- [ ] **Step 3: Implement `path.ts`**
-
-Use a Catmull-Rom spline through hand-placed control points. Catmull-Rom because it passes
-*through* its control points, so the curve can be tuned by moving a point to a place it
-will actually go. Keep coordinates normalised: `x` and `z` in −1..1, `y` in 0..1 down the
-page. Renderers scale; the curve never knows about pixels.
-
-- [ ] **Step 4: Run and watch it pass**
-
-Run: `npx vitest run tests/signal-path.test.ts`
-Expected: PASS, 7 tests.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/lib/signal/path.ts tests/signal-path.test.ts
-git commit -m "feat: add canonical signal curve with tested sampling API"
-```
-
-### Task 2.2 — SVG renderer
-
-- [ ] **Step 1: Implement `svg-signal.ts`**
-
-Build an `<svg>` with a single `<path>`, set `stroke-dasharray` to the measured
-`getTotalLength()`, and drive `stroke-dashoffset` from `setProgress`. Re-measure on resize,
-debounced. Honour `prefers-reduced-motion` by jumping straight to full draw.
-
-- [ ] **Step 2: Verify by hand**
-
-Mount it on a scratch page, scroll, and confirm the line draws smoothly with no jump at
-section boundaries. There is no meaningful unit test for this; visual confirmation is the
-gate.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/lib/signal/svg-signal.ts
-git commit -m "feat: add 2D SVG signal renderer"
-```
-
----
-
-# PHASES 3–15 — Phase-Level Detail
-
-Expand the phase you are about to start into task-level steps before implementing it.
-
-## PHASE 3 — Motion Infrastructure
-
-**Deliverable:** Lenis smooth scroll and a single GSAP master timeline that sections
-register into. No section uses its own ScrollTrigger.
-
-**Files:** `src/lib/motion/scroll.ts`, `src/lib/motion/timeline.ts`
-
-**Interfaces produced:**
-```ts
-export function initScroll(): void;
-export function globalProgress(): number;                       // 0..1 page progress
-export function onSection(id: SectionId, el: HTMLElement,
-                          fn: (local: number) => void): () => void;  // returns unsubscribe
-export function reducedMotion(): boolean;
-```
-
-**Verification:** scrolling the full page logs monotonic 0→1 progress; `reducedMotion()`
-returns true under an emulated `prefers-reduced-motion` and all registered callbacks fire
-once at their end state instead of animating.
-
-## PHASE 4 — Shell: Layout, Nav, Footer
-
-**Deliverable:** `BaseLayout.astro` rewritten dark, self-hosted fonts preloaded, existing
-SEO and JSON-LD schema preserved. Nav with **CV download always visible** and a sound
-toggle (inert until Phase 13). Footer carrying the `|` completion bar.
-
-**Files:** `src/layouts/BaseLayout.astro`, `src/components/Nav.astro`,
-`src/components/Footer.astro`, `src/styles/global.css`, `public/favicon.svg`
-
-**Also in this phase** (spec §10, otherwise unassigned): the **signal mark** — a
-hand-authored SVG of the curve reduced to a single glyph — which becomes the favicon and
-the nav wordmark. And the **procedural page grain**: a tiled SVG `feTurbulence` or a small
-canvas-generated noise texture applied as a low-opacity overlay on `--ground`. Warm black
-reads flat and digital without it; grain is what makes it look like a surface rather than
-an absence of light.
-
-**Carry forward from Phase 0:** the `fonts.googleapis` grep must now return clean.
-
-**Verification:** `npm run build` passes. Lighthouse on the shell alone ≥ 98. Focus ring
-visible on `--ground` at every interactive element. Tab order is linear.
-
-**Task-level expansion (added 2026-09-20).** The plan requires each phase be expanded before
-implementing it. Briefs for these are already written in `.superpowers/sdd/BUILD-PLAN/`, including
-batched forms (`task-P4-brief.md`, `task-P5-brief.md`) that carry standing constraints.
-
-### Task 4.1 — `global.css` reset + page grain
-
-- [ ] **Step 1: Rewrite `src/styles/global.css`.** It currently opens with three `@tailwind`
-  directives removed in Task 0.1 and still styles the retired cream direction. Replace with:
-  `@import './tokens.css';` first, then a minimal reset, `body { background: var(--ground);
-  color: var(--type); font-family: var(--font-body); }`, and the `.skip-link` rule (keep it —
-  it is a real accessibility affordance already present).
-- [ ] **Step 2: Retire the dead font families.** `Manrope`, `Bricolage Grotesque` and
-  `Space Mono` are referenced throughout. Every one becomes `var(--font-body)`,
-  `var(--font-display)` or `var(--font-mono)`. After this step no typeface is named as a
-  literal string anywhere in `src/`.
-- [ ] **Step 3: The procedural page grain** (spec §10, unassigned until now). A tiled SVG
-  `feTurbulence` as a data-URI background, or a small canvas-generated noise texture, applied
-  as a low-opacity overlay on `--ground`. Warm black reads flat and digital without it.
-  Must be CSS-only and cost zero JS — a `body::after` with `pointer-events: none`.
-  Keep it under 2 KB. Respect `prefers-reduced-motion` only if it animates; a static grain
-  needs no guard.
-- [ ] **Step 4:** `npm run build` green; screenshot the built page headless and confirm the
-  ground is warm black, not blue-black, and that text is legible on it.
-
-### Task 4.2 — The signal mark, favicon and OG image
-
-- [ ] **Step 1: Author the signal mark.** A hand-authored SVG reducing the curve to a single
-  glyph (spec §10). Source its shape from `sampleSignalRange` output so the mark and the
-  page draw the same line — do not draw a different squiggle.
-- [ ] **Step 2:** It becomes `public/favicon.svg` and the nav wordmark. One file, two uses.
-- [ ] **Step 3:** Regenerate `public/og-image.svg` on the dark palette. The existing one is
-  cream and contradicts the new direction.
-- [ ] **Step 4:** Confirm the favicon renders legibly at 16px — a curve with too much detail
-  turns to mush. Screenshot to check rather than assuming.
-
-### Task 4.3 — `BaseLayout.astro` rewritten dark
-
-- [ ] **Step 1: Preserve the SEO and JSON-LD exactly.** The existing schema, canonical URLs,
-  OG and Twitter tags are correct and hard-won. Carry them across verbatim; only the
-  `description` default changes (Task 1.2 already derived its year count).
-- [ ] **Step 2:** Import `global.css`. This is the first time `tokens.css` reaches the page —
-  Task 0.3 deliberately left it unwired.
-- [ ] **Step 3:** The two font preloads are already in place from Task 0.2. Verify they
-  survive the rewrite, `crossorigin` intact.
-- [ ] **Step 4:** Call `initScroll()` from `src/lib/motion/scroll.ts` in an inline module
-  script. This is the first JS the site ships since Phase 0 — **record the gzip delta**.
-- [ ] **Step 5:** `grep -rn "fonts.googleapis\|fonts.gstatic" src/` must return clean. This is
-  the Phase 0 carry-forward and Phase 4 is where it is formally closed.
-
-### Task 4.4 — Nav and Footer
-
-- [ ] **Step 1: Nav.** CV download **always visible**, not hidden in a menu — spec §9 is
-  explicit, recruiters look for it first. Sound toggle present but inert until Phase 13
-  (render it `aria-pressed="false"` and `disabled`, or omit the handler; do not fake it).
-  Wordmark uses the Task 4.2 signal mark.
-- [ ] **Step 2: Footer.** Carries the `|` completion bar — the RxJS completion notation that
-  terminates the signal (spec §6). It is a graphical element, so `--signal` is permitted.
-- [ ] **Step 3: Accessibility gate.** Focus ring visible against `--ground` on every
-  interactive element, tab order linear, skip-link still first in the tab order.
-  This is the phase's stated verification and it is not optional.
-
-### Task 4.5 — Mount the signal layer (added 2026-09-22)
-
-Carries the whole-curve framing decision (see Decisions, 2026-09-22). Full step list lives in
-`Addendum A` of `.superpowers/sdd/BUILD-PLAN/task-P4-brief.md`; the substance, so a cold session
-is not dependent on a gitignored brief:
-
-- [ ] **Step 1:** `createSvgSignal(mount)` — drop the `section` argument, sample
-  `sampleSignalRange(0, 1, CURVE_SAMPLE_DENSITY)`, and re-measure polyline faceting against the
-  much larger box before trusting `CURVE_SAMPLE_DENSITY = 240`. `setProgress` now means *global*
-  page progress. Measure the `<svg>`'s own box, not the mount's, or padding on the mount silently
-  scales the curve down.
-- [ ] **Step 2:** Add `onPageProgress(fn)` to `src/lib/motion/timeline.ts` — a sibling of
-  `onSection` reporting 0..1 across the document, same reduced-motion contract, still the only
-  place a `ScrollTrigger` is created. Do not poll `globalProgress()` on the ticker instead; that is
-  a second scroll pathway and it will drift from anything a later phase pins.
-- [ ] **Step 3:** One `<div id="signal-layer" aria-hidden="true">` in `BaseLayout.astro`,
-  absolutely positioned and `pointer-events: none`, so it cannot add to document height and feed
-  back into its own measurement. Stacking: ground, grain, signal, content.
-- [ ] **Step 4:** Below 768px, drop the layer's opacity — spec §7.3, no reserved column at phone
-  width so the line goes behind the content.
-- [ ] **Step 5:** The curve terminates at `x: 0, y: 1`, inside the footer. Meet it with the Task
-  4.4 `|` completion bar, or record why not.
-- [ ] **Step 6:** Report shipped JS gzip and the delta from **2,039 bytes**. This commit is where
-  the deferred ~54.6 KB motion bill lands.
-- [ ] **Step 7:** Do NOT import `reducedMotion()` from `motion/scroll.ts` into `svg-signal.ts` —
-  `scroll.ts` imports gsap and lenis at module scope, so it would drag the whole motion layer into
-  the renderer's import graph. The renderer's local `matchMedia` check stays.
-
-
-## PHASE 5 — Sections 01–02: Hero and Nine Years
-
-**Deliverable:** hero with the status rail (Sydney time, work rights, availability),
-headline, positioning line carrying the MCP/AI-augmented angle, both CTAs, and the
-**duotone still portrait** — particles arrive in Phase 11. Timeline rendering five
-emissions from `timeline`, with statistics counting up on scroll position.
-
-**Files:** `src/components/Hero.astro`, `src/components/NineYears.astro`,
-`src/islands/hero.ts`, `src/islands/years.ts`, `scripts/portrait.mjs`
-
-**Verification:** the year counter reads the value `yearsElapsed()` returns, not a literal.
-Counting stats expose their final value to assistive tech immediately (spec §13). Local
-time updates without a layout shift.
-
-**Task-level expansion (added 2026-09-20).** The plan requires each phase be expanded before
-implementing it. Briefs for these are already written in `.superpowers/sdd/BUILD-PLAN/`, including
-batched forms (`task-P4-brief.md`, `task-P5-brief.md`) that carry standing constraints.
-
-### Task 5.1 — `scripts/portrait.mjs`: the duotone still
-
-- [ ] **Step 1:** Bake a duotone portrait at build time with `sharp`, using `--ground` and
-  `--signal` as the two tones. This is the Phase 11 fallback and the mobile/reduced-motion
-  path, so it ships to most visitors and must look deliberate, not degraded.
-- [ ] **Step 2:** Emit AVIF + WebP + a JPEG fallback at 1x and 2x. Wire into `npm run images`.
-- [ ] **Step 3:** The source portrait is 3960×3960 (spec §9.01). Confirm it exists before
-  building the pipeline; if it is absent, report NEEDS_CONTEXT — do not substitute a
-  placeholder face.
-
-### Task 5.2 — Section 01: Hero
-
-- [ ] **Step 1: The status rail.** Sydney local time (live, updating without layout shift —
-  reserve the width), availability state, and **Australian Permanent Resident**. One mono
-  line. Work rights are here deliberately: recruiters filter on them early and hard.
-- [ ] **Step 2: H1** — "Senior Web Engineer · Angular Specialist".
-- [ ] **Step 3: The positioning sentence must carry the AI-augmented angle** — MCP servers
-  and Figma Code Connect, shortening design-to-code. Spec §9.01 calls this "the single most
-  differentiating thing on the resume". Task 1.2 added it to the stack data; this is where
-  it earns its place in prose.
-- [ ] **Step 4:** Two CTAs — *See the work* and *Download CV*.
-- [ ] **Step 5:** Mount the duotone portrait. Particles are Phase 11; the still is the
-  deliverable here and must stand on its own.
-- [ ] **Step 6:** `src/islands/hero.ts` — the clock only. Everything else is server-rendered.
-
-### Task 5.3 — Section 02: Nine Years
-
-- [ ] **Step 1:** Render five emissions from `timeline`, coloured by the §6 state logic
-  (`--signal` live, `--shipped` shipped, `--type-dim` historical).
-- [ ] **Step 2:** India → UK → Australia must be *visible* in the layout, not asserted —
-  it is what substantiates the "3 countries" claim.
-- [ ] **Step 3: Statistics count up on scroll position, never on a timer.** Register via
-  `onSection('years', el, fn)` from Phase 3. No component creates its own ScrollTrigger.
-- [ ] **Step 4: Accessibility (spec §13).** Counting stats must expose their **final** value
-  to assistive tech immediately — the animation is decorative. `aria-hidden` the animating
-  digits and carry the real value in the accessible name, or render the final value and
-  animate a visual-only layer.
-- [ ] **Step 5:** The year counter reads `yearsElapsed()`. Verify it renders 9 today and
-  would render 10 on 2026-10-01 — this is the phase's stated verification.
-
-## PHASE 6 — Section 03: Selected Work + Generated Diagrams
-
-**Deliverable:** four case studies, each with a generated SVG diagram. No screenshots.
-
-**Files:** `src/components/SelectedWork.astro`, `src/lib/diagrams/*.ts`
-
-Four diagrams per spec §9.03: bundle bar 100%→40%, five repos converging with deploy
-45min→12min, a flat 60fps frame-time graph, a one-million-point scatter resolving.
-
-**Rule:** if a diagram cannot be built honestly from a real resume number, that study
-reverts to prose. Never draw a chart of an invented figure.
-
-**Verification:** every number in every diagram traces to a line in `Resume.pdf`.
-
-**Task-level expansion (added 2026-09-25).** Three tasks. 6.1 is the precondition for the
-rest: measured on the built page at 1440, the curve's left-margin run sits at 26–54% of the
-document while `#work` starts at 71%. The curve's `y` is mapped linearly onto the whole
-document, so it lines up with a section only by coincidence. Nothing can be laid out against
-the line until the line is pinned to the sections. Briefs are in `.superpowers/sdd/BUILD-PLAN/`.
-
-### Task 6.1 — Pin the signal to the sections; derive the gutter; dim off-gutter
-
-- [x] **Step 1: Section anchors (TDD).** A pure module maps curve `y` to page `y` piecewise:
-  each `SECTION_SPANS` seam lands on the top of the DOM element carrying
-  `data-signal-section="<id>"`. Linear within a section. `path.ts` geometry is untouched —
-  this is renderer scaling, which is the renderer's job. Sections not yet rebuilt are
-  anchored to their interim stand-ins (`ring` → `#gallery`, `stack` → `#skills`,
-  `contact` → `#contact`) until Phases 7–8 replace them.
-- [x] **Step 2: Page order.** `<Work />` moves directly under `<NineYears />` (§5).
-- [x] **Step 3: `--signal-gutter` derived from the curve (TDD).** The work section's spine
-  (the run parked at the left margin, control points 21–26) sets it: max spine `x` plus half
-  the stroke plus clearance, stated as a viewport-relative formula that also holds past
-  1440px. A test reads `tokens.css` and fails if the token no longer clears the curve.
-- [x] **Step 4: The dim rule.** The line is full strength only where it sits in its gutter,
-  and dimmed everywhere else. That covers sections 01–02 (the 2026-09-24 decision), the
-  sweep that opens section 03, and phone width (§7.3) with one rule. The bands come from
-  the same sampled pixel points the path is drawn from. The dim alpha is computed, not
-  guessed: every text colour the line crosses stays ≥ 4.5:1 against the blended stroke.
-
-### Task 6.2 — `src/lib/diagrams/*.ts` (TDD, pure)
-
-- [x] **Step 1:** `bundle` — one bar, 100 → 40. The Nx dependency graph in §9.03 is **dropped**:
-  the resume gives it no number, so any node count would be invented.
-- [x] **Step 2:** `repos` — five lines converging into one, labelled `5+` (the resume says
-  5+, so five is a lower bound drawn as one); a deploy bar 45 → 12 min at true scale.
-- [x] **Step 3:** `frametime` — a flat trace on the 16.7ms line. No jitter: sample noise
-  would be invented data. The claim is the flat line.
-- [x] **Step 4:** `scatter` — exactly 1,000,000 points from a seeded PRNG, binned at build
-  time into a density grid. Test asserts the bins sum to 1,000,000. The distribution is
-  illustrative and the caption says so; the count is real.
-
-### Task 6.3 — Section 03: `SelectedWork.astro` + `src/islands/work.ts`
-
-- [x] **Step 1:** Replace `Work.astro` with `SelectedWork.astro`: four studies,
-  problem / approach / result, each with its diagram as a server-rendered SVG `<figure>`.
-  The figcaption carries the numbers as text, so the section reads completely with JS off.
-- [x] **Step 2:** Lay the section out against `--signal-gutter`. Content never enters it.
-- [x] **Step 3:** The branch: as each card enters, a branch draws from the spine (its origin
-  sampled from `path.ts` through the 6.1 anchor mapping) right into the card, via
-  `onSection('work', …)`.
-- [x] **Step 4:** Diagrams resolve on scroll position — bar collapses, repos converge, the
-  scatter resolves — never on a timer. Reduced motion shows the end state.
-
-## PHASE 7 — Section 04: The Ring (2D rail first)
-
-**Deliverable:** the horizontal scroll-snap rail that is the mobile and no-WebGL
-presentation — built first so the ring has a working fallback before it exists. Screenshot
-pipeline extended with duotone and AVIF output (grain and chrome are not baked — see Decisions).
-
-**Files:** `src/components/Ring.astro`, `src/islands/ring.ts`,
-`scripts/optimise-gallery.mjs`
-
-**Note:** the Ezytrack master is now `gallery-masters/ezytrack.png`, a correctly named 2704×14756 PNG.
-
-**Verification:** every card is a real `<a>` to a live site. Hover scrolls the long capture
-inside the frame. Keyboard reaches every card.
-
-**Task-level expansion (added 2026-09-25).** Briefs are in `.superpowers/sdd/BUILD-PLAN/`.
-
-### Task 7.1 — The screenshot pipeline
-
-- [x] `optimise-gallery.mjs` rewritten: duotone `--ground`→`--type` ring captures at 480w/960w in
-  AVIF and WebP, `src/data/ring-captures.json` for their sizes, the double-encode fixed.
-
-### Task 7.2 — `Ring.astro` (the 2D rail) + `src/islands/ring.ts`
-
-- [x] **Step 1:** `Ring.astro` replaces `Gallery.astro` (deleted, with its divider and its
-  `is:inline` script). `#ring` carries `data-signal-section="ring"`; the nav links to it as
-  *Shipped*. Five cards in a native scroll-snap rail, each one `<a>` to the live site wrapping
-  markup browser chrome (the real hostname), the capture and the title. Hover or focus scrolls the
-  capture with `transform` at a constant 400px/s; none under reduced motion.
-- [x] **The split is a track** (see Decisions): a stroke above the rail, the curve pinned to its
-  centre line at control point 34 (`RING_SPLIT_POINT`), a drop and a `--shipped` emission per
-  card. Drawn in full in the HTML.
-- [x] **In-section anchors generalised.** `anchors.ts` holds a list of control point + selector +
-  edge (`IN_SECTION_ANCHORS`): the spine's two ends and the split. Every anchor is a sampling cut;
-  480 samples still hold (worst chord 0.66px at 1440, unchanged).
-- [x] **Step 2:** `ring.ts` draws the split off the tip over 128px (`--s-10`) of tip travel —
-  the track outward from the measured meeting point, then the drops, then the emissions. Arrow
-  keys, Home and End move between cards; a focused card is snapped fully into the rail.
-  `lib/signal/draw.ts` holds what it shares with `work.ts`.
-
-Measured: the curve meets the track at the drawn vertex exactly (Δ < 0.01px) at 1024, 1440, 1920,
-2560 and 375. Shipped JS on `/` 59,069 gzip by the same method that reads the Phase 6 build as
-57,745 (**+1,324**; against the recorded 57,756, +1,313): 72.1% of the 80 KB budget, 22,851
-bytes left. `index.html` 19,945 → 18,955 gzip. CLS 0.
-
-## PHASE 8 — Sections 05–06: Stack and Contact
-
-**Deliverable:** the `pipe()` operator chain including the new AI tooling node, and the
-contact form rebuilt in vanilla TypeScript — which finally removes the last React
-dependency.
-
-**Files:** `src/components/Stack.astro`, `src/components/Contact.astro`,
-`src/islands/contact-form.ts`
-
-Headline: **"Nothing happens until you subscribe."**
-
-**Verification:** form submits to Formspree via `PUBLIC_FORMSPREE_ENDPOINT`, else the live
-default, and falls back to `mailto:` only when neither is a usable Formspree URL (Decisions,
-2026-09-26 — falling back whenever the variable is unset would turn the live form off). Native constraint validation, errors announced to screen readers,
-no React in the built output (`grep -r "react" dist/` is clean).
-
-**Task-level expansion (added 2026-09-26).** Briefs are in `.superpowers/sdd/BUILD-PLAN/`.
-About and the Marquee retire (see Decisions), so the page runs Ring → Stack → Contact.
-
-### Task 8.1 — Section 05: `Stack.astro` + `src/islands/stack.ts`
-
-- [x] `About.astro`, `Marquee.astro`, `Skills.astro` deleted, and `aboutCols`, `marqueeItems` and
-  the proficiency `Level` with them. `#stack` carries `data-signal-section="stack"`. Nav reads
-  Work · Shipped · Stack · Contact.
-- [x] `skillGroups` rebuilt from the resume's five groups (Core, Architecture, Testing, AI
-  tooling, Also). No proficiency labels.
-- [x] Five operator rows inside a mono `pipe(` … `)`. Each row sits on a hairline rule, and the
-  row's node is drawn on the rule at the curve's own `x` (`signalXAtPageY`), so a node never
-  sits on a glyph. The curve's weave is unchanged; between rules it passes behind the rows,
-  dimmed.
-- [x] `stack.ts`: each node fills as the tip passes its rule. Server-rendered lit, so JS-off and
-  reduced-motion visitors see the finished chain.
-
-Measured: every node sits on the drawn curve at its rule (Δ ≤ 0.005px) at 1024, 1440, 1920, 2560
-and 375, inside its rule and clear of the gutter; none needed the on-rule hold. The ring's centre
-hold is now 808px at 1440 (was ~2,195). 480 samples still hold (worst chord 0.66px at 1440,
-unchanged; 0.48px inside the stack span). Each node passes 30–31 intermediate fill states over
-64px of tip travel. Shipped JS on `/` **59,921 gzip (+852)**: the Stack island 650, the shared
-`follow` chunk 282, the Ring island −79. 73.1% of the 80 KB budget. `index.html` 18,955 → 17,179
-gzip. CLS 0.
-
-### Task 8.2 — Section 06: `Contact.astro` + `src/islands/contact-form.ts`
-
-- [x] `Contact.astro` replaces the interim `#contact` block in `index.astro` and takes over
-  `data-signal-section="contact"`. Headline "Nothing happens until you subscribe."
-- [x] The form posts natively to Formspree, so it works with JS off. The island adds
-  constraint messages, announced errors and an in-place sent/failed state. The endpoint is
-  `PUBLIC_FORMSPREE_ENDPOINT`, else the live default; if neither is a usable URL, `mailto:`.
-- [x] Email, socials, CV, and one line on freelance availability linking to `/websites`.
-- [x] The final emission on the line, drawn as the tip reaches it, above the footer's `|`.
-
-Measured: every seam Δ 0 at 1024, 1440, 1920, 2560 and 375; `#contact` still opens at 7235.36 at
-1440 (the Stack above it is unchanged), and `/` grows 7990 → 8816px. The emission sits on the
-drawn curve (|Δx| ≤ 0.004px) at all five widths and lands 392–396px above the footer's bar on
-desktop (526px at 375), 17–37px left of it (6px at 375). It fills over 64px of tip travel with
-30–31 intermediate states, and under reduced motion it is placed and lit with one state. The
-line runs behind the form's opaque panel and, dimmed, across the head. Worst chord in the contact
-span 0.26px at 1440 (whole curve 0.66px, unchanged). CLS 0. The form was exercised over CDP
-interception only — 200, 422, 500 and a network failure; nothing reached Formspree. Shipped JS on
-`/` **61,790 gzip (+1,869)**: the Contact chunk 1,873. 75.4% of the 80 KB budget. `index.html`
-17,179 → 17,913 gzip. No `react-dom`, `jsx-runtime`, `react-hook-form` or `zod` in `dist/`.
-`resend` is removed: nothing imported it, and it was the last thing pulling `react` and
-`react-dom` into `node_modules` (through `@react-email/render`), 19 packages in all.
-
-## PHASE 9 — SHIPPABLE: 2D Site Complete
-
-**Deliverable:** a complete, fast, accessible portfolio, live. **This is the finish line
-that matters.**
-
-Do not begin Phase 10 until this phase is signed off. The value of a shipped 2D site
-exceeds the value of a half-finished 3D one.
-
-**Task-level expansion (added 2026-09-26).** Briefs are in `.superpowers/sdd/BUILD-PLAN/`.
-Tasks 9.1–9.4 change the site, 9.5 is the audit that proves it and fixes what the audit finds,
-and 9.6 is the deploy, which the controller runs with Noel and no subagent. The order matters.
-9.1 moves the terminus, which changes the page's height, so 9.4's figures and 9.5's audit have
-to run after it. 9.4 comes before 9.5 because Lighthouse should grade the final chunking.
-
-**Review Focus.** These are the five conditions most likely to bite a real visitor that no unit
-test pins. Each is checked in the task named:
-
-1. **The footer moves after the line is drawn:** fonts swap in, a late image lands, or the
-   viewport resizes. The terminus must follow the bar, because a stale terminus leaves the line
-   ending in mid-air (9.1: re-measure after `document.fonts.ready` and on resize, and check the
-   bar against the curve's end at five widths).
-2. **JS off:** no line at all, yet the page still has to end `●` then `|`, centred and close
-   together, with every word readable (9.1 for the ending, 9.5 for the whole page).
-3. **Reduced motion:** the line is fully drawn to the new terminus at once, the emission is lit,
-   and nothing animates anywhere (9.1 for the ending, 9.5 for the page).
-4. **A share crawler fetching `og:image`:** it gets an absolute URL to a 1200×630 PNG served as
-   `image/png`, set in the brand faces rather than a fallback sans (9.3, then checked again on
-   the preview deploy in 9.6).
-5. **A first visit on throttled mobile:** no render-blocking request the budget does not allow,
-   and the LCP element is text painted in the preloaded face (9.4 for the requests, 9.5 for the
-   Lighthouse figures).
-
-**Deliberately not in Phase 9.** Everything under "Deferred by Noel — 2026-09-26" (the Stack's
-nodes, the sharp turns at points 7–10, the work spine's breaths). The scatter's
-lowest-density fill. The ring's 9px drop at 375. The split meeting a dim line. A shared class for
-the reduced-motion opt-out: each opt-out is local and commented, which is enough. The
-`font-bricolage` strings and dead Tailwind on `/websites`, which is Phase 14's restyle.
-
-### Task 9.1 — The line ends above the footer ✅ Done
-
-- [x] `resolveSeamPixels(sectionTops, height, terminus?)`: a measured terminus replaces the
-  box's bottom edge as the curve's last knot. Fallback seams scale to the terminus, not to the
-  box, and no seam passes it. TDD in `tests/signal-anchors.test.ts`.
-- [x] `Footer.astro`: the `|` bar moves from the footer's last pixel to its top edge, centred,
-  and carries `data-signal-terminus`. `svg-signal.ts` measures the bar's centre line and passes
-  it in.
-- [x] `Contact.astro`: the emission sits directly above the bar. Target: the emission's centre
-  is at most 96px from the bar's centre at every width, and it sits on the curve. **Measured
-  72px at every width** (half `--emission` + `--s-8`), already under target from Step 2 alone —
-  no spacing token changed, only the comments describing the old ~400px gap.
-- [x] Comments and spec wording that place the terminus "at the document's bottom" are
-  corrected (`Footer.astro`, `anchors.ts`, `contact.ts`). The spec itself never said "document's
-  bottom" or "last pixel" (`grep -n -i` for both turned up nothing) — nothing to change there.
-
-### Task 9.2 — Rulings and teardown
-
-- [x] RxJS goes into `architecture()` after Angular Signals. `tests/skill-groups.test.ts` keeps
-  the resume mirror and names RxJS as its one exception. It also fails if RxJS ever appears on
-  the resume, so the exception retires itself. Checked at 1440 and 375: the row wraps cleanly
-  (two lines at 375, one at 1440), no glyph sits on the node, and the node still lands on the
-  curve — max Δ 0.005px at 1440, 0.004px at 375, independently re-measured by parsing the drawn
-  `<path d>`, matching Task 8.1's own figures.
-- [x] `.contact__title { text-wrap: balance }`, so "YOU" no longer sits alone at 375. Checked at
-  375, 390 and 1440: at 375/390 the headline balances to four lines ("NOTHING" / "HAPPENS" /
-  "UNTIL YOU" / "SUBSCRIBE."), pairing YOU with UNTIL; at 1440 it still wraps to three lines,
-  just distributed more evenly than the unbalanced greedy wrap, with no orphan and no overflow.
-- [x] `/dev/signal` deleted, and with it `createSvgSignal`'s `pageLayer` option, which only the
-  harness turned off. The build reports 2 pages. See Known Gaps ("Closed by Task 9.2") for the
-  full verification and the JS delta (61,500 gzip, −347 against 61,847).
-- [x] `mountHeroClock()` is idempotent: a second call cancels the first one's timer and
-  listener. Verified live (see Known Gaps, "Closed by Task 9.2"): three back-to-back mounts
-  leave exactly one live timer chain and one live listener running.
-
-Shipped JS on `/` after all four items: **61,540 gzip (−307 against the Task 9.1 baseline of
-61,847)** — the `/dev/signal`/`pageLayer` teardown (item 3) accounts for −347, and the hero
-clock's stop function (item 4) adds back +40 to the inline module script. See
-`task-9.2-report.md` for every script named.
-
-### Task 9.3 — The OG image as a raster
-
-- [x] `scripts/og-image.mjs` imports `path.ts` and draws the card's line from the canonical
-  curve (no duplicated `d`). It takes colours from `tokens.css`, renders with sharp to a
-  committed 1200×630 `public/og-image.png` (33.6 kB), and is added to `npm run images`.
-- [x] The card's text is set in Archivo and JetBrains Mono. sharp's renderer cannot read the
-  site's WOFF2 files (tested 2026-09-26: everything fell back to a sans). Build-only static
-  TTFs with their OFL licence go in `scripts/og/fonts/`. **Not** reached through
-  `FONTCONFIG_FILE` in the end: on this machine, sharp/libvips' Pango has only a CoreText
-  backend compiled in — no env var reaches it, and forcing the fontconfig backend segfaults
-  (matches `lovell/sharp#4577`). Instead `opentype.js` shapes each line into glyph-outline
-  `<path>`s directly from the TTFs, so sharp never resolves a font by name at all — see
-  `scripts/og-image.mjs`'s header comment for the full finding. Verified by eye against a
-  Chrome render of the old SVG at 11× zoom: genuinely wider/bolder name, genuinely
-  monospaced mono line, not a fallback sans.
-- [x] `public/og-image.svg` deleted. `BaseLayout` points at the PNG and emits `og:image:width`,
-  `og:image:height`, `og:image:type` and `og:image:alt`. This closes Phase 4 minor (5).
-
-### Task 9.4 — The critical path, and a budget that measures itself ✅ Done
-
-- [x] `scripts/budget.mjs` (`npm run budget`): for each built page, every script the page loads
-  before interaction is gzipped and summed: external module scripts, their static import graph,
-  inline module scripts and `is:inline` blocks. Dynamic `import()` is excluded. The run fails
-  above 80 KB. Its pure parts are in `scripts/lib/budget.mjs` and tested (`tests/budget.test.ts`,
-  TDD — RED on the missing module, GREEN on the first implementation, 7 tests). `/` reconciled
-  exactly to the pre-existing 61,540-byte figure with no gap to explain.
-- [x] The three critical-path items, fixed together. Render-blocking CSS: `build.inlineStylesheets:
-  'always'` in `astro.config.mjs` — kept; render-blocking-insight 2 → 0, LCP −147.5ms, FCP −76.1ms,
-  Performance 97 → 98, and combined HTML+CSS bytes over the wire *fall* 25,257 → 24,920 gzip
-  (−337). The missing `modulepreload`: `src/integrations/modulepreload.ts`, an `astro:build:done`
-  hook reusing `pageScripts`/`staticImports`/`resolveSpecifier`, adding a `<link
-  rel="modulepreload" fetchpriority="low">` per shared chunk. `fetchpriority="low"` is not
-  decorative — the default-priority version regressed FCP +373.5ms by pulling GSAP's 50.84 KB
-  chunk forward at high priority; low priority keeps the round-trip fix (chain depth 3 → 2) and
-  *improves* FCP over even the no-preload baseline. The renderer chunk's own missing
-  `modulepreload` (`svg-signal`) is moot — Task 9.2 folded it into `BaseLayout`'s entry chunk, so
-  it was never a separate chunk to preload. Chunking: `vite.build.rollupOptions.output.manualChunks`
-  folds the 282-byte `follow` chunk into `tip` (489 bytes merged vs. 262 + 334 = 596 apart,
-  −170 on the page total including the wrapper-boilerplate shrink on every other entry chunk, one
-  fewer request). No other chunk under ~1 KB gzip exists once `follow`/`tip` are merged — `timeline`
-  (GSAP, 50.84 KB) is the only other shared chunk and is far over the line, so nothing else
-  qualifies. "Unused JavaScript" re-measured: still 29,451 bytes, entirely within `timeline.js`
-  (57.9% of its 50,890 transferred bytes) — GSAP core code no section's `ScrollTrigger` usage
-  exercises during the Lighthouse trace window. Accepted: dropping it means dropping GSAP
-  features, which the brief rules out.
-- [x] Before and after, recorded below and in `.superpowers/sdd/BUILD-PLAN/task-9.4-report.md`
-  (full `npm run budget` output, three-run Lighthouse medians, request-chain evidence, island
-  smoke checks over real-time CDP, JS-off check via CDP `Emulation.setScriptExecutionDisabled`).
-
-  | Metric | Before | After |
-  |---|---|---|
-  | Budget total (`/`) | 61,540 gzip (75.1%) | 61,370 gzip (74.9%) |
-  | Render-blocking resources | 2 | 0 |
-  | Request-chain depth | 3 (HTML → entry → shared chunk) | 2 (HTML → entry; shared chunks preloaded directly) |
-  | Lighthouse Performance (median of 3) | 97 | 98 |
-  | LCP (median of 3) | 2,554.5ms | 2,404.8ms |
-  | FCP (median of 3) | 1,434.8ms | 1,054.8ms |
-  | CLS (median of 3) | 0 | 0 |
-  | TBT (median of 3) | 0 | 0 |
-  | Unused JavaScript | 29,451 bytes (`timeline.js`) | 29,451 bytes (`timeline.js`, unchanged, accepted) |
-  | Accessibility (median of 3) | 100 | 100 |
-
-### Task 9.5 — The ship audit
-
-- [x] Lighthouse mobile, three runs with the median recorded: Performance **97/98** (`/`/
-  `/websites`, ≥ 95 ✓), Accessibility **100/96** (✓ / finding), **LCP 2,404ms/2,477ms — over
-  the 2.0s budget on both pages**, CLS **0/0** (✓), TBT **0/0** reported as INP's lab proxy.
-  See "Measured after Phase 9" for the full table and the LCP diagnosis.
-- [x] A keyboard-only pass through the whole page (35 stops, 1440 and 375, no traps, visible
-  focus at every stop). A screen-reader pass (AX tree over CDP) on the timeline, the ring
-  rail and the form — all match §13. A JS-off pass — every word readable, only the hero
-  clock's live digits differ from its "local time" placeholder, by design. A reduced-motion
-  pass — zero timer-driven property changes sampled at six fixed scroll positions.
-- [x] Phase 4 minors fixed: (2) `role="list"`, (7) the redundant `if (layer)`, and (1) the inert
-  sound toggle, made honest per Noel's ruling (Decisions, 2026-09-26). (3) "Back to top" is not
-  restored, because the nav is persistent; recorded as a Decision below. (4) and (6) confirmed
-  still open, belonging to later phases (see Known Gaps); (5) already resolved by Task 9.3.
-- [x] Every Global Constraints budget measured and recorded under "Measured after Phase 9" and
-  in `docs/SESSIONS.md`.
-
-### Task 9.6 — Deploy (controller with Noel, no subagent)
-
-- [x] Push `feat/signal-path-rebuild` **only on Noel's word**. Verify the Vercel preview: the
-  pages, the OG card fetched from the preview URL, the form's `action`, and Lighthouse against
-  the real network. *Pushed 2026-09-27 on Noel's word (68f2c78; later commits local). The preview
-  builds, but Vercel Deployment Protection 302s every route to the login, so verification waits on
-  a Protection Bypass for Automation secret from Noel. Add to the checks: the `/websites` → `/#contact`
-  307 (Task 9.7) — `astro preview` ignores `vercel.json`, so only a Vercel deploy can show it.*
 - [ ] **After the merge (Noel ruled 2026-09-29 — neither blocks shipping):** a text-based export of the September resume replaces
   `public/noel-sebastian.pdf` (the served CV is the March one; `Resume.pdf` has no text layer, so ATS
   cannot read it); a 5-minute VoiceOver pass on the preview (checklist in `task-9.5-report.md`).
   After the merge: the `VERCEL_DEPLOY_HOOK` repo secret for the monthly rebuild. *Done 2026-09-29:
   hook `scheduled-rebuild` on `master`, secret set, a manual `workflow_dispatch` run returned Vercel's
   `PENDING` job.*
-- [x] Merge to `master` for production **only on Noel's word**, then smoke-check
-  `https://www.noel-sebastian.com`. Phase 9 is marked complete only after that check. *2026-09-29:
-  preview verified with the bypass header (`.env.local` `VERCEL_AUTOMATION_BYPASS_SECRET`); found and
-  fixed (Task 9.8) the `/websites/` trailing-slash gap and LCP over 2.0s. Tagged `v1-letterpress` on
-  `6a4bac7`, `master` fast-forwarded to `c2b0e46`. Smoke check on the live domain: `/` 200, apex → www
-  308, `/websites` and `/websites/` 307 → `/#contact`, 404 page, `og-image.png` `image/png`, PDF,
-  `robots.txt`, sitemap, form `action` all correct; no `x-robots-tag`.*
 
-### Task 9.8 — Latin-subset the fonts; `/websites/` redirect gap (added 2026-09-29) ✅ Done
+- Final whole-branch review, parked: M5, the hero clock's per-second tick — Noel's design call.
 
-- [x] Preview LCP median was 2,500ms (`p.hero__lede`, all render delay), so the recorded ruling
-  applied. `scripts/fonts.mjs` (`npm run fonts`, `subset-font`) writes `public/fonts/` from the
-  masters in `font-masters/`; it fails on a dropped used codepoint, a lost axis/feature, or a
-  `font-stretch` outside the kept range. Archivo 90,104 → 57,188 B, JetBrains Mono 40,404 → 38,472 B.
-  `vercel.json` gains an explicit `/websites/` source (`/websites/:path*` does not match the empty
-  path). Report: `task-9.8-report.md`.
+---
 
-### Final whole-branch review — 2026-09-27
+# PHASES 10–15 — Phase-Level Detail
 
-Opus, over `6a4bac7..68f2c78`: ready with fixes — 0 Critical, 4 Important, 9 Minor
-(`.superpowers/sdd/BUILD-PLAN/final-review-report.md`). The one fix wave (`c02fc7c..8918fc2`) was
-reviewed clean. The fixes: the nav is sticky again (`overflow-x: clip`); the decade copy plus the monthly rebuild; "industry-first" kept and
-recorded; `/websites` given the Contact form (`ContactForm.astro`); a `robots.txt` sitemap URL; a 404 page;
-JSON-LD from `caseStudies`; the portrait source moved out of `public/`; a shared new-tab note. Parked:
-M5, the hero clock's per-second tick, as Noel's design call.
-
-### Task 9.7 — `/websites` redirects to Contact until Phase 14 (added 2026-09-27)
-
-- [x] `vercel.json`: `/websites` and `/websites/:path*` → `/#contact`, 307. The sitemap filter drops
-  the URL. Contact's freelance line points at the form instead of the page. Found in the final
-  review's re-check: without Tailwind, `/websites` renders essentially unstyled, and merging would
-  have replaced production's working page (Decisions, 2026-09-27).
+Expand the phase you are about to start into task-level steps before implementing it.
 
 ## PHASE 10 — WebGL: Gate + Signal Tube
 
@@ -1665,245 +553,72 @@ decision was made; this section records *what it is*.
 - **2026-09-29** — **Rollback path:** Vercel Instant Rollback to the `6a4bac7` deployment for the
   live site (note it disables auto-promotion of new `master` deploys until undone); the tag
   `v1-letterpress` for the code.
+- **2026-09-29** — **The handoff docs hold one fact in one place, and nothing is ever deleted
+  from them.** This file is current state, `docs/SESSIONS.md` the last three entries, and
+  `docs/archive/` everything finished or closed — moved verbatim, append-only. The routing table
+  is in `.agents/skills/session-handoff/end.md`; `check.mjs lint` flags drift and `check.mjs
+  verify` fails if a line present at `HEAD` is in neither the live docs nor the archive. It
+  replaces the old "fold at ~40 entries, keep only Decided and Didn't-work lines" rule, which
+  would have thrown data away and had not triggered by 180 KB.
 
 ## Known Gaps
 
-- **The `/websites` redirect is only verifiable on a Vercel deployment** (`astro preview`
-  ignores `vercel.json`). Verified on preview and production 2026-09-29.
-- **CLOSED 2026-09-29 —** the scheduled rebuild's `VERCEL_DEPLOY_HOOK` secret is set and a manual
-  run reached Vercel. First scheduled run: 1 Oct 00:00 UTC, which should flip the copy to "a decade".
+Open items and standing notes only. When a gap closes, move the whole bullet verbatim to
+`docs/archive/plan-closed-gaps.md` with a closing line — never delete it, never leave it here
+marked RESOLVED.
+
+### Post-launch — owed by Noel or waiting on a date
+
 - **Served CV is still the March PDF** (`public/noel-sebastian.pdf`); replace with a text-based
   export of the September resume. VoiceOver pass still owed (checklist in `task-9.5-report.md`).
+- **Confirm the first scheduled rebuild.** `VERCEL_DEPLOY_HOOK` is set (closed gap archived);
+  after the 1 Oct 00:00 UTC run, check it succeeded in Actions and the live copy says "a decade".
+
+### Performance
+
 - **LCP has ~0 headroom.** Preview median 1,988ms, one run 2,645; production single run 2,165.
   Next lever: drop the JetBrains Mono preload (the LCP element is set in Archivo).
-- **The `→` in "Bundle size, 100% → 40%" renders in a fallback face** — neither font has U+2192.
-  Allowlisted in `scripts/fonts.mjs`; the copy could say "to" instead.
-- No test framework existed before Phase 0. Vitest covers pure modules only —
-  `career.ts`, `signal/path.ts`, and later `audio/engine.ts` scheduling. Motion and visual
-  work is verified by hand; this is a deliberate limit, not an oversight.
-- Testimonials remain absent until real client quotes exist (spec §3).
+  Already tried in Phase 9 and not kept (archived LCP diagnosis): `fetchpriority` on the entry
+  `<script>` tags (Astro stops bundling them), low-priority entry `modulepreload`, `<head>` reorder.
 - The site has no automated performance regression check. Phase 9 establishes the numbers
   manually; consider a Lighthouse CI step afterwards.
-- `src/pages/dev/signal.astro` (Task 2.2) is a `noindex` dev harness for the SVG signal
-  renderer — there is no real page to mount a section on until Phase 4 builds the shell.
-  It accepts `?t=0..1` to set progress directly for screenshotting, and falls back to a
-  raw scroll listener otherwise. Scaffolding: delete it before the Phase 9 ship.
-  **Closed by Task 9.2:** deleted, along with the now-empty `src/pages/dev/`.
-- **The `/dev/signal` harness (`src/pages/dev/signal.astro`) must be deleted before the Phase 9
-  ship.** It is `noindex` but it is scaffolding, and it is why the build now reports 3 pages.
-  **Closed by Task 9.2:** deleted. `createSvgSignal`'s `pageLayer` option (which existed only
-  so the harness could turn off the dim rule, the playhead reveal and the tip publishing) went
-  with it — every `if (pageLayer)` branch is now unconditional page-layer behaviour, and the
-  isolated-mount length-fraction reveal in `applyReveal` is gone. Every comment naming the
-  harness or `/dev/signal` (`anchors.ts`, `svg-signal.ts`, `motion/scroll.ts`,
-  `tests/motion.test.ts`) now names the real case instead — a page with no hero anchor or no
-  section anchors (`/websites`) and, hypothetically, a page rendering no
-  `[data-signal-terminus]` element. The build now reports **2 pages**, and `dist/sitemap-0.xml`
-  lists only `/` and `/websites/`. Re-verified after the teardown, with a genuine wheel-driven
-  scroll through Lenis (a raw `window.scrollTo()` does not update GSAP's ScrollTrigger, which
-  only recalculates on Lenis's own `scroll` event — a test-methodology trap, not a code issue):
-  on both `/` and `/websites`, scrolled to the bottom, `strokeDasharray` is `'none'` (fully
-  drawn) and the curve's last point matches the footer bar's centre to within 0.00025px.
-  Reduced motion still draws the line fully at once with no scroll. Shipped JS on `/`:
-  **61,500 gzip (−347 against 61,847)** — folding `svg-signal.js` into the `BaseLayout` chunk
-  (no more separate request) plus small, deterministic shrinks across every other chunk from
-  Rollup's chunk-splitting graph having one fewer entry point to plan around.
-- **RESOLVED 2026-09-22 (was: decision owed before Phase 4) — the signal is one whole-curve,
-  page-height layer.** `createSvgSignal`'s per-section API and `toSvgPath`'s global coordinate
-  space were incompatible: `toSvgPath` maps the normalised curve over the *whole* box it is given
-  (`x` → `((x+1)/2)·width`, `y` → `y·height`), but `createSvgSignal(mount, section)` handed it one
-  section's points and the mount's full box, so each section drew its global slice into a
-  page-sized space. Measured box-fill at a 1000×480 mount — kept because it is the evidence the
-  decision rests on:
 
-  | section | drawn width | drawn height | box area filled |
-  |---|---|---|---|
-  | hero | 28% | 14% | 3.9% |
-  | years | 65% | 12% | 7.8% |
-  | work | 70% | 28% | 19.5% |
-  | ring | 35% | 24% | 8.4% |
-  | stack | 27% | 14% | 3.8% |
-  | contact | 8% | 8% | **0.7%** |
+### Cosmetic — open, not blocking
 
-  The resolution is one renderer for the whole curve on a single page-height layer; the `section`
-  parameter goes and the global mapping becomes correct by construction. See Decisions
-  (2026-09-22) for the full statement and `Addendum A` in
-  `.superpowers/sdd/BUILD-PLAN/task-P4-brief.md` for the Task 4.5 implementation.
-- **OPEN, Phase 6 owns it: `--signal-gutter` is about half the width the line actually occupies.**
-  From `work` onward the curve parks at `x ≈ −0.76`, which maps to ~12% of the layer's width — about
-  173px at a 1440px viewport. `--signal-gutter` is `clamp(48px, 6vw, 96px)`, about 86px there. Spec
-  §7.3 reserves that column for the line and says content never encroaches, so content laid out
-  against the current token would sit on top of the line from section 03 onward. Nothing before
-  Phase 6 lays out a section, so nothing is blocked. Settle it by deriving the gutter from the
-  curve's measured minimum `x`, not by moving the curve — the geometry is the design and the token
-  was a guess.
-- **`onSection`'s first callback arrives on the next refresh/rAF pass, not synchronously inside the
-  `onSection()` call.** A section already on screen at page load *does* receive its initial progress
-  — traced through `ScrollTrigger.refresh()`'s `isFirstRefresh && !_refreshingAll && self.update()`,
-  and through the batched case where `_refreshAll` calls `_updateAll(2)` whose gate passes on
-  `force === 2` regardless of `_refreshingAll`. So this is a timing expectation, not a bug: do not
-  write Phase 5 code that assumes the renderer has been given a progress value by the time
-  `onSection()` returns. Give renderers a sane value at construction instead — `SvgSignal` already
-  defaults to 0.
-- **RESOLVED 2026-09-24 by Task 5.2 — Archivo's `wdth` axis is live.** `SENIOR WEB ENGINEER` at
-  64px/800 measures condensed **521.16px**, normal **787.83px**, expanded **984.58px** (+24.97% over
-  normal); `font-stretch` keywords and raw `font-variation-settings` agree to the hundredth of a
-  pixel. `public/fonts/archivo-var.woff2` is the right file. Original entry, for the record:
-  **Archivo's `wdth` axis is confirmed only circumstantially** — Fontsource metadata declares
-  wdth 62–125, and `-wdth-` (90,104 bytes) is 2.6× the weight-only `-wght-` (34,928). No font
-  tooling on this machine. The decisive check is visual: the first display heading rendered with
-  `font-stretch` expanded, in Phase 4/5. If Expanded never appears, that file is the first suspect.
-
-### Opened by Phase 4 — 2026-09-23
-
-- **`--virtual-time-budget` freezes `requestAnimationFrame` after a single frame.** Proved with a
-  recursive frame tracer: 1 frame over 3s, top-level and inside an iframe. Anything rAF-driven —
-  Lenis, ScrollTrigger, the `stroke-dashoffset` draw — is therefore **invisible** under it, and a
-  screenshot taken that way silently shows frame 1 rather than the settled state. This supersedes
-  the 2026-09-20 note recommending `--virtual-time-budget=5000` for screenshots: it is fine for
-  static paint, wrong for anything animated. Motion must be verified over real-time CDP. Every
-  Phase 4 check except the anchor trace was rAF-independent, so they stand.
-- **Seven Phase 4 review minors, deferred to the final whole-branch review:**
-  (1) the inert sound toggle explains itself only via `title` on a `disabled` button, which is
-  neither focusable nor reliably announced — **RESOLVED 2026-09-26 by Task 9.5:** a real
-  focusable button, `aria-disabled="true"` not `disabled`, visible label "Sound · soon"
-  (Decisions, 2026-09-26); (2) `role="list"` missing on the nav and footer `ul`s
-  (Safari/VoiceOver drops list semantics under `list-style: none`) — **RESOLVED 2026-09-26 by
-  Task 9.5:** both carry `role="list"` now, confirmed in the live AX tree; (3) the "Back to top"
-  link was dropped without a decision record, on a 9,163px document — **RESOLVED 2026-09-26
-  (Decisions):** staying dropped is the decision, recorded rather than left silent; (4) the
-  desktop signal layer is full-opacity and the footer is the one place Phase 4 lays text across
-  the curve's path — latent, since the centre column is mostly empty — **confirmed by Task 9.5,
-  matches the Task 8.2 re-check below: still open, still just cosmetic.** At 1440 the centre
-  column is empty (no overlap). At 375, under `prefers-reduced-motion` with the line fully
-  drawn, it runs straight through "Medium" in the footer's social row — visibly a dim red
-  stroke through the word, same as Task 8.2 found for the name/tagline/copyright/colophon at
-  this width. `--signal-dim-alpha` keeps it legible (screenshotted); no code change made. (5)
-  `og-image.svg`
-  duplicates the generated `d` with no regeneration command of its own, so it can go stale
-  silently — **RESOLVED 2026-09-26 by Task 9.3:** `og-image.svg` is deleted; `scripts/og-image.mjs`
-  bakes `public/og-image.png` from `sampleSignalRange()` directly, so there is no `d` left to
-  duplicate; (6) **24 lowercase `font-bricolage` class strings survive in `src/`** — the Phase 4
-  ruling's grep was case-sensitive and missed exactly the hole it was written to close, though
-  they are inert Tailwind names on components Phases 5–8 rewrite — **confirmed by Task 9.5: still
-  open**, on `/websites` only now (every other page was rewritten by Phases 5–8); Phase 14's
-  restyle owns it, per "Deliberately not in Phase 9"; (7) `BaseLayout.astro`'s `if (layer)`
-  silently no-ops on an element `BaseLayout` itself renders eleven lines above — **RESOLVED
-  2026-09-26 by Task 9.5:** the guard is gone; a missing layer now throws.
-- **RESOLVED 2026-09-26 by Task 9.4 — all three fixed together.** Original: **Three critical-path
-  items for the Phase 9 performance pass, to be fixed together, not piecemeal:** `unused-javascript`
-  reports 29 KiB (the motion chunk ships whole while no section registers a trigger yet — expected
-  to amortise across Phases 5–8, but verify rather than assume); a render-blocking 1.9 KB
-  `_astro/index.css` link worth ~150ms; and no `modulepreload` for the 1.6 KB `svg-signal` chunk,
-  which `BaseLayout`'s chunk statically imports — one extra round trip. Now: `unused-javascript`
-  re-measured at **29,451 bytes, unchanged** — it never amortised, because it is GSAP core code no
-  section's `ScrollTrigger` usage exercises during Lighthouse's trace window, not motion-chunk
-  code waiting for a trigger to register. Accepted — removing it means removing GSAP features.
-  The render-blocking CSS is gone: `build.inlineStylesheets: 'always'` (there are two stylesheets
-  by Task 9.4, 5,341 + 1,806 bytes gzip, not one) drops render-blocking-insight's count 2 → 0, for
-  a measured LCP −147.5ms / FCP −76.1ms / Performance 97 → 98, and the combined HTML+CSS bytes
-  over the wire *fall* (one gzip stream beats three). The `svg-signal` chunk's missing
-  `modulepreload` is moot — Task 9.2 folded `svg-signal` into `BaseLayout`'s own entry chunk,
-  so it was never a separate chunk to preload by the time Task 9.4 started. The request-chain
-  problem the finding was really pointing at (any shared chunk discovered only after its entry
-  parses) still existed for `timeline` and `tip`, and Task 9.4 fixes it there: `src/integrations/
-  modulepreload.ts` adds a `modulepreload` link per shared chunk, `fetchpriority="low"` (measured:
-  default priority regressed FCP +373.5ms by pulling GSAP's 50.84 KB chunk forward; low priority
-  keeps the chain-depth fix, 3 → 2, without the regression).
-- **RESOLVED 2026-09-26 by Task 9.3 — the OG image is a build-time PNG.** Original: **the OG image
-  is still an SVG**, which Twitter/X, Facebook, LinkedIn and Slack do not render, so the share card
-  currently shows nowhere. Pre-existing; spec §10 already schedules a build-time `sharp` raster.
-  Now: `scripts/og-image.mjs` renders a committed `public/og-image.png` (1200×630, 33.6 kB),
-  `BaseLayout` points at it with the four `og:image:*` tags a crawler expects.
-
-### Opened by Task 5.1 — 2026-09-23
-
-- **`scripts/optimise-gallery.mjs` encodes every gallery asset twice, and the second pass throws
-  the settings away.** It builds a buffer with `.webp({ quality: 72 })` / `.webp({ quality: 76 })`
-  and then writes it with `sharp(buffer).toFile(...)` — re-opening an already-encoded buffer, which
-  re-encodes it at sharp's *default* WebP quality and discards the quality the line above asked
-  for. So the committed gallery files are double-encoded (generation loss) at a quality nobody
-  chose. Found while writing `scripts/portrait.mjs`, which avoids it by writing the encoded buffer
-  with `writeFile` and says why in a comment.
-- **Consequence: `npm run images` dirties the tree.** Re-running it rewrites committed gallery
-  assets to different bytes (`ezytrack-scroll.webp` 192,436 → 279,384), which means the committed
-  gallery assets were not produced by the current script against the current libvips. Task 5.1
-  reverted the churn rather than fixing it. **Phase 6 owns this** — it rewrites the gallery anyway,
-  so the re-encode and the byte change land there rather than as a drive-by now.
-  Workaround meanwhile: run `node scripts/portrait.mjs` directly to re-bake the portrait. Verified
-  deterministic — a re-run leaves the tree clean.
-- **RESOLVED 2026-09-26 by Task 8.1 — `About.astro` is deleted; the portrait lives only in the
-  Hero.** Original: **`About.astro`'s portrait mount still carries dead Tailwind-era styling** (`border-2 border-ink`,
-  an inline box-shadow). Inert since Phase 0, but the new portrait is engineered to dissolve into
-  `--ground` with no edges, so a border around it is the wrong mount. Whichever phase rebuilds
-  that section drops it.
-
-### Opened by Phase 5 — 2026-09-24
-
-- **RESOLVED 2026-09-24 — the grain now paints above content (see Decisions). Original finding:**
-  **the page grain punches a hole around every opaque element.**
-  `body::after` carries the grain at `z-index: -2`, behind all content, so any opaque in-flow
-  element covers it and reads as a rectangle against a grained ground. Measured on the real page:
-  ground **15,14,13** with grain against the portrait's corners at **10,9,7**. This is not a
-  portrait problem — Task 5.1's "dissolves to exactly `--ground`, no visible boundary" is true of
-  the *asset* and false of the *page*, and it generalises to every full-bleed image the site adds
-  (§9.03's case-study shots, §9.04's ring cards). Task 5.2 fixed its own instance with a
-  `radial-gradient(farthest-side …)` mask — `farthest-side` puts the radii on the mid-edges so the
-  corners, where a rectangle reads loudest, fall outside the mask — and verified at 9× contrast
-  boost that the grain runs continuously across the area. **`mix-blend-mode: screen` was tried
-  first and measured worse** (22,21,18): the asset dissolves to `--ground`, not to black, so screen
-  adds a ground to a ground. The general alternatives are to raise the grain above content (costs a
-  compositing layer over the whole document) or to accept masks per image. **Phase 6 needs a
-  standing answer before it places its first case-study image.**
-- **DECIDED 2026-09-24, Phase 6 implements (see Decisions) — text now crosses the signal, and the
-  overlap is under-contrasted.**
-  Phase 4's deferred minor (4) is no longer latent. Section 02 is the first section whose centre
-  column is not empty, and the curve runs through it — visibly across "since 2016" in the lede and
-  straight through the "90%+" statistic. `--type` on `--signal` is about **2.9:1**, below AA, so
-  wherever a 4px stroke crosses a glyph that glyph is under-contrasted. It currently threads the
-  gaps by luck rather than by design. This is the same question as `--signal-gutter` being half the
-  curve's real extent, and Phase 6 already owns that — settle both together: derive the gutter from
-  the curve's measured minimum `x`, and decide whether the line dims behind content (§7.3 already
-  does this at phone width) or content routes around it.
-- **RESOLVED 2026-09-26 by Task 9.4 — `npm run budget` measures every script, not just
-  `_astro/*.js`.** Original: **The JS budget has been measured with two blind spots all along.**
-  The hero island is inlined into `index.html` rather than emitted as a chunk, so a chunk-only
-  sum misses it; and `Gallery.astro`'s `is:inline` script (~1.1 KB raw) was never counted in any
-  phase figure (it left with `Gallery.astro` in Task 7.2, so the page now has no `is:inline`
-  script at all). Deltas between phases are still sound because the omission is consistent, but
-  the **absolute** number understates what ships. Phase 9 must measure every script the page
-  actually loads — external chunks, module-inlined scripts and `is:inline` blocks — not just
-  `_astro/*.js`. Now: `scripts/budget.mjs` (`npm run budget`) parses `pageScripts()` off the
-  built HTML itself — every `<script type="module" src>`, `<link rel="modulepreload">`, and every
-  inline executable `<script>` body, whatever page structure produced them — then walks each
-  external file's static import closure and gzips everything, inline bodies included. No blind
-  spot is possible by construction: it does not know "chunk" from "inline", only "script the page
-  runs". Reconciled exactly against the existing 61,540-byte figure (Task 9.2/9.3's manual
-  `zlib.gzipSync` sum) before any Task 9.4 code change — no gap to explain, confirming the manual
-  sums were already counting the hero island's inline script correctly by hand; the blind spot
-  was in *not having a script that does this automatically*, which is now fixed.
-- **`mountHeroClock()` is not idempotent.** Each call adds a `visibilitychange` listener and starts
-  a `setTimeout` chain nothing cancels. Nothing re-mounts it today, but `scroll.ts` is deliberately
-  written to survive an Astro view transition re-mounting it, so the codebase anticipates them. If
-  view transitions land (Phase 15 is the likely place), that is a leaked timer and listener per
-  navigation. Minor; fold into the final whole-branch review. **Closed by Task 9.2:** a
-  module-level `stopClock` calls `stopClock?.()` at the top of `mountHeroClock()`, clearing the
-  pending timeout and removing the named `visibilitychange` listener before scheduling a new
-  chain. Verified live on the dev server (import through `/src/islands/hero.ts`, spying on
-  `setTimeout`/`clearTimeout`/`addEventListener`/`removeEventListener` against an isolated DOM,
-  the Astro dev 404 page, so nothing else on a real page confounds the count): three back-to-back
-  `mountHeroClock()` calls produce 3 `setTimeout` calls and 2 `clearTimeout` calls (each of the
-  2nd and 3rd mounts cancelling the previous), and 3 listener adds against 2 removes — net exactly
-  one live timer chain and one live listener. A further 3.2s real-time wait adds exactly 3 more
-  `setTimeout` calls (one re-arm per second, one chain) and zero more `clearTimeout` calls,
-  confirming only the single surviving chain keeps ticking.
-- **RESOLVED 2026-09-25: kept, see Decisions. Original finding:** **Archivo's middot is a square, and nothing chose that.** The H1's `·` separator renders as a
-  filled square block at display size. Verified it is genuinely Archivo's U+00B7 — the glyph is in
-  the font (`document.fonts.check` true, 35.95px advance at 86px) and differs from both serif's and
-  system-ui's round dots, while Archivo's own U+2022 bullet is round. So it is not a tofu and not a
-  fallback. On the dark palette in `--signal` it happens to read as an emission mark, which is
-  on-concept, but it was inherited rather than decided, and the same `·` renders round in the mono
-  voice (the status rail, the `01 · of('Noel Sebastian')` caption). Noel's call.
+- **The `→` in "Bundle size, 100% → 40%" renders in a fallback face** — neither font has U+2192.
+  Allowlisted in `scripts/fonts.mjs`; the copy could say "to" instead.
+- **Final-review minors, deferred (2026-09-27):** comment nits in `global.css` (the wrap is below
+  360, not 390) and `404.astro` (no sitemap `filter` exists); the sitemap filter hard-codes the
+  domain. M5 is parked for Noel (see Carried forward).
+- **Two Phase 4 review minors are still open** (the list of seven is archived; five are resolved).
+  (4) The desktop signal layer crosses footer text at narrow widths — cosmetic, kept legible by
+  `--signal-dim-alpha`; see the Task 8.2 re-check below. (6) Lowercase `font-bricolage` class
+  strings survive on `/websites` only — Phase 14's restyle owns them.
+- **Re-checked by Task 8.2 — the Phase 4 minor about footer text crossing the line** is covered
+  by the dim rule (the line is dim anywhere it does not clear content). Measured with Contact
+  built: at 1440, 1920 and 2560 the line crosses no footer text; at 1024 it crosses the colophon;
+  at 375 it crosses the name, tagline, copyright line, "Medium" and the colophon. All at 0.15, so
+  contrast holds.
+- **The Stack's nodes step right, then back once, rather than left and right.** The weave's
+  bends are at control points 41 (`x` −0.30), 44 (0.24) and 46 (−0.14, the contact seam). The
+  seams pin the span to the section, and the five rules fall at 41–76% of its height at 1440, so
+  the left bend lands in the head (at the lede's second line) and the rows see the run from it
+  to the right bend and a little way back: nodes at 640, 761, 860, 897, 865px. The same shape at
+  every width. Honest to the curve, and the nodes still never sit on a glyph, but it is less of a
+  weave than the Decision pictures. Pinning a stack control point to a rule would fix it; that is
+  an in-section anchor, which Task 8.1's brief ruled out.
+- **At phone width the curve runs 9px beside the first card's drop.** At 375 the meeting point is
+  187.5px and the first card's drop is at its centre, 178px, so the dim curve and the drop run down
+  the 48px drop zone side by side before the card hides the curve. Legible, not ugly, but not
+  designed. A drop placed off-centre, or the first card snapped so its centre is the meeting point,
+  would settle it.
+- **The split meets a dim line.** The track and drops are full strength, while the curve arriving
+  at them is at `--signal-dim-alpha`: it is outside the gutter the whole way across the section's
+  head. Correct under the dim rule, and the track reads as the line arriving at full strength, but
+  the join is a step in strength, not a continuous stroke.
+- **Minor: the scatter's lowest density level fills nearly the whole plot box**, since one point
+  lifts a cell to level 1. It reads as a tinted panel rather than empty ground around the clusters.
+  Cosmetic: a threshold or a log scale in `quantiseLevels`.
 
 ### Deferred by Noel — 2026-09-26 (revisit after implementation is complete)
 
@@ -1928,106 +643,26 @@ before then.
   an uneven, dirty line rather than as attachment points. Straightening them is a `path.ts` edit.
   Re-run the continuity and chord tests, and re-check the branch origins in `work.ts`, which
   read the curve's `x`.
-- **The two open Phase 8 questions were answered on 2026-09-26** (see Decisions): RxJS goes into
-  `architecture()` on the site only, and the `|` moves to the top of the footer, directly under
-  the final emission. Both are Phase 9 work.
 
-### Opened by Task 8.2 — 2026-09-26
+### Standing notes — limits and gotchas, not bugs
 
-- **The final emission and the `|` are 392–396px apart on desktop, 526px at 375, and the line
-  runs on between them.** The curve ends at the document's last pixel, where the footer's bar is,
-  and the emission sits in Contact above the footer, so the whole footer lies between the two.
-  They read as one sequence — one mark on the line, then the bar it ends in, both near the centre
-  (the emission 17–37px left of the bar, where the curve is still settling) — but §6's
-  "terminates in a final emission" is looser than it could be. Tighter would mean the emission in
-  the footer, or a shorter footer; Phase 9's polish pass or Noel. **Resolved 2026-09-26 (Noel):**
-  the bar moves to the top of the footer, under the emission, and the line ends there. Phase 9.
-  **Closed by Task 9.1:** `resolveSeamPixels` takes a measured terminus (the bar's centre line,
-  `Footer.astro`'s `[data-signal-terminus]`) in place of the box's bottom edge, and the bar
-  itself moved to be the footer's first child, centred on the footer's top hairline via a
-  margin calc that adds nothing to the footer's height. Measured at 1024/1440/1920/2560/375:
-  the curve's drawn last point lands on the bar's centre within 0.001px at every width, and the
-  emission-to-bar gap is a flat **72px** everywhere (well under the 96px target) purely as a
-  side effect of the bar's move — Contact.astro's spacing tokens were not touched. Verified live
-  with real-time CDP (not `--virtual-time-budget`): a font-swap forced by holding the two woff2
-  responses open (Fetch domain) shows the terminus tracking the bar through a 92px document-
-  height change at 1440, via the existing ResizeObserver on `#signal-layer` — no
-  `document.fonts.ready` hook was needed. A real resize while scrolled to the bottom keeps the
-  tip on the bar. JS-off screenshots at 1440 and 375, zoomed 4×, show the footer's 1px hairline
-  passing through the dead centre of the 4px bar at both widths. Shipped JS on `/` **61,847
-  gzip (+57 against 61,790)** — `measureTerminus()` alone, in `svg-signal.js`; every other
-  chunk byte-for-byte unchanged. 75.5% of the 80 KB budget, 20,073 bytes left.
-- **The success state is a status line.** On a 200 the form resets and the status reads "Sent.
-  Thank you — I will reply by email." Nothing else changes. That is enough for a single-purpose
-  form; a larger confirmation would be island-rendered content, so it was not built.
-- **JS off lands on Formspree's own confirmation page.** Acceptable per the brief; Formspree's
-  `_next` redirect back to the site needs a paid plan.
-
-### Opened by Task 8.1 — 2026-09-26
-
-- **The Stack's nodes step right, then back once, rather than left and right.** The weave's
-  bends are at control points 41 (`x` −0.30), 44 (0.24) and 46 (−0.14, the contact seam). The
-  seams pin the span to the section, and the five rules fall at 41–76% of its height at 1440, so
-  the left bend lands in the head (at the lede's second line) and the rows see the run from it
-  to the right bend and a little way back: nodes at 640, 761, 860, 897, 865px. The same shape at
-  every width. Honest to the curve, and the nodes still never sit on a glyph, but it is less of a
-  weave than the Decision pictures. Pinning a stack control point to a rule would fix it; that is
-  an in-section anchor, which Task 8.1's brief ruled out.
-- **RxJS is not on the resume.** The site is built on RxJS operators, but neither the Skills
-  table nor the experience lists RxJS (the old `skillGroups` and marquee did). The rule is that
-  every Stack item traces to the resume, so it is not in the chain. Noel's call: add it to the
-  resume, and the test lets it into the chain. **Resolved 2026-09-26 (Noel, Decisions):** the
-  resume and the PDF do not change; RxJS is the one documented exception. **Closed by Task 9.2:**
-  `content.ts`'s `architecture()` items gain `'RxJS'` after `'Angular Signals'`.
-  `tests/skill-groups.test.ts` names the exception (`SITE_ONLY_ITEMS`) and asserts it against
-  the resume transcript on both sides — it inserts RxJS into the expected list at the right
-  slot, and a second test fails if RxJS ever appears in the resume itself, so the exception
-  retires on its own the day Noel adds it there.
-- **RESOLVED 2026-09-26 by Task 9.4 — folded into `tip`.** Original: **The shared `follow` helper
-  is its own 282-byte chunk and one more request.** Rollup splits it because its importers (Ring,
-  Stack) differ from `tip`'s. Duplicating the wiring instead measured 59,821 gzip, 100 bytes less,
-  with no extra request. Fold it into the `tip` chunk with a `manualChunks` rule in the Phase 9
-  chunking pass, alongside the missing `modulepreload`. Now: `vite.build.rollupOptions.output.
-  manualChunks` in `astro.config.mjs` matches `/src/lib/signal/(?:follow|tip)\.ts$` into one `tip`
-  chunk. Measured: 489 bytes gzip merged against 262 + 334 = 596 bytes apart, and the page total
-  drops 61,540 → 61,370 (−170, more than the merge alone accounts for — every other entry chunk
-  lost a byte or two of Rollup wrapper/boilerplate, the same effect Task 9.2 saw removing
-  `/dev/signal` from the module graph), with one fewer request.
-
-### Opened by Task 7.2 — 2026-09-25
-
-- **RESOLVED 2026-09-26 by Task 8.1 — About is gone and the `stack` seam is `#stack`, so the hold
-  ends at the Stack's top: 808px at 1440 (754 at 1024, 836 at 1920 and 2560, 699 at 375).**
-  Original finding: **the ring's hold runs down through About.** The `ring` span ends at the `stack` seam, which is
-  still `#skills`, and `About.astro` sits between the ring and Skills with no anchor of its own. So
-  control points 34→39 — the curve holding the centre — stretch from the track through the rest of
-  the rail and all of About (about 2,200px at 1440). Dimmed throughout, so contrast holds. Phase 8
-  decides where About goes; the ring's bottom seam follows.
-- **At phone width the curve runs 9px beside the first card's drop.** At 375 the meeting point is
-  187.5px and the first card's drop is at its centre, 178px, so the dim curve and the drop run down
-  the 48px drop zone side by side before the card hides the curve. Legible, not ugly, but not
-  designed. A drop placed off-centre, or the first card snapped so its centre is the meeting point,
-  would settle it.
-- **The split meets a dim line.** The track and drops are full strength, while the curve arriving
-  at them is at `--signal-dim-alpha`: it is outside the gutter the whole way across the section's
-  head. Correct under the dim rule, and the track reads as the line arriving at full strength, but
-  the join is a step in strength, not a continuous stroke.
-
-### Opened by Phase 6 — 2026-09-25
-
-- **RESOLVED 2026-09-26 by Task 8.2 — `contact` is on `Contact.astro` (`#contact`), so no interim
-  anchor is left. Amended by Task 8.1: `stack` is on `Stack.astro` (`#stack`).** Original finding:
-  **Two sections are anchored to interim stand-ins** (the ring's moved onto `#ring` in Task 7.2):
-  `stack` → `#skills`, `contact` → `#contact`, each marked `data-signal-section` and commented as
-  interim. Phase 8 moves the attribute onto the rebuilt sections. A missing anchor falls back to
-  linear mapping, so forgetting one fails soft, but it fails *wrong*: the line will drift off its
-  section.
-- **RESOLVED 2026-09-26 by Task 8.1 — About and Skills are deleted, and the Stack lays out in the
-  shared content box; the dim line crosses its rows by design (Decisions, "The Stack keeps the
-  weave"). The interim `#contact` block below it still starts at x=0 until Task 8.2.** Original:
-  **The dim line still crosses unrebuilt text below section 04**: About and Skills start at
-  x=0 because their layout classes are dead Tailwind (Gallery is gone as of Task 7.2). It is
-  dimmed to 0.15, so contrast holds, but it lies on the text. Phase 8 owns it.
+- **The `/websites` redirect is only verifiable on a Vercel deployment** (`astro preview`
+  ignores `vercel.json`). Verified on preview and production 2026-09-29.
+- **`onSection`'s first callback arrives on the next refresh/rAF pass, not synchronously inside the
+  `onSection()` call.** A section already on screen at page load *does* receive its initial progress
+  — traced through `ScrollTrigger.refresh()`'s `isFirstRefresh && !_refreshingAll && self.update()`,
+  and through the batched case where `_refreshAll` calls `_updateAll(2)` whose gate passes on
+  `force === 2` regardless of `_refreshingAll`. So this is a timing expectation, not a bug: do not
+  write Phase 5 code that assumes the renderer has been given a progress value by the time
+  `onSection()` returns. Give renderers a sane value at construction instead — `SvgSignal` already
+  defaults to 0.
+- **`--virtual-time-budget` freezes `requestAnimationFrame` after a single frame.** Proved with a
+  recursive frame tracer: 1 frame over 3s, top-level and inside an iframe. Anything rAF-driven —
+  Lenis, ScrollTrigger, the `stroke-dashoffset` draw — is therefore **invisible** under it, and a
+  screenshot taken that way silently shows frame 1 rather than the settled state. This supersedes
+  the 2026-09-20 note recommending `--virtual-time-budget=5000` for screenshots: it is fine for
+  static paint, wrong for anything animated. Motion must be verified over real-time CDP. Every
+  Phase 4 check except the anchor trace was rAF-independent, so they stand.
 - **The content-box assumption is load-bearing.** `gutter.ts`'s lit/dim bands assume every section
   from 03 down lays out as a centred `--container` with `--s-5` padding plus
   `padding-left: var(--signal-gutter)`. A section built differently gets a line lit under its
@@ -2035,11 +670,12 @@ before then.
 - **`global.css`'s reduced-motion rule turns inline style writes into 1ms transitions**, which
   stalled in headless Chrome. The branch and each scrubbed diagram part opt out. Any later island
   that writes positions per frame needs the same opt-out; worth one shared class in the Phase 9 pass.
-- **Minor: the scatter's lowest density level fills nearly the whole plot box**, since one point
-  lifts a cell to level 1. It reads as a tinted panel rather than empty ground around the clusters.
-  Cosmetic: a threshold or a log scale in `quantiseLevels`.
-- **Re-checked by Task 8.2 — the Phase 4 minor about footer text crossing the line** is covered
-  by the dim rule (the line is dim anywhere it does not clear content). Measured with Contact
-  built: at 1440, 1920 and 2560 the line crosses no footer text; at 1024 it crosses the colophon;
-  at 375 it crosses the name, tagline, copyright line, "Medium" and the colophon. All at 0.15, so
-  contrast holds.
+- **The success state is a status line.** On a 200 the form resets and the status reads "Sent.
+  Thank you — I will reply by email." Nothing else changes. That is enough for a single-purpose
+  form; a larger confirmation would be island-rendered content, so it was not built.
+- **JS off lands on Formspree's own confirmation page.** Acceptable per the brief; Formspree's
+  `_next` redirect back to the site needs a paid plan.
+- No test framework existed before Phase 0. Vitest covers pure modules only —
+  `career.ts`, `signal/path.ts`, and later `audio/engine.ts` scheduling. Motion and visual
+  work is verified by hand; this is a deliberate limit, not an oversight.
+- Testimonials remain absent until real client quotes exist (spec §3).
