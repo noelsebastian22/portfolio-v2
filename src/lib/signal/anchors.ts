@@ -4,12 +4,13 @@
  * `path.ts` describes the curve in normalised space, `y` 0..1. Mapping that `y` linearly
  * onto the whole document only lines the curve up with a section by coincidence, and any
  * change to a section's height slides the line off it. Instead, each `SECTION_SPANS` seam
- * is pinned to the top of the section it opens, and the curve is scaled linearly between
- * seams. This is renderer scaling — the geometry in `path.ts` is untouched.
+ * is pinned to the top of the section it opens, and the curve is stretched between seams
+ * along a monotone cubic (see `mapCurveY`). This is renderer scaling — the geometry in
+ * `path.ts` is untouched.
  *
  * Inside sections, further anchors pin particular control points to particular elements
  * (`IN_SECTION_ANCHORS`, below): the work spine's two ends and the ring's split. They are
- * optional: without them the mapping is seam-linear.
+ * optional: without them only the seams are knots.
  *
  * Pure module: no DOM. The renderer measures the section tops and hands them in.
  * All pixel values here are in the renderer's own box (the `<svg>`), not the document.
@@ -80,16 +81,17 @@ export function resolveSeamPixels(
 /**
  * Anchors *inside* a section, as opposed to the seams between sections: a control point
  * pinned to an element's edge. They are optional — a page without the element keeps the
- * seam-linear mapping on that side — and every one of them is renderer scaling: `path.ts`
+ * seams-only mapping on that side — and every one of them is renderer scaling: `path.ts`
  * is untouched.
  *
- * Why they exist: the seams alone scale the curve linearly inside a section, so a feature
- * of the curve lands wherever the section's height happens to put it.
+ * Why they exist: with only the seams as knots, a feature of the curve lands wherever the
+ * section's height happens to put it.
  *
- * - **The spine** (`SPINE_SPAN`, control points 21 and 26). Seam-linear, the right-to-left
- *   sweep that opens `work` always took 47.6% of the section, and the first case studies
- *   sat beside the sweep instead of the spine they branch from. Pinning the spine's ends
- *   to the first card's top and the last card's bottom fits the sweep into the head.
+ * - **The spine** (`SPINE_SPAN`, control points 21 and 26). Pinned by the seams alone,
+ *   the right-to-left sweep that opens `work` always took 47.6% of the section, and the
+ *   first case studies sat beside the sweep instead of the spine they branch from.
+ *   Pinning the spine's ends to the first card's top and the last card's bottom fits the
+ *   sweep into the head.
  * - **The ring's split** (`RING_SPLIT_POINT`, control point 34). The arc reaches the
  *   centre there, and §6 has the line split into five at that point. It is pinned to the
  *   centre line of the ring rail's track, so the curve meets the track exactly.
@@ -209,29 +211,97 @@ export function anchorKnots(seamPixels: readonly number[], anchors?: AnchorPixel
   return { curve, pixel };
 }
 
-function mapThroughKnots(curveY: number, knots: Knots): number {
-  const last = knots.curve.length - 1;
-  let segment = 0;
-  while (segment < last - 1 && curveY > knots.curve[segment + 1]) segment++;
-  const y0 = knots.curve[segment];
-  const y1 = knots.curve[segment + 1];
-  const p0 = knots.pixel[segment];
-  const p1 = knots.pixel[segment + 1];
-  return p0 + ((curveY - y0) / (y1 - y0)) * (p1 - p0);
+/** The knots plus the mapping's slope (d pixel / d curve `y`) at each of them. */
+interface KnotSpline extends Knots {
+  slope: number[];
 }
 
 /**
- * Curve `y` (0..1) → pixel `y`, piecewise-linear between anchors: the seams, plus each
- * in-section anchor `anchors` has a pixel for. Monotonic because every anchor is
- * non-decreasing in both spaces. Out-of-range input extrapolates along the end segments
- * rather than clamping, though the curve never produces any.
+ * Fritsch–Carlson slopes for a monotone cubic Hermite through the knots. A piecewise-linear
+ * map has a slope jump at every knot, and the line shows each one as a corner — at 1440 the
+ * years → work seam bent 43° in one vertex. Hermite with shared slopes is C1 there; the
+ * Fritsch–Carlson limit keeps every interval's cubic from overshooting, so the map stays
+ * monotone and the line can never fold back up the page.
+ */
+function toSpline(knots: Knots): KnotSpline {
+  const { curve, pixel } = knots;
+  const last = curve.length - 1;
+  const secant: number[] = [];
+  for (let k = 0; k < last; k++) {
+    const run = curve[k + 1] - curve[k];
+    secant.push(run > 0 ? (pixel[k + 1] - pixel[k]) / run : 0);
+  }
+
+  // Each interior knot starts from the slope of the parabola through it and its two
+  // neighbours. The plain mean of the two secants ignores how long each interval is, and
+  // here they range from a spine-to-seam gap of under 100px to whole sections: it pulled a
+  // long interval's steep slope into a short neighbour, which then had to brake hard inside
+  // it, drawing a kink under 40px in radius where the spine hands over to the ring on a
+  // narrow layout.
+  const slope: number[] = new Array(curve.length);
+  slope[0] = secant[0] ?? 0;
+  slope[last] = secant[last - 1] ?? 0;
+  for (let k = 1; k < last; k++) {
+    const before = curve[k] - curve[k - 1];
+    const after = curve[k + 1] - curve[k];
+    slope[k] = (secant[k - 1] * after + secant[k] * before) / (before + after);
+  }
+
+  for (let k = 0; k < last; k++) {
+    // A flat interval — two knots clamped onto one pixel — must stay flat end to end, or
+    // the cubic would bulge out of it in one direction or the other.
+    if (secant[k] === 0) {
+      slope[k] = 0;
+      slope[k + 1] = 0;
+      continue;
+    }
+    const alpha = slope[k] / secant[k];
+    const beta = slope[k + 1] / secant[k];
+    const magnitude = Math.hypot(alpha, beta);
+    if (magnitude > 3) {
+      const tau = 3 / magnitude;
+      slope[k] = tau * alpha * secant[k];
+      slope[k + 1] = tau * beta * secant[k];
+    }
+  }
+  return { curve, pixel, slope };
+}
+
+function mapThroughSpline(curveY: number, spline: KnotSpline): number {
+  const { curve, pixel, slope } = spline;
+  const last = curve.length - 1;
+  if (curveY <= curve[0]) return pixel[0] + (curveY - curve[0]) * slope[0];
+  if (curveY >= curve[last]) return pixel[last] + (curveY - curve[last]) * slope[last];
+
+  let k = 0;
+  while (k < last - 1 && curveY > curve[k + 1]) k++;
+  const run = curve[k + 1] - curve[k];
+  if (!(run > 0)) return pixel[k];
+  const s = (curveY - curve[k]) / run;
+  const s2 = s * s;
+  const s3 = s2 * s;
+  // Hermite, written as an offset from the interval's top knot so a flat interval returns
+  // that knot's pixel exactly rather than within a rounding error either side of it.
+  return (
+    pixel[k] +
+    (pixel[k + 1] - pixel[k]) * (3 * s2 - 2 * s3) +
+    run * ((s3 - 2 * s2 + s) * slope[k] + (s3 - s2) * slope[k + 1])
+  );
+}
+
+/**
+ * Curve `y` (0..1) → pixel `y`, through every anchor: the seams, plus each in-section
+ * anchor `anchors` has a pixel for. A monotone cubic (`toSpline`), so it passes exactly
+ * through each knot with no corner at any of them, and never decreases because every
+ * anchor is non-decreasing in both spaces. Out-of-range input extrapolates linearly along
+ * the end slopes rather than clamping, though the curve never produces any.
  */
 export function mapCurveY(
   curveY: number,
   seamPixels: readonly number[],
   anchors?: AnchorPixels,
 ): number {
-  return mapThroughKnots(curveY, anchorKnots(seamPixels, anchors));
+  return mapThroughSpline(curveY, toSpline(anchorKnots(seamPixels, anchors)));
 }
 
 /**
@@ -244,10 +314,10 @@ export function toPixelPoints(
   seamPixels: readonly number[],
   anchors?: AnchorPixels,
 ): PixelPoint[] {
-  const knots = anchorKnots(seamPixels, anchors);
+  const spline = toSpline(anchorKnots(seamPixels, anchors));
   return points.map((p) => ({
     x: ((p.x + 1) / 2) * width,
-    y: mapThroughKnots(p.y, knots),
+    y: mapThroughSpline(p.y, spline),
   }));
 }
 

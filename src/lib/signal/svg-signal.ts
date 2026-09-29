@@ -13,8 +13,8 @@
  * that look like one until a seam disagrees — and §6 asks for a continuous line.
  *
  * The curve is pinned to the page's sections: each `SECTION_SPANS` seam lands on the top of
- * the element carrying `data-signal-section="<id>"`, and the curve scales linearly between
- * them (see `anchors.ts`). A seam with no such element falls back to the whole-box linear
+ * the element carrying `data-signal-section="<id>"`, and the curve is stretched between
+ * them along a monotone cubic (see `anchors.ts`). A seam with no such element falls back to the whole-box linear
  * position, which is what a page with no sections — `/websites` — gets throughout.
  *
  * No framework: the `<svg>` and `<path>` are built with `document.createElementNS` and

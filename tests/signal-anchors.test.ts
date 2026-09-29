@@ -137,10 +137,85 @@ describe('mapCurveY', () => {
     }
   });
 
-  it('is linear within a section', () => {
-    const [y0, y1] = [SEAM_CURVE_Y[3], SEAM_CURVE_Y[4]];
-    const mid = mapCurveY((y0 + y1) / 2, seams);
-    expect(mid).toBeCloseTo((TOPS[3] + TOPS[4]) / 2, 9);
+  it('is exactly linear when the knots are — a page with no sections draws what it always drew', () => {
+    const fallback = resolveSeamPixels([null, null, null, null, null, null], 1000);
+    for (let i = 0; i <= 1000; i++) {
+      expect(mapCurveY(i / 1000, fallback)).toBeCloseTo(i, 9);
+    }
+  });
+});
+
+/**
+ * Knots as the built page measured them (`seamPixels` in `SEAM_CURVE_Y` order, including
+ * the terminus; `anchors` in `IN_SECTION_ANCHORS` order; `width` the layer's box). The
+ * narrow one is a ~485px layout — headless Chrome's floor — not a true phone.
+ */
+const REFERENCE_LAYOUTS = [
+  {
+    name: '1440',
+    width: 1425,
+    seamPixels: [65, 923.4, 1975.9, 4762.1, 6041.9, 7239.9, 8494.9],
+    anchors: [2435, 4589.3, 5223.2],
+  },
+  {
+    name: 'narrow',
+    width: 485,
+    seamPixels: [89, 1195.8, 2570.2, 6480.4, 7531.6, 8737, 10311.9],
+    anchors: [2880.9, 6384.4, 6793.1],
+  },
+] as const;
+
+describe.each(REFERENCE_LAYOUTS)('mapCurveY — a monotone cubic through the knots at $name', (layout) => {
+  const knots = anchorKnots(layout.seamPixels, layout.anchors);
+  const map = (y: number) => mapCurveY(y, layout.seamPixels, layout.anchors);
+
+  it('passes exactly through every knot', () => {
+    knots.curve.forEach((y, i) => expect(map(y)).toBeCloseTo(knots.pixel[i], 9));
+  });
+
+  it('never decreases, sampled densely', () => {
+    let previous = -Infinity;
+    for (let i = 0; i <= 20000; i++) {
+      const y = map(i / 20000);
+      expect(y).toBeGreaterThan(previous);
+      previous = y;
+    }
+  });
+
+  it('has no slope jump at any knot — the corner the linear map drew there is gone', () => {
+    const h = 1e-7;
+    for (let i = 1; i < knots.curve.length - 1; i++) {
+      const y = knots.curve[i];
+      const left = (map(y) - map(y - h)) / h;
+      const right = (map(y + h) - map(y)) / h;
+      expect(Math.abs(right - left) / Math.max(left, right)).toBeLessThan(1e-3);
+    }
+  });
+
+  it('extrapolates linearly past either end', () => {
+    const last = knots.curve[knots.curve.length - 1];
+    expect(map(-0.2) - map(-0.1)).toBeCloseTo(map(-0.1) - map(0), 6);
+    expect(map(last + 0.2) - map(last + 0.1)).toBeCloseTo(map(last + 0.1) - map(last), 6);
+  });
+});
+
+describe('mapCurveY — knots clamped onto one pixel', () => {
+  // `work` missing and held at `years`; the spine clamped onto both of its seams; the split
+  // clamped onto the ring's own seam. Four flat intervals, one of them zero-length in pixels.
+  const seams = resolveSeamPixels([0, 500, null, 700, 800, 900], 1000);
+  const anchors = resolveAnchorPixels([100, 5000, 100], seams);
+
+  it('produces no NaN, stays monotone, and holds a flat interval flat', () => {
+    expect(seams[2]).toBe(seams[1]);
+    let previous = -Infinity;
+    for (let i = 0; i <= 20000; i++) {
+      const y = mapCurveY(i / 20000, seams, anchors);
+      expect(Number.isFinite(y)).toBe(true);
+      expect(y).toBeGreaterThanOrEqual(previous);
+      previous = y;
+    }
+    const [years, work] = [SEAM_CURVE_Y[1], SEAM_CURVE_Y[2]];
+    expect(mapCurveY((years + work) / 2, seams, anchors)).toBe(500);
   });
 });
 
@@ -384,9 +459,12 @@ describe('in-section anchors — the general mechanism', () => {
     const splitOnly = resolveAnchorPixels([null, null, 4600], seams);
     expect(splitOnly).toEqual([null, null, 4600]);
     expect(mapCurveY(ANCHOR_CURVE_Y[2], seams, splitOnly)).toBeCloseTo(4600, 9);
-    // The work section is untouched: seam-linear, exactly as with no anchors at all.
-    const mid = (SPINE_CURVE_Y[0] + SPINE_CURVE_Y[1]) / 2;
-    expect(mapCurveY(mid, seams, splitOnly)).toBeCloseTo(mapCurveY(mid, seams), 9);
+    // A knot's slope is set by its neighbours, so the split reaches no further than the
+    // intervals either side of the ring's seams: hero and years map as with no anchors.
+    for (let i = 0; i <= 1000; i++) {
+      const y = (i / 1000) * SEAM_CURVE_Y[2];
+      expect(mapCurveY(y, seams, splitOnly)).toBeCloseTo(mapCurveY(y, seams), 9);
+    }
   });
 
   it('clamps the split into the ring section, never across a seam', () => {
