@@ -45,8 +45,10 @@
   /* The signal's reserved left column — spec §7.3 — derived from the curve, not guessed.
 
      The signal layer spans the viewport, mapping the curve's x −1..1 onto 0..100vw, so
-     the work section's spine (path.ts SPINE_SPAN, rightmost x −0.72) sits at
-     (−0.72 + 1) / 2 = 0.14 of the viewport width. Content sits in a centred --container
+     the work section's spine (path.ts SPINE_SPAN, x −0.74) sits at (−0.74 + 1) / 2 = 0.13
+     of the viewport width. The coefficient is 0.14: the spine is dead straight, and with
+     no slack all of it would sit exactly on the clear edge, where sub-pixel rounding
+     could flip it between lit and dim (gutter.ts). Content sits in a centred --container
      padded by --s-5, so from the content box's own left edge the gutter is: the spine's
      right edge (centre plus half the stroke), plus clearance, minus the margin that
      centring leaves either side of the container, minus the container's padding.

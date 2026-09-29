@@ -28,9 +28,10 @@ export interface SectionSpan {
 }
 
 /**
- * Hand-placed control points, sampled with a uniform Catmull-Rom spline. Catmull-Rom
- * because it passes *through* its control points: moving a point moves the curve to
- * exactly where you put it, so the line can be tuned by reading the table.
+ * Hand-placed control points, sampled with a uniform Catmull-Rom spline (held straight
+ * along the spine — see `TANGENTS`). Catmull-Rom because it passes *through* its control
+ * points: moving a point moves the curve to exactly where you put it, so the line can be
+ * tuned by reading the table.
  *
  * Spacing is the design constraint, not just the positions. Sampling maps `t` uniformly
  * onto the point list, so the line's speed at a point is roughly `gap × (COUNT − 1)`.
@@ -81,15 +82,15 @@ const CONTROL_POINTS: readonly SignalPoint[] = [
   { x: -0.14, y: 0.317, z: 0.00 },
   { x: -0.40, y: 0.340, z: 0.00 },
   { x: -0.62, y: 0.365, z: 0.01 },
-  // Parked at the left margin, descending steadily — the spine the case studies branch
-  // right from. The small outward breaths are where a card attaches.
-  { x: -0.72, y: 0.391, z: 0.01 },
-  { x: -0.76, y: 0.417, z: 0.02 },
+  // Parked at the left margin, descending dead straight — the spine the case studies
+  // branch right from. One `x` from here to the spine's last point (see `TANGENTS`).
+  { x: -0.74, y: 0.391, z: 0.01 },
+  { x: -0.74, y: 0.417, z: 0.02 },
   { x: -0.74, y: 0.443, z: 0.02 },
-  { x: -0.77, y: 0.469, z: 0.03 },
-  { x: -0.75, y: 0.494, z: 0.04 },
+  { x: -0.74, y: 0.469, z: 0.03 },
+  { x: -0.74, y: 0.494, z: 0.04 },
   // Starts leaning toward the viewer as the ring approaches.
-  { x: -0.72, y: 0.518, z: 0.06 },
+  { x: -0.74, y: 0.518, z: 0.06 },
   { x: -0.66, y: 0.540, z: 0.10 }, // seam
 
   // ── ring ────────────────────────────────────────────────────────────────────────────
@@ -221,14 +222,39 @@ function clamp01(value: number): number {
   return value;
 }
 
-/** Uniform Catmull-Rom on one axis: `b`→`c` over s∈0..1, shaped by neighbours `a` and `d`. */
-function catmullRom(a: number, b: number, c: number, d: number, s: number): number {
+/**
+ * The curve's tangent at every control point, per unit of segment progress. Catmull-Rom's
+ * own, `(next − previous) / 2`, with the terminal point standing in for the missing
+ * neighbour at either end — which makes the curve leave and arrive along the chord instead
+ * of flicking off-screen.
+ *
+ * One exception: the spine. Its points share one `x`, but Catmull-Rom takes the tangent at
+ * its ends from the sweep arriving and the lean toward the ring, both of which move in
+ * `x`, and would bow the first and last spine segments. The `x` tangent there is zero
+ * instead, so the spine is straight end to end and the segments either side of it still
+ * meet it with a continuous tangent.
+ */
+const TANGENTS: readonly SignalPoint[] = CONTROL_POINTS.map((_, i) => {
+  const previous = CONTROL_POINTS[Math.max(i - 1, 0)];
+  const next = CONTROL_POINTS[Math.min(i + 1, TOTAL_SEGMENTS)];
+  const isSpineEnd = i === SPINE_FIRST_POINT || i === SPINE_LAST_POINT;
+  return {
+    x: isSpineEnd ? 0 : (next.x - previous.x) / 2,
+    y: (next.y - previous.y) / 2,
+    z: (next.z - previous.z) / 2,
+  };
+});
+
+/**
+ * Cubic Hermite on one axis: `b`→`c` over s∈0..1, leaving `b` along `mb` and arriving at
+ * `c` along `mc`. With `TANGENTS` this is exactly uniform Catmull-Rom everywhere off the
+ * spine. Written as an offset from `b` so a segment whose ends and tangents agree on an
+ * axis — the spine's `x` — returns that value exactly rather than to within rounding.
+ */
+function hermite(b: number, c: number, mb: number, mc: number, s: number): number {
   const s2 = s * s;
   const s3 = s2 * s;
-  return (
-    0.5 *
-    (2 * b + (-a + c) * s + (2 * a - 5 * b + 4 * c - d) * s2 + (-a + 3 * b - 3 * c + d) * s3)
-  );
+  return b + (c - b) * (3 * s2 - 2 * s3) + (s3 - 2 * s2 + s) * mb + (s3 - s2) * mc;
 }
 
 /** Position along the curve at normalised progress t (0..1). Clamps out of range. */
@@ -239,17 +265,15 @@ export function sampleSignal(t: number): SignalPoint {
   const segment = Math.min(Math.floor(scaled), TOTAL_SEGMENTS - 1);
   const s = scaled - segment;
 
-  // At the ends the terminal point stands in for the missing neighbour, which makes the
-  // curve leave and arrive along the chord instead of flicking off-screen.
-  const p0 = CONTROL_POINTS[Math.max(segment - 1, 0)];
-  const p1 = CONTROL_POINTS[segment];
-  const p2 = CONTROL_POINTS[segment + 1];
-  const p3 = CONTROL_POINTS[Math.min(segment + 2, TOTAL_SEGMENTS)];
+  const b = CONTROL_POINTS[segment];
+  const c = CONTROL_POINTS[segment + 1];
+  const mb = TANGENTS[segment];
+  const mc = TANGENTS[segment + 1];
 
   return {
-    x: catmullRom(p0.x, p1.x, p2.x, p3.x, s),
-    y: catmullRom(p0.y, p1.y, p2.y, p3.y, s),
-    z: catmullRom(p0.z, p1.z, p2.z, p3.z, s),
+    x: hermite(b.x, c.x, mb.x, mc.x, s),
+    y: hermite(b.y, c.y, mb.y, mc.y, s),
+    z: hermite(b.z, c.z, mb.z, mc.z, s),
   };
 }
 

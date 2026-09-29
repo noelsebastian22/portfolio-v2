@@ -16,8 +16,8 @@ describe('SPINE_SPAN', () => {
   it('lands exactly on control points 21 and 26 — the run parked at the left margin', () => {
     expect(SPINE_SPAN.tStart).toBeCloseTo(21 / 50, 12);
     expect(SPINE_SPAN.tEnd).toBeCloseTo(26 / 50, 12);
-    expect(sampleSignal(SPINE_SPAN.tStart).x).toBeCloseTo(-0.72, 12);
-    expect(sampleSignal(SPINE_SPAN.tEnd).x).toBeCloseTo(-0.72, 12);
+    expect(sampleSignal(SPINE_SPAN.tStart).x).toBeCloseTo(-0.74, 12);
+    expect(sampleSignal(SPINE_SPAN.tEnd).x).toBeCloseTo(-0.74, 12);
   });
 
   it('stays in the left fifth of the layer throughout', () => {
@@ -33,7 +33,7 @@ describe('--signal-gutter in tokens.css', () => {
   });
 
   it("clears the spine: the coefficient is at least the spine's rightmost x as a fraction of the width", () => {
-    // Tolerance is float noise only: (−0.72 + 1) / 2 is 0.14000000000000001 in doubles.
+    // Tolerance is float noise only, for a coefficient set exactly on the spine.
     expect(coefficient).toBeGreaterThanOrEqual((spineMaxX() + 1) / 2 - 1e-12);
   });
 
@@ -117,7 +117,7 @@ describe.each([
 
   if (lit) {
     it('lights the whole spine', () => {
-      // Within a pixel: at 1440 the spine's rightmost points sit exactly on the clear edge.
+      // The spine sits a hundredth of the width inside the clear edge, so one band holds it.
       expect(bands.some(([top, bottom]) => top <= spineTop + 1 && bottom >= spineBottom - 1)).toBe(true);
     });
 

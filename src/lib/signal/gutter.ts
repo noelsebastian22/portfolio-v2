@@ -34,7 +34,7 @@ export interface GutterRegion {
  * and with `x + reach` at or left of `region.contentLeft`.
  *
  * There is no special case for phone width. There the content edge is the page padding
- * (24px) and the curve never comes within 11.5% of the width of the left edge, so no point
+ * (24px) and the curve never comes within 13% of the width of the left edge, so no point
  * clears and the whole line dims — by geometry, the same test as everywhere else.
  *
  * Crossings are interpolated along the polyline segment rather than snapped to a vertex,

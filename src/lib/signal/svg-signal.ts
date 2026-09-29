@@ -174,7 +174,7 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
   // Safe because the mount is inset by half the stroke (see #signal-layer in
   // global.css): whatever overflows at either edge paints inside the document rather than
   // past its last pixel, so it cannot grow scrollHeight. The curve's horizontal extremes
-  // are interior (11.5%–81.0% of the box), so nothing overflows sideways.
+  // are interior (13.0%–81.1% of the box), so nothing overflows sideways.
   svg.style.overflow = 'visible';
   svg.setAttribute('aria-hidden', 'true'); // decorative — a marble diagram, not content
 
