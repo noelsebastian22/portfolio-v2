@@ -41,9 +41,9 @@ import {
   toPixelPoints,
   type PixelPoint,
 } from './anchors';
-import { gutterBands, strengthStops, type GutterRegion } from './gutter';
+import { gutterBands, strengthAt, strengthStops, type GutterRegion, type StrengthStop } from './gutter';
 import { cumulativeLengths, lengthAtY, playheadPageY } from './playhead';
-import { publishSignalCurve, publishSignalTip } from './tip';
+import { publishSignalCurve, publishSignalGeometry, publishSignalTip } from './tip';
 // Resize re-measurement is debounced — the viewBox and total length both change. Shared
 // with the section islands that follow the line, so they re-measure on the same beat.
 import { RESIZE_DEBOUNCE_MS } from './draw';
@@ -308,11 +308,12 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
     pixelPoints: readonly PixelPoint[],
     gutter: GutterRegion | null,
     height: number,
-  ): void {
+  ): StrengthStop[] {
     const bands = gutter ? gutterBands(pixelPoints, gutter) : [];
+    const stops = strengthStops(bands, height, BAND_FADE_PX);
     gradient.setAttribute('y2', String(height));
     gradient.replaceChildren(
-      ...strengthStops(bands, height, BAND_FADE_PX).map(({ offset, full }) => {
+      ...stops.map(({ offset, full }) => {
         const stop = document.createElementNS(SVG_NS, 'stop');
         stop.setAttribute('offset', String(offset));
         stop.style.stopColor = 'var(--signal)';
@@ -320,6 +321,7 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
         return stop;
       }),
     );
+    return stops;
   }
 
   /**
@@ -358,7 +360,22 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
 
     // Before the reduced-motion early return on purpose: dimming is contrast, not motion.
     const gutterIndex = SECTION_SPANS.findIndex((span) => span.id === GUTTER_FROM_SECTION);
-    applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
+    const stops = applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
+
+    // For the Phase 10 tube (tip.ts): the same points, in page px, with each point's curve
+    // z and y carried beside it. Before the reduced-motion return like the dim rule — the
+    // geometry is the line, not its motion.
+    const boxLeftInPage = boxRect.left + window.scrollX;
+    publishSignalGeometry({
+      points: pixelPoints.map((p, i) => ({
+        x: boxLeftInPage + p.x,
+        y: boxTopInPage + p.y,
+        z: points[i].z,
+        curveY: points[i].y,
+      })),
+      lengths: lengthTable,
+      strength: pixelPoints.map((p) => strengthAt(stops, height, p.y)),
+    });
 
     if (reduceMotion) {
       // Fully drawn, permanently. No dasharray at all rather than a dasharray equal to

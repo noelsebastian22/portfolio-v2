@@ -58,8 +58,8 @@ only when it passes.
 
 ```ts
 export interface SignalGeometry {
-  /** Page-pixel points — the same samples the SVG path is drawn through. */
-  points: readonly { x: number; y: number; z: number }[];
+  /** Page-pixel points — the same samples the SVG path is drawn through — with the curve's own z and normalised y (curveY), which the tube's hero profile reads. */
+  points: readonly { x: number; y: number; z: number; curveY: number }[];
   /** Cumulative length along the line at each point, px. */
   lengths: readonly number[];
   /** Dim rule per point, 0 (dim) … 1 (full), from the same bands as the SVG gradient. */
