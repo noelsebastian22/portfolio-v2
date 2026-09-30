@@ -168,6 +168,7 @@ const collectionPageSchema = {
       import { initScroll } from '../lib/motion/scroll';
       import { onPageProgress } from '../lib/motion/timeline';
       import { createSvgSignal } from '../lib/signal/svg-signal';
+      import { checkCapability, forcedMode, readEnvironment } from '../lib/gfx/gate';
 
       // Order matters: initScroll() starts the shared ticker the trigger runs on.
       initScroll();
@@ -177,6 +178,24 @@ const collectionPageSchema = {
       // should throw here rather than silently ship a page with no signal at all.
       const signal = createSvgSignal(document.getElementById('signal-layer')!);
       onPageProgress((t) => signal.setProgress(t));
+
+      // Phase 10: the enhanced layer, decided only once the page is loaded and idle, so it
+      // can never touch first paint or LCP. Three.js is behind this import and in no
+      // initial chunk (npm run budget fails if it ever is).
+      function startEnhanced(): void {
+        const capability = checkCapability(readEnvironment(), forcedMode(location.search));
+        if (!capability.enabled) return;
+        import('../lib/gfx/scene')
+          .then(({ loadEnhanced }) => loadEnhanced({ skipProbe: capability.skipProbe }))
+          .catch(() => {
+            // A failed chunk load or a renderer that would not start: the SVG line was never
+            // hidden, so there is nothing to undo.
+          });
+      }
+      const whenIdle = (fn: () => void) =>
+        'requestIdleCallback' in window ? requestIdleCallback(fn) : fn();
+      if (document.readyState === 'complete') whenIdle(startEnhanced);
+      else window.addEventListener('load', () => whenIdle(startEnhanced), { once: true });
     </script>
   </body>
 </html>
