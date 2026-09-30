@@ -138,8 +138,10 @@ control points. Both renderers consume it:
 
 - `SvgSignal` — renders it as an SVG `<path>`, revealed by animating `stroke-dashoffset`
   against scroll progress.
-- `TubeSignal` — renders it as a Three.js `TubeGeometry` extruded along the same curve,
-  with bloom.
+- `TubeSignal` — renders it as a Three.js tube extruded through the same sampled points
+  the SVG draws, with a glow. A custom mesh rather than `TubeGeometry`, which would re-sample
+  its own curve and cannot vary thickness; real depth in the hero only (Phase 10 design,
+  `2026-09-30-phase-10-webgl-tube-design.md`).
 
 Because both read the same source, the 2D fallback and the WebGL version have **identical
 choreography** — not a degraded approximation. This is what makes the fast path honest.
@@ -434,8 +436,9 @@ runs behind the rows, dimmed. A node is an outline until the signal's tip reache
 then fills as an emission while the row's identifier comes up from `--type-dim` to `--type`.
 The chain is served lit: with JS off there is no line, and each node sits filled at the start
 of its rule, which is a marble diagram's own notation. The colour shift and thickness change
-on the line itself come with `TubeSignal` (Phase 10), where they are per-vertex attributes
-rather than a second renderer.
+on the line itself are per-vertex attributes on `TubeSignal` rather than a second renderer;
+the mesh carries them from Phase 10, and the effect itself waits for the Stack rework
+(Phase 10 design, D8).
 
 Proficiency labels ("Expert", "Advanced") are dropped, including the resume's own
 "(Expert)". Self-assessed skill ratings read as filler to a hiring manager; the case-study

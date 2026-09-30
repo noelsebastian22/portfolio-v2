@@ -203,7 +203,12 @@ Expand the phase you are about to start into task-level steps before implementin
 **Deliverable:** the capability gate, and `TubeSignal` reading the **same**
 `sampleSignalRange` output as the SVG renderer.
 
-**Files:** `src/lib/gfx/gate.ts`, `src/lib/gfx/scene.ts`, `src/lib/signal/tube-signal.ts`
+**Design:** `docs/superpowers/specs/2026-09-30-phase-10-webgl-tube-design.md` — real depth in
+the hero only, overlay on the running SVG, custom mesh (not `TubeGeometry`), shader glow.
+
+**Files:** `src/lib/gfx/gate.ts`, `src/lib/gfx/scene.ts`, `src/lib/gfx/tube-mesh.ts`,
+`src/lib/gfx/camera.ts`, `src/lib/signal/tube-signal.ts`; `svg-signal.ts` and `tip.ts` gain the
+geometry channel.
 
 ```ts
 export interface Capability { enabled: boolean; reason?: string; }
