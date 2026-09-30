@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pageScripts, resolveSpecifier, staticImports } from '../scripts/lib/budget.mjs';
+import { containsThree, pageScripts, resolveSpecifier, staticImports } from '../scripts/lib/budget.mjs';
 
 describe('pageScripts', () => {
   const html = `<head>
@@ -44,5 +44,12 @@ describe('resolveSpecifier', () => {
   it('resolves against the importing chunk', () => {
     expect(resolveSpecifier('/_astro/Ring.b2.js', './tip.a1.js')).toBe('/_astro/tip.a1.js');
     expect(resolveSpecifier('/_astro/deep/x.js', '../y.js')).toBe('/_astro/y.js');
+  });
+});
+
+describe('containsThree', () => {
+  it('spots Three.js by the global it registers, which survives minification', () => {
+    expect(containsThree('var a=1;window.__THREE__="186";')).toBe(true);
+    expect(containsThree('import{a}from"./tip.x.js";')).toBe(false);
   });
 });

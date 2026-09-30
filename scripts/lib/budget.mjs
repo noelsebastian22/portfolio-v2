@@ -94,3 +94,15 @@ export function staticImports(js) {
 export function resolveSpecifier(fromPath, specifier) {
   return new URL(specifier, 'https://x' + fromPath).pathname;
 }
+
+/**
+ * Whether a built chunk contains Three.js. Three registers `__THREE__` on the global object
+ * with its revision, and that string survives minification, so it identifies the library
+ * however Vite names or splits the chunk.
+ *
+ * @param {string} source
+ * @returns {boolean}
+ */
+export function containsThree(source) {
+  return source.includes('__THREE__');
+}

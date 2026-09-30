@@ -26,17 +26,25 @@
  *
  * Only `/` is gated (exit 1 over budget) — `/websites` is reported, not gated, until Phase
  * 14 restyles it (BUILD-PLAN.md, Phase 9 "Deliberately not in Phase 9").
+ *
+ * Phase 10: this script also fails the build if any page's initial script graph contains
+ * Three.js (`containsThree`, lib/budget.mjs) — the WebGL tube is only ever behind a dynamic
+ * `import()`, never in a page's own closure. Separately, it finds the enhanced chunk — every
+ * chunk no page loads up front that a late (dynamic-import) entry point reaches on its way to
+ * Three.js — sums its gzip size, reports it, and gates it at 256,000 bytes (250 KB gzip,
+ * spec §12).
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
-import { pageScripts, resolveSpecifier, staticImports } from './lib/budget.mjs';
+import { containsThree, pageScripts, resolveSpecifier, staticImports } from './lib/budget.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
 const BUDGET_BYTES = 81_920; // 80 KB gzip, spec §12 — copied verbatim, never re-derived.
+const ENHANCED_BUDGET_BYTES = 256_000; // 250 KB gzip, spec §12 — the post-interactive WebGL chunk.
 const GATED_PAGE = '/';
 
 /** Every `*.html` file under `dist/`, as absolute filesystem paths. */
@@ -82,7 +90,7 @@ function walkClosure(entryPaths) {
 
     const raw = readDistFile(urlPath);
     const gzip = gzipSync(raw);
-    files.push({ path: urlPath, raw: raw.length, gzip: gzip.length });
+    files.push({ path: urlPath, raw: raw.length, gzip: gzip.length, hasThree: containsThree(raw.toString('utf8')) });
 
     for (const specifier of staticImports(raw.toString('utf8'))) {
       queue.push(resolveSpecifier(urlPath, specifier));
@@ -107,7 +115,7 @@ function measurePage(htmlFile) {
   const rows = [...files, ...inlineBodies].sort((a, b) => b.gzip - a.gzip);
   const total = rows.reduce((sum, row) => sum + row.gzip, 0);
 
-  return { page: pagePath(htmlFile), rows, total };
+  return { page: pagePath(htmlFile), rows, total, files };
 }
 
 function printReport({ page, rows, total }) {
@@ -137,6 +145,35 @@ function main() {
       overBudget = true;
     }
   }
+
+  // Spec §11.3: Three.js lives behind a dynamic import and is never in an initial chunk.
+  const pagesLoadingThree = pages.filter((result) => result.files.some((file) => file.hasThree));
+  for (const result of pagesLoadingThree) {
+    console.error(`\n${result.page} loads Three.js before interaction.`);
+  }
+
+  // The enhanced chunk: every built chunk no page loads up front, closed over its static
+  // imports, that reaches Three.js — minus anything a page already loaded.
+  const initialPaths = new Set(pages.flatMap((result) => result.files.map((file) => file.path)));
+  const astroDir = path.join(DIST, '_astro');
+  const lateEntries = readdirSync(astroDir)
+    .filter((name) => name.endsWith('.js'))
+    .map((name) => `/_astro/${name}`)
+    .filter((urlPath) => !initialPaths.has(urlPath));
+  const enhanced = new Map();
+  for (const entry of lateEntries) {
+    const closure = walkClosure([entry]);
+    if (!closure.some((file) => file.hasThree)) continue;
+    for (const file of closure) if (!initialPaths.has(file.path)) enhanced.set(file.path, file);
+  }
+  const enhancedTotal = [...enhanced.values()].reduce((sum, file) => sum + file.gzip, 0);
+  if (enhanced.size > 0) {
+    const pct = ((enhancedTotal / ENHANCED_BUDGET_BYTES) * 100).toFixed(1);
+    console.log(`\nEnhanced WebGL chunk (after interaction): ${enhancedTotal} gzip, ${pct}% of ${ENHANCED_BUDGET_BYTES}.`);
+  }
+  const enhancedOverBudget = enhancedTotal > ENHANCED_BUDGET_BYTES;
+  if (enhancedOverBudget) console.error(`Enhanced chunk exceeds ${ENHANCED_BUDGET_BYTES} bytes.`);
+  if (pagesLoadingThree.length > 0 || enhancedOverBudget) process.exit(1);
 
   if (overBudget) {
     console.error(`\n${GATED_PAGE} exceeds the ${BUDGET_BYTES}-byte budget.`);
