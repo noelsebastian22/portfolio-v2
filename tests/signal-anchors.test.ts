@@ -242,6 +242,51 @@ describe('the tightest turn on the drawn line', () => {
   });
 });
 
+/**
+ * How many times the drawn line changes which way it is turning between `t0` and `t1`.
+ * Stretches straighter than `ignoreRadius` px are skipped, so a near-straight run's float
+ * noise does not count as a reversal.
+ */
+function turnReversals(
+  t0: number,
+  t1: number,
+  layout: (typeof REFERENCE_LAYOUTS)[number],
+  ignoreRadius = 1500,
+) {
+  const points = toPixelPoints(
+    sampleSignalRange(t0, t1, 5001),
+    layout.width,
+    layout.seamPixels,
+    layout.anchors,
+  );
+  let reversals = 0;
+  let previousSign = 0;
+  for (let i = 1; i < points.length - 1; i++) {
+    const [a, b, c] = [points[i - 1], points[i], points[i + 1]];
+    const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+    const sides =
+      Math.hypot(b.x - a.x, b.y - a.y) *
+      Math.hypot(c.x - b.x, c.y - b.y) *
+      Math.hypot(c.x - a.x, c.y - a.y);
+    const isNearlyStraight = sides / (2 * Math.abs(cross)) > ignoreRadius;
+    if (isNearlyStraight) continue;
+    const sign = Math.sign(cross);
+    if (previousSign !== 0 && sign !== previousSign) reversals++;
+    previousSign = sign;
+  }
+  return reversals;
+}
+
+describe.each(REFERENCE_LAYOUTS)('leaving the spine at $name', (layout) => {
+  // The line turns off the straight spine toward the ring and keeps turning that way until
+  // the arc's own inflection, past control point 30. Straightening the spine left point 27
+  // too far right for it, and the line eased off and turned back for ~100px above
+  // `04 — mergeMap()` before carrying on (Noel, 2026-09-30).
+  it('bends one way only from the spine end into the ring arc', () => {
+    expect(turnReversals(controlPointT(SPINE_LAST_POINT), controlPointT(30), layout)).toBe(0);
+  });
+});
+
 describe('mapCurveY — knots clamped onto one pixel', () => {
   // `work` missing and held at `years`; the spine clamped onto both of its seams; the split
   // clamped onto the ring's own seam. Four flat intervals, one of them zero-length in pixels.

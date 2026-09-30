@@ -98,13 +98,16 @@ const CONTROL_POINTS: readonly SignalPoint[] = [
   { x: -0.74, y: 0.494, z: 0.04 },
   // Starts leaning toward the viewer as the ring approaches.
   { x: -0.74, y: 0.518, z: 0.06 },
-  { x: -0.66, y: 0.540, z: 0.10 }, // seam
+  // The spine leaves with no sideways speed, so the steps right have to grow from here —
+  // 0.03, 0.09, 0.11. A bigger first step than second makes the line surge off the spine,
+  // ease off and turn back before the arc takes it.
+  { x: -0.71, y: 0.540, z: 0.10 }, // seam
 
   // ── ring ────────────────────────────────────────────────────────────────────────────
   // Comes forward and centres, in one uncluttered arc. The renderer splits this span into
   // five, so it carries no waypoints of its own — every extra wiggle here would fight the
   // split. Note how much slower it moves than the rest: the line dwells through the ring.
-  { x: -0.60, y: 0.561, z: 0.14 },
+  { x: -0.62, y: 0.561, z: 0.14 },
   { x: -0.51, y: 0.582, z: 0.19 },
   { x: -0.40, y: 0.602, z: 0.24 },
   { x: -0.28, y: 0.622, z: 0.29 },
