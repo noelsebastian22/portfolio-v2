@@ -133,13 +133,6 @@ body::after {
   opacity: 0;
 }
 
-/* The one timed transition on the site besides hover states: the tube's arrival while the
-   hero is on screen, once (Phase 10 design §6 step 5). */
-.signal-crossfade,
-#signal-layer.signal-crossfade svg {
-  transition: opacity 300ms ease;
-}
-
 /**
  * Where content begins, measured by the renderer for the dim rule (see gutter.ts). Its
  * width runs from the layer's left edge to a section's content box — the centring margin

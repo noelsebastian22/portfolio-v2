@@ -7,6 +7,7 @@ import {
   SECTION_SPANS,
   SPINE_FIRST_POINT,
   SPINE_LAST_POINT,
+  DRAWN_FROM_T,
 } from '../src/lib/signal/path';
 
 describe('sampleSignal', () => {
@@ -33,6 +34,14 @@ describe('sampleSignalRange', () => {
     expect(pts).toHaveLength(10);
     expect(pts[0]).toEqual(sampleSignal(0));
     expect(pts[9]).toEqual(sampleSignal(1));
+  });
+});
+
+describe('DRAWN_FROM_T — where the drawn line begins', () => {
+  // Noel, 2026-09-30: no line in the hero; it emerges at the hero's bottom edge.
+  it('is the Nine Years seam, control point 7', () => {
+    expect(DRAWN_FROM_T).toBe(SECTION_SPANS.find((s) => s.id === 'years')!.tStart);
+    expect(DRAWN_FROM_T).toBeCloseTo(controlPointT(7), 12);
   });
 });
 

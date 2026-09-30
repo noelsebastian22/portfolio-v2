@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PerspectiveCamera, Vector3 } from 'three';
-import { cameraRig, heroDepthFor } from '../src/lib/gfx/camera';
+import { cameraRig } from '../src/lib/gfx/camera';
 
 /** Where a world point lands on screen, in CSS px from the viewport's top-left. */
 function project(rig: ReturnType<typeof cameraRig>, width: number, height: number, world: Vector3) {
@@ -26,19 +26,5 @@ describe('cameraRig — the page plane is 1:1 with CSS px', () => {
       expect(onScreen.x).toBeCloseTo(pageX, 6);
       expect(onScreen.y).toBeCloseTo(offsetY, 6);
     }
-  });
-
-  it('draws a point behind the page smaller and toward the centre', () => {
-    const [width, height] = [1425, 900];
-    const rig = cameraRig(width, height, 0, 0);
-    const far = project(rig, width, height, new Vector3(100, -100, -heroDepthFor(rig.distance)));
-    expect(far.x).toBeGreaterThan(100);
-    expect(far.y).toBeGreaterThan(100);
-    expect(far.x).toBeLessThan(width / 2);
-  });
-
-  it('keeps the deepest hero point inside the far plane', () => {
-    const rig = cameraRig(1425, 900, 0, 0);
-    expect(rig.distance + heroDepthFor(rig.distance)).toBeLessThan(rig.far);
   });
 });

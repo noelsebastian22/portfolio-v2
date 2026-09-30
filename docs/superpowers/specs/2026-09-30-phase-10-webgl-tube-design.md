@@ -24,14 +24,34 @@ Success:
 
 | # | Decision | Why |
 |---|---|---|
-| D1 | **Real 3D in the hero only.** The curve's `z` is real depth in the hero and eases to exactly 0 by the Nine Years seam (control point 7); below it `z` is ignored for position. | Four islands pin elements to the 2D line's on-screen position. Perspective anywhere else would slide the tube off them. The hero has nothing pinned to it. |
-| D2 | **Thick in the hero, 2D width below.** ~24px across at the headline (a starting value, tuned at the checkpoint), tapering to `--signal-stroke` by the Nine Years seam. | A tube only reads as round when thick; every dot, drop and node is sized for a 4px line. |
+| D1 | **Real 3D in the hero only.** The curve's `z` is real depth in the hero and eases to exactly 0 by the Nine Years seam (control point 7); below it `z` is ignored for position. *(Superseded by R1/R2/R4.)* | Four islands pin elements to the 2D line's on-screen position. Perspective anywhere else would slide the tube off them. The hero has nothing pinned to it. |
+| D2 | **Thick in the hero, 2D width below.** ~24px across at the headline (a starting value, tuned at the checkpoint), tapering to `--signal-stroke` by the Nine Years seam. *(Superseded by R1/R2/R4.)* | A tube only reads as round when thick; every dot, drop and node is sized for a 4px line. |
 | D3 | **Overlay on the running 2D line.** `svg-signal.ts` keeps measuring, publishing the tip and the curve lookup; it gains one geometry publication. The tube is a painter over it. | Minimal change to live code. The islands' source of truth is untouched. Fallback is instant: unhide the SVG. |
 | D4 | **A custom tube mesh, not `TubeGeometry`.** | `TubeGeometry` needs its own `Curve` and re-samples it — a second definition of the curve, against AGENTS.md's "one canonical curve". It also cannot vary radius along its length. |
 | D5 | **Glow in the shader, not post-process bloom.** | Near-zero per-frame cost and no extra code, so the frame probe passes on more machines. Bloom (`UnrealBloomPass`, ~10KB, several full-screen passes) is the fallback option if the glow looks flat at the checkpoint. |
 | D6 | **Render on change only.** The scene redraws when the scroll position or the tip changes; there is no free-running loop. | "The scroll is the transport." An idle page costs the GPU nothing. |
 | D7 | **Fallback is one-way per visit,** remembered in `sessionStorage` (wrapped in try/catch). | Flicking between renderers is worse than staying on 2D; a reload should not retry a tube that just failed. |
 | D8 | **The Stack's colour/thickness effect is out of scope.** The mesh carries per-vertex attributes so it *can* be added. | Noel may rework the Stack section; its effect is decided in that brainstorm. |
+
+## Revision — 2026-09-30, after Noel's first look
+
+Noel saw the tube (Tasks 1–7 as built, `a3cec21`). The spine looks right. The hero does not: a
+line hovering in the middle of the hero at first load reads as a phantom. His decisions, all
+confirmed in conversation:
+
+| # | Decision | Replaces |
+|---|---|---|
+| R1 | **The line starts at the bottom of the hero, for both renderers.** No line in the hero at all; the tip emerges at the hero's bottom edge as you scroll. | Design D1 (real depth in the hero) and parent spec §6's hero row |
+| R2 | **8px everywhere**: `--signal-stroke: 8px`. The SVG line, work branches, ring track and drops, footer bar and gutter clearance all derive from the token. The tube is a uniform radius of `--signal-stroke / 2`. | Design D2 (thick hero, 2D width below) |
+| R3 | **The tube is full `--signal` everywhere, with no dim rule.** The **2D line keeps its dim rule**: phones get 2D, and there the whole line runs behind copy. | The tube half of spec §5 "Shading" |
+| R4 | The hero's depth and thickness code is now dead and is **removed**: the tube lies flat (z = 0) everywhere. Because the SVG and the tube now coincide at every point, **the swap is always instant**, and the 300ms crossfade (the one timer exception) goes. | Design §5 hero depth/radius, §6 step 5 crossfade |
+
+**Accepted cost (a Known Gap, owned by Noel):** at ≥ 900px, text drawn over the full-strength
+tube fails AA (`--type` on `--signal` 2.9:1, `--type-dim` 1.1:1). Revisit later with Noel's
+idea: the line dives into a "hole" where a text block starts and comes out where it ends.
+
+**To check at the next look:** the emission dots and the Stack's nodes were sized beside a 4px
+line.
 
 ## 3. Prerequisite — done
 
@@ -58,33 +78,25 @@ only when it passes.
 
 ```ts
 export interface SignalGeometry {
-  /** Page-pixel points — the same samples the SVG path is drawn through — with the curve's own z and normalised y (curveY), which the tube's hero profile reads. */
-  points: readonly { x: number; y: number; z: number; curveY: number }[];
+  /** Page-pixel points — the same samples the SVG path is drawn through, from DRAWN_FROM_T on. */
+  points: readonly { x: number; y: number }[];
   /** Cumulative length along the line at each point, px. */
   lengths: readonly number[];
-  /** Dim rule per point, 0 (dim) … 1 (full), from the same bands as the SVG gradient. */
-  strength: readonly number[];
 }
 ```
 
-Published on creation and after every debounced resize re-measure. `z` comes from the same
-`sampleWholeCurve()` samples; nothing re-samples `path.ts`.
+Published on creation and after every debounced resize re-measure. Nothing re-samples `path.ts`.
 
 ## 5. Rendering
 
 - **Camera.** A `PerspectiveCamera` at distance `D = (viewportHeight / 2) / tan(fov / 2)`
   from the page plane, centred on the viewport and moved with `scrollY`, so a point at
   `z = 0` projects onto its own CSS pixel. World units are CSS pixels (`y` negated).
-- **Hero depth.** World `z = z_curve × HERO_DEPTH × heroWeight(t)`. `heroWeight` is 1
-  through the hero and eases to exactly 0 at control point 7 (smoothstep over the last hero
-  segment). `HERO_DEPTH` is a tunable starting at about `1.5 × D`, so the far end sits well
-  behind the page.
-- **Radius.** Starts at ~12px (24px across) where the tube passes the headline, and tapers to
-  `--signal-stroke / 2` by control point 7. Perspective thins the distant part on its own.
+- **Radius.** One uniform radius the whole way: `--signal-stroke / 2` (R2, R4). The tube lies
+  flat on the page everywhere, so there is no taper and nothing tunable.
 - **Shading.** An unlit shader: a bright core and a darker rim from the normal against the view
-  direction reads as round, with an additive halo for the glow (D5). Colour is `--signal`. The
-  per-vertex strength scales it toward `--signal-dim-alpha` exactly where the SVG dims. Token
-  values are read from computed style at start-up.
+  direction reads as round, with an additive halo for the glow (D5). Colour is `--signal`,
+  full `--signal` everywhere (R3). Token values are read from computed style at start-up.
 - **Reveal.** A per-vertex length attribute against a `uDrawn` uniform. Fragments past the tip
   are discarded, so the cut is exact rather than stepping from ring to ring, and the tip gets a
   rounded cap to match the SVG's round linecap. `uDrawn` comes from the published tip through
@@ -104,10 +116,8 @@ Published on creation and after every debounced resize re-measure. `z` comes fro
 4. **Frame probe:** render ~20 frames at the current scroll position. Pass if the median frame
    interval is ≤ 20ms and the 90th percentile ≤ 33ms, which holds on both 60Hz and 120Hz
    displays. Failure: dispose, set the session flag, stay on 2D.
-5. **Swap:** if the hero is off-screen, swap instantly (the tube and the line coincide there);
-   if it is on screen, crossfade over 300ms, once. That is a state change like a hover
-   transition, not scroll choreography — a noted exception to "nothing animates on a timer",
-   open to Noel's veto. The SVG path stays mounted and measuring, only hidden.
+5. **Swap:** instant — the tube and the line share every pixel. The SVG path stays mounted and
+   measuring, only hidden.
 6. **Watchdog → fallback (one-way):** the median of the last 60 rendered frames goes over 25ms
    while scrolling, `webglcontextlost` fires, or `prefers-reduced-motion` flips to `reduce`.
    Then unhide the SVG, dispose the renderer, remove the canvas and set the session flag.
@@ -119,13 +129,12 @@ Published on creation and after every debounced resize re-measure. `z` comes fro
 **Vitest (pure modules):**
 - `gate.ts` — each condition fails the gate alone, with fake `navigator`/`matchMedia`/canvas;
   the override parses `2d`/`tube` and ignores anything else.
-- `tube-mesh.ts` — ring centres are exactly the input points; consecutive frames never flip
-  (normal dot product > 0) through the curve's tightest turns; radius follows the D2 profile;
-  vertex/index counts match.
-- `heroWeight` — 1 in the hero, exactly 0 at control point 7 and everywhere after.
+- `tube-mesh.ts` — ring centres are exactly the input points, flat on the page; consecutive
+  frames never flip (normal dot product > 0) through the curve's tightest turns; one radius
+  the whole way; vertex/index counts match.
 - `camera.ts` — a `z = 0` point projects to its CSS pixel at several scroll positions and
   viewport sizes.
-- Geometry strength — matches `strengthStops` at every point.
+- `DRAWN_FROM_T` — the Nine Years seam, control point 7.
 
 **Build:** `npm run budget` fails if a `three` module is reachable from any page's initial
 graph, and reports the enhanced chunk against 250KB gzip. The base-path delta is recorded in

@@ -10,8 +10,8 @@
  * - the drawn **tip**, which moves with scroll;
  * - the **curve lookup** — the curve's page `x` at a page `y` — which changes only when
  *   the renderer re-measures (a resize, or the document changing height);
- * - the **geometry** — the line's points, lengths and dim-rule strength, for the Phase 10
- *   tube, which paints over the SVG instead of measuring anything itself.
+ * - the **geometry** — the line's points and lengths, for the Phase 10 tube, which paints
+ *   over the SVG instead of measuring anything itself.
  *
  * Every value is in **page** coordinates (document coordinates, comparable with
  * `getBoundingClientRect().top + scrollY`). The conversion from the layer's own box happens
@@ -81,12 +81,10 @@ export function publishSignalCurve(lookup: CurveLookup): void {
   for (const fn of curveListeners) fn();
 }
 
-/** One drawn point, in page px, with the curve's own `z` and normalised `y` beside it. */
+/** One drawn point, in page px. */
 export interface SignalGeometryPoint {
   x: number;
   y: number;
-  z: number;
-  curveY: number;
 }
 
 /**
@@ -97,8 +95,6 @@ export interface SignalGeometry {
   points: readonly SignalGeometryPoint[];
   /** Cumulative length along the line at each point, px. */
   lengths: readonly number[];
-  /** The dim rule per point: 0 dim … 1 full strength, from the same stops as the gradient. */
-  strength: readonly number[];
 }
 
 let currentGeometry: SignalGeometry | null = null;

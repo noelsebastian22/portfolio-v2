@@ -1,24 +1,19 @@
 /**
  * The tube's geometry, built straight from the points the SVG line is drawn through
  * (`SignalGeometry`, tip.ts). Not `THREE.TubeGeometry`: that needs its own `Curve` and
- * re-samples it — a second definition of the line — and cannot vary its radius along the
- * way (Phase 10 design, D4).
+ * re-samples it — a second definition of the line (Phase 10 design, D4).
  *
- * One ring of vertices per published point, oriented by rotation-minimising frames (the
+ * One ring of vertices per published point, flat on the page (world z = 0, camera.ts) and
+ * one radius the whole way (revision R2, R4), oriented by rotation-minimising frames (the
  * double-reflection method), which never twist or flip at a tight turn the way Frenet frames
  * do. Pure: typed arrays out, no Three.js — tube-signal.ts turns them into buffers.
  */
 
-import type { SignalGeometry, SignalGeometryPoint } from '../signal/tip';
-import { controlPointT, sampleSignal } from '../signal/path';
+import type { SignalGeometry } from '../signal/tip';
 
 export interface TubeProfile {
-  /** Radius where the tube passes the headline, px. */
-  heroRadius: number;
-  /** Radius from the Nine Years seam on — half of `--signal-stroke`. */
-  baseRadius: number;
-  /** World depth of curve z = −1 (camera.ts `heroDepthFor`). */
-  heroDepth: number;
+  /** Half of `--signal-stroke`, px. */
+  radius: number;
   radialSegments: number;
 }
 
@@ -26,44 +21,9 @@ export interface TubeArrays {
   positions: Float32Array;
   normals: Float32Array;
   lengths: Float32Array;
-  strengths: Float32Array;
   indices: Uint32Array;
   centres: Float32Array;
-  radii: Float32Array;
   ringLengths: Float32Array;
-  ringStrengths: Float32Array;
-}
-
-// The hero's landmarks, read off the curve rather than restated: it banks through the
-// headline around control points 3–4 and reaches the Nine Years seam at 7.
-const TAPER_FROM_Y = sampleSignal(controlPointT(5)).y;
-const FLATTEN_FROM_Y = sampleSignal(controlPointT(6)).y;
-const HERO_END_Y = sampleSignal(controlPointT(7)).y;
-
-function smoothstep(from: number, to: number, value: number): number {
-  const t = Math.min(1, Math.max(0, (value - from) / (to - from)));
-  return t * t * (3 - 2 * t);
-}
-
-/**
- * How much of the curve's z becomes real depth: 1 through the hero, easing to exactly 0 at
- * the Nine Years seam. Below it the tube lies on the page, on the SVG line's own pixels
- * (Phase 10 design, D1) — including the ring, whose depth waits for Phase 12.
- */
-export function heroWeight(curveY: number): number {
-  return 1 - smoothstep(FLATTEN_FROM_Y, HERO_END_Y, curveY);
-}
-
-/** Thick past the headline, tapering to the 2D line's width by the seam (design D2). */
-export function radiusAt(curveY: number, profile: TubeProfile): number {
-  const heroShare = 1 - smoothstep(TAPER_FROM_Y, HERO_END_Y, curveY);
-  return profile.baseRadius + (profile.heroRadius - profile.baseRadius) * heroShare;
-}
-
-/** Page px → world: x as is, y negated, z real only in the hero (camera.ts convention). */
-export function worldPoint(p: SignalGeometryPoint, heroDepth: number): [number, number, number] {
-  const depth = p.z * heroDepth * heroWeight(p.curveY);
-  return [p.x, -p.y, depth === 0 ? 0 : depth]; // no −0: tests compare flat points exactly
 }
 
 type Vec3 = [number, number, number];
@@ -90,7 +50,9 @@ export function buildTube(
 ): TubeArrays {
   const rings = geometry.points.length;
   const segments = profile.radialSegments;
-  const centres = geometry.points.map((p) => worldPoint(p, profile.heroDepth));
+  const radius = profile.radius * radiusScale + radiusPad;
+  // Page px → world: x as is, y negated, on the page plane (camera.ts convention).
+  const centres: Vec3[] = geometry.points.map((p) => [p.x, -p.y, 0]);
 
   const tangents: Vec3[] = centres.map((_, i) =>
     normalise(sub(centres[Math.min(i + 1, rings - 1)], centres[Math.max(i - 1, 0)])),
@@ -119,13 +81,9 @@ export function buildTube(
   const positions = new Float32Array(vertexCount * 3);
   const normals = new Float32Array(vertexCount * 3);
   const lengths = new Float32Array(vertexCount);
-  const strengths = new Float32Array(vertexCount);
-  const radii = new Float32Array(rings);
   const centreArray = new Float32Array(rings * 3);
 
   for (let i = 0; i < rings; i++) {
-    const radius = radiusAt(geometry.points[i].curveY, profile) * radiusScale + radiusPad;
-    radii[i] = radius;
     centreArray.set(centres[i], i * 3);
     const across = frames[i];
     const around = cross(tangents[i], across);
@@ -140,7 +98,6 @@ export function buildTube(
       positions.set([centres[i][0] + out[0] * radius, centres[i][1] + out[1] * radius, centres[i][2] + out[2] * radius], v * 3);
       normals.set(out, v * 3);
       lengths[v] = geometry.lengths[i];
-      strengths[v] = geometry.strength[i];
     }
   }
 
@@ -159,32 +116,13 @@ export function buildTube(
     }
   }
 
-  return {
-    positions,
-    normals,
-    lengths,
-    strengths,
-    indices,
-    centres: centreArray,
-    radii,
-    ringLengths: Float32Array.from(geometry.lengths),
-    ringStrengths: Float32Array.from(geometry.strength),
-  };
+  return { positions, normals, lengths, indices, centres: centreArray, ringLengths: Float32Array.from(geometry.lengths) };
 }
 
-/** The tube's centre, radius and strength at `length` px along it — where the tip's cap sits. */
-export function pointAtLength(
-  tube: TubeArrays,
-  length: number,
-): { x: number; y: number; z: number; radius: number; strength: number } {
+/** The tube's centre at `length` px along it — where the tip's cap sits. */
+export function pointAtLength(tube: TubeArrays, length: number): { x: number; y: number; z: number } {
   const last = tube.ringLengths.length - 1;
-  const ringAt = (i: number) => ({
-    x: tube.centres[i * 3],
-    y: tube.centres[i * 3 + 1],
-    z: tube.centres[i * 3 + 2],
-    radius: tube.radii[i],
-    strength: tube.ringStrengths[i],
-  });
+  const ringAt = (i: number) => ({ x: tube.centres[i * 3], y: tube.centres[i * 3 + 1], z: tube.centres[i * 3 + 2] });
   if (!(length > tube.ringLengths[0])) return ringAt(0);
   if (length >= tube.ringLengths[last]) return ringAt(last);
 
@@ -199,13 +137,7 @@ export function pointAtLength(
   const span = tube.ringLengths[lo] - tube.ringLengths[lo - 1];
   const t = span > 0 ? (length - tube.ringLengths[lo - 1]) / span : 1;
   const mix = (a: number, b: number) => a + (b - a) * t;
-  return {
-    x: mix(before.x, after.x),
-    y: mix(before.y, after.y),
-    z: mix(before.z, after.z),
-    radius: mix(before.radius, after.radius),
-    strength: mix(before.strength, after.strength),
-  };
+  return { x: mix(before.x, after.x), y: mix(before.y, after.y), z: mix(before.z, after.z) };
 }
 
 /**

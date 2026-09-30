@@ -30,7 +30,7 @@
  * pads past its ends. The bands come from the same pixel points the path is drawn from.
  */
 
-import { SECTION_SPANS, sampleSignalRange, type SignalPoint } from './path';
+import { DRAWN_FROM_T, SECTION_SPANS, sampleSignalRange, type SignalPoint } from './path';
 import {
   ANCHOR_T,
   IN_SECTION_ANCHORS,
@@ -41,7 +41,7 @@ import {
   toPixelPoints,
   type PixelPoint,
 } from './anchors';
-import { gutterBands, strengthAt, strengthStops, type GutterRegion, type StrengthStop } from './gutter';
+import { gutterBands, strengthStops, type GutterRegion } from './gutter';
 import { cumulativeLengths, lengthAtY, playheadPageY } from './playhead';
 import { publishSignalCurve, publishSignalGeometry, publishSignalTip } from './tip';
 // Resize re-measurement is debounced — the viewBox and total length both change. Shared
@@ -117,17 +117,20 @@ const BAND_FADE_PX = 32;
 const CURVE_SAMPLE_DENSITY = 480;
 
 /**
- * Samples the whole curve at roughly `CURVE_SAMPLE_DENSITY` intervals, span by span, so
- * every anchor — each seam and each in-section anchor — is a vertex of the drawn polyline.
- * The anchors are where the curve is pinned to the page, so they are exactly where a chord
- * cutting a corner would show.
+ * Samples the curve from `DRAWN_FROM_T` (the hero carries no line) at roughly
+ * `CURVE_SAMPLE_DENSITY` intervals, span by span, so every anchor — each seam and each
+ * in-section anchor — is a vertex of the drawn polyline. The anchors are where the curve is
+ * pinned to the page, so they are exactly where a chord cutting a corner would show.
  */
 function sampleWholeCurve(): SignalPoint[] {
   // The in-section anchors (see anchors.ts) are split points exactly like the seams: the
   // work span is sampled as sweep, spine and exit, and the ring span as arc and hold.
-  const cuts = [...SECTION_SPANS.map((span) => span.tStart), ...ANCHOR_T, 1].sort(
-    (a, b) => a - b,
-  );
+  const cuts = [
+    DRAWN_FROM_T,
+    ...SECTION_SPANS.map((span) => span.tStart).filter((t) => t > DRAWN_FROM_T),
+    ...ANCHOR_T,
+    1,
+  ].sort((a, b) => a - b);
 
   const points: SignalPoint[] = [];
   for (let i = 0; i < cuts.length - 1; i++) {
@@ -304,16 +307,11 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
   }
 
   /** Rewrites the gradient's stops: dim everywhere, full strength inside the gutter. */
-  function applyStrength(
-    pixelPoints: readonly PixelPoint[],
-    gutter: GutterRegion | null,
-    height: number,
-  ): StrengthStop[] {
+  function applyStrength(pixelPoints: readonly PixelPoint[], gutter: GutterRegion | null, height: number): void {
     const bands = gutter ? gutterBands(pixelPoints, gutter) : [];
-    const stops = strengthStops(bands, height, BAND_FADE_PX);
     gradient.setAttribute('y2', String(height));
     gradient.replaceChildren(
-      ...stops.map(({ offset, full }) => {
+      ...strengthStops(bands, height, BAND_FADE_PX).map(({ offset, full }) => {
         const stop = document.createElementNS(SVG_NS, 'stop');
         stop.setAttribute('offset', String(offset));
         stop.style.stopColor = 'var(--signal)';
@@ -321,7 +319,6 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
         return stop;
       }),
     );
-    return stops;
   }
 
   /**
@@ -360,21 +357,13 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
 
     // Before the reduced-motion early return on purpose: dimming is contrast, not motion.
     const gutterIndex = SECTION_SPANS.findIndex((span) => span.id === GUTTER_FROM_SECTION);
-    const stops = applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
+    applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
 
-    // For the Phase 10 tube (tip.ts): the same points, in page px, with each point's curve
-    // z and y carried beside it. Before the reduced-motion return like the dim rule — the
-    // geometry is the line, not its motion.
+    // For the Phase 10 tube (tip.ts): the same points, in page px.
     const boxLeftInPage = boxRect.left + window.scrollX;
     publishSignalGeometry({
-      points: pixelPoints.map((p, i) => ({
-        x: boxLeftInPage + p.x,
-        y: boxTopInPage + p.y,
-        z: points[i].z,
-        curveY: points[i].y,
-      })),
+      points: pixelPoints.map((p) => ({ x: boxLeftInPage + p.x, y: boxTopInPage + p.y })),
       lengths: lengthTable,
-      strength: pixelPoints.map((p) => strengthAt(stops, height, p.y)),
     });
 
     if (reduceMotion) {

@@ -118,23 +118,3 @@ export function strengthStops(
   }
   return stops;
 }
-
-/**
- * The strength at pixel `y`: 0 dim … 1 full, read off `strengthStops` exactly as an SVG
- * gradient interpolates them — linearly between neighbours, the later stop winning a tie.
- * The tube carries this per vertex, so it dims exactly where the SVG line dims.
- */
-export function strengthAt(stops: readonly StrengthStop[], height: number, y: number): number {
-  if (!(height > 0) || stops.length === 0) return 0;
-  const offset = Math.min(1, Math.max(0, y / height));
-  const level = (stop: StrengthStop): number => (stop.full ? 1 : 0);
-
-  for (let i = 1; i < stops.length; i++) {
-    const [before, after] = [stops[i - 1], stops[i]];
-    if (offset > after.offset) continue;
-    const span = after.offset - before.offset;
-    if (!(span > 0)) return level(after);
-    return level(before) + ((level(after) - level(before)) * (offset - before.offset)) / span;
-  }
-  return level(stops[stops.length - 1]);
-}

@@ -2,9 +2,9 @@
  * The enhanced layer's entry — the dynamic-import boundary (spec §11.3). Nothing here is in
  * any initial chunk: `BaseLayout` imports this only after the gate (gate.ts) says yes.
  *
- * Owns the renderer, the fixed canvas, the camera, the frame probe, the swap from the SVG
- * line, the watchdog and the one-way fallback. The SVG renderer keeps running underneath
- * throughout, only hidden, so handing back is one class removed (Phase 10 design, §6).
+ * Owns the renderer, the fixed canvas, the camera, the frame probe, the instant swap over
+ * the SVG line, the watchdog and the one-way fallback. The SVG renderer keeps running
+ * underneath throughout, only hidden, so handing back is one class removed (Phase 10 design, §6).
  *
  * Renders on change only — a scroll, a tip move, a re-measure, a resize — never in a free
  * loop: the scroll is the transport, and an idle page costs the GPU nothing (design D6).
@@ -14,13 +14,11 @@ import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { onPageProgress } from '../motion/timeline';
 import { createTubeSignal } from '../signal/tube-signal';
 import { onSignalGeometry, onSignalTip } from '../signal/tip';
-import { cameraRig, heroDepthFor } from './camera';
+import { cameraRig } from './camera';
 import { createFrameWatch, probeVerdict, PROBE_FRAMES, shouldFallBack, type ProbeVerdict } from './frame';
 import { rememberFallback } from './gate';
 import { hexToRgb } from './tube-mesh';
 
-/** Starting value, tuned at Noel's checkpoint (design D2): 24px across at the headline. */
-const HERO_RADIUS = 12;
 const MAX_PIXEL_RATIO = 2;
 /** The probe is retried this many times if the tab was hidden while it ran. */
 const PROBE_ATTEMPTS = 3;
@@ -44,9 +42,7 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
   const tokens = getComputedStyle(document.documentElement);
   const tube = createTubeSignal({
     color: hexToRgb(tokens.getPropertyValue('--signal')),
-    dimAlpha: parseFloat(tokens.getPropertyValue('--signal-dim-alpha')),
-    heroRadius: HERO_RADIUS,
-    baseRadius: parseFloat(tokens.getPropertyValue('--signal-stroke')) / 2,
+    radius: parseFloat(tokens.getPropertyValue('--signal-stroke')) / 2,
   });
 
   const canvas = document.createElement('canvas');
@@ -63,7 +59,6 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
   // The canvas's own box, not innerWidth: a fixed element excludes the scrollbar, and the
   // page-px ↔ world mapping has to use the width the canvas actually covers.
   const viewport = () => ({ width: canvas.clientWidth, height: canvas.clientHeight });
-  let heroDepth = heroDepthFor(cameraRig(viewport().width, viewport().height, 0, 0).distance);
 
   function render(): void {
     const { width, height } = viewport();
@@ -128,8 +123,7 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
 
   cleanups.push(
     onSignalGeometry((geometry) => {
-      heroDepth = heroDepthFor(cameraRig(viewport().width, viewport().height, 0, 0).distance);
-      tube.rebuild(geometry, heroDepth);
+      tube.rebuild(geometry);
       requestRender();
     }),
     onSignalTip((pageY) => {
@@ -178,14 +172,7 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
     }
   }
 
-  // Below the hero the tube and the line share every pixel, so the swap is invisible; with
-  // the hero on screen they differ, so it crossfades once (design §6 step 5).
-  const years = document.querySelector('[data-signal-section="years"]');
-  const isHeroOnScreen = years !== null && years.getBoundingClientRect().top > 0;
-  if (isHeroOnScreen) {
-    layer.classList.add('signal-crossfade');
-    canvas.classList.add('signal-crossfade');
-  }
+  // The tube and the SVG line now share every pixel (revision R4), so the swap is instant.
   render();
   isLive = true;
   layer.classList.add('signal-layer--tube');
