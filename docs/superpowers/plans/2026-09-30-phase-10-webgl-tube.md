@@ -1920,3 +1920,613 @@ git commit -m "docs: Phase 10 figures — enhanced chunk, base JS, LCP"
 - [ ] **Step 4: Checkpoint**
 
 Stop. Hand Noel the Task 7 screenshots and the numbers. He reviews the hero moment, the thickness (`HERO_RADIUS` in `scene.ts`), the depth (`HERO_DEPTH_FACTOR` in `camera.ts`) and the glow (`GLOW_*` in `tube-signal.ts`) on his desktop. Tuning those constants is a follow-up commit. Nothing merges to `master` before he approves.
+
+---
+
+## Revision — 2026-09-30, after Noel's first look (Task 9)
+
+Noel saw the tube (Tasks 1–7 as built, `a3cec21`). The spine looks right. The hero does not: a line hovering in the middle of the hero at first load reads as a phantom. His decisions, all confirmed in conversation:
+
+| # | Decision | Replaces |
+|---|---|---|
+| R1 | **The line starts at the bottom of the hero, for both renderers.** No line in the hero at all; the tip emerges at the hero's bottom edge as you scroll. | Design D1 (real depth in the hero) and parent spec §6's hero row |
+| R2 | **8px everywhere**: `--signal-stroke: 8px`. The SVG line, work branches, ring track and drops, footer bar and gutter clearance all derive from the token. The tube is a uniform radius of `--signal-stroke / 2`. | Design D2 (thick hero, 2D width below) |
+| R3 | **The tube is full `--signal` everywhere, with no dim rule.** The **2D line keeps its dim rule**: phones get 2D, and there the whole line runs behind copy. | The tube half of spec §5 "Shading" |
+| R4 | The hero's depth and thickness code is now dead and is **removed**: the tube lies flat (z = 0) everywhere. Because the SVG and the tube now coincide at every point, **the swap is always instant**, and the 300ms crossfade (the one timer exception) goes. | Design §5 hero depth/radius, §6 step 5 crossfade |
+
+**Accepted cost (a Known Gap, owned by Noel):** at ≥ 900px, text drawn over the full-strength tube fails AA (`--type` on `--signal` 2.9:1, `--type-dim` 1.1:1). Revisit later with Noel's idea: the line dives into a "hole" where a text block starts and comes out where it ends.
+
+**To check at the next look:** the emission dots and the Stack's nodes were sized beside a 4px line.
+
+### Task 9: The revised look — line from the hero's bottom, 8px, full strength
+
+**Files:**
+- Modify: `src/lib/signal/path.ts` (export `DRAWN_FROM_T`)
+- Modify: `src/lib/signal/svg-signal.ts` (sample from `DRAWN_FROM_T`; publish the slimmer geometry; `applyStrength` back to `void`)
+- Modify: `src/lib/signal/tip.ts` (`SignalGeometryPoint` is `{ x, y }`; `SignalGeometry` is `{ points, lengths }`)
+- Modify: `src/lib/signal/gutter.ts` (remove `strengthAt`: no consumer is left)
+- Replace: `src/lib/gfx/tube-mesh.ts`, `src/lib/signal/tube-signal.ts` (full code below)
+- Modify: `src/lib/gfx/camera.ts` (remove `HERO_DEPTH_FACTOR`, `heroDepthFor`; `far = distance * 2`)
+- Modify: `src/lib/gfx/scene.ts` (uniform radius from the token; no hero depth; instant swap)
+- Modify: `src/styles/tokens.css` (`--signal-stroke: 8px`), `src/styles/global.css` (remove the `.signal-crossfade` rules)
+- Tests: `tests/signal-geometry.test.ts`, `tests/gfx-tube-mesh.test.ts`, `tests/gfx-camera.test.ts`, `tests/signal-path.test.ts`
+- Docs (same commit, AGENTS.md rule): the design doc, and the parent spec's §6 (the `TubeSignal` bullet and the hero row) and §8's hero visual line (the one that says "the signal tube entering from deep Z")
+
+**Interfaces:**
+- Produces:
+  ```ts
+  // path.ts
+  export const DRAWN_FROM_T: number; // SECTION_SPANS' years tStart — control point 7
+  // tip.ts
+  export interface SignalGeometryPoint { x: number; y: number }
+  export interface SignalGeometry { points: readonly SignalGeometryPoint[]; lengths: readonly number[] }
+  // tube-mesh.ts
+  export interface TubeProfile { radius: number; radialSegments: number }
+  export interface TubeArrays { positions: Float32Array; normals: Float32Array; lengths: Float32Array; indices: Uint32Array; centres: Float32Array; ringLengths: Float32Array }
+  export function buildTube(geometry: SignalGeometry, profile: TubeProfile, radiusScale?: number, radiusPad?: number): TubeArrays;
+  export function pointAtLength(tube: TubeArrays, length: number): { x: number; y: number; z: number };
+  export function hexToRgb(hex: string): [number, number, number];
+  // tube-signal.ts
+  export interface TubeLook { color: [number, number, number]; radius: number }
+  export interface TubeSignal { group: Group; rebuild(geometry: SignalGeometry): void; setTip(pageY: number): void; dispose(): void }
+  // camera.ts
+  export function cameraRig(width: number, height: number, scrollX: number, scrollY: number): CameraRig; // unchanged signature
+  ```
+
+- [ ] **Step 1: Failing tests first**
+
+In `tests/signal-path.test.ts`, add (import `DRAWN_FROM_T` and `SECTION_SPANS`, and `controlPointT` if they aren't already imported):
+
+```ts
+describe('DRAWN_FROM_T — where the drawn line begins', () => {
+  // Noel, 2026-09-30: no line in the hero; it emerges at the hero's bottom edge.
+  it('is the Nine Years seam, control point 7', () => {
+    expect(DRAWN_FROM_T).toBe(SECTION_SPANS.find((s) => s.id === 'years')!.tStart);
+    expect(DRAWN_FROM_T).toBeCloseTo(controlPointT(7), 12);
+  });
+});
+```
+
+Replace `tests/gfx-tube-mesh.test.ts` with:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { sampleSignalRange } from '../src/lib/signal/path';
+import { DRAWN_FROM_T } from '../src/lib/signal/path';
+import { toPixelPoints } from '../src/lib/signal/anchors';
+import { cumulativeLengths } from '../src/lib/signal/playhead';
+import type { SignalGeometry } from '../src/lib/signal/tip';
+import { buildTube, hexToRgb, pointAtLength, type TubeProfile } from '../src/lib/gfx/tube-mesh';
+
+/** The line as the SVG draws it on the real 1440 page, from the hero's bottom edge down. */
+function referenceGeometry(): SignalGeometry {
+  const samples = sampleSignalRange(DRAWN_FROM_T, 1, 413);
+  const pixels = toPixelPoints(samples, 1425, [65, 923.4, 1975.9, 4762.1, 6041.9, 7239.9, 8494.9], [2435, 4589.3, 5223.2]);
+  return { points: pixels, lengths: cumulativeLengths(pixels) };
+}
+
+const profile: TubeProfile = { radius: 4, radialSegments: 12 };
+
+describe('buildTube', () => {
+  const geometry = referenceGeometry();
+  const tube = buildTube(geometry, profile);
+  const rings = geometry.points.length;
+  const segments = profile.radialSegments;
+
+  it('has one ring per published point, centred on it, flat on the page', () => {
+    geometry.points.forEach((p, i) => {
+      // Float32 buffers: ~1e-4 px of rounding at page scale, far below a pixel.
+      expect(tube.centres[i * 3]).toBeCloseTo(p.x, 2);
+      expect(tube.centres[i * 3 + 1]).toBeCloseTo(-p.y, 2);
+      expect(tube.centres[i * 3 + 2]).toBe(0);
+    });
+  });
+
+  it('sizes its buffers to rings × segments', () => {
+    expect(tube.positions.length).toBe(rings * segments * 3);
+    expect(tube.normals.length).toBe(rings * segments * 3);
+    expect(tube.lengths.length).toBe(rings * segments);
+    expect(tube.indices.length).toBe((rings - 1) * segments * 6);
+  });
+
+  it('is one radius the whole way — the 2D stroke, halved', () => {
+    for (let ring = 0; ring < rings; ring += 37) {
+      for (let j = 0; j < segments; j++) {
+        const v = (ring * segments + j) * 3;
+        const offset = [0, 1, 2].map((k) => tube.positions[v + k] - tube.centres[ring * 3 + k]);
+        expect(Math.hypot(...offset)).toBeCloseTo(4, 2);
+        const normal = [0, 1, 2].map((k) => tube.normals[v + k]);
+        expect(Math.hypot(...normal)).toBeCloseTo(1, 5);
+        expect(offset.reduce((sum, o, k) => sum + o * normal[k], 0)).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('never flips its frame from ring to ring, through the tightest turns on the line', () => {
+    for (let ring = 0; ring < rings - 1; ring++) {
+      const a = ring * segments * 3;
+      const b = (ring + 1) * segments * 3;
+      const dot = tube.normals[a] * tube.normals[b] + tube.normals[a + 1] * tube.normals[b + 1] + tube.normals[a + 2] * tube.normals[b + 2];
+      expect(dot).toBeGreaterThan(0.5);
+    }
+  });
+
+  it('carries length per vertex from the geometry', () => {
+    expect(tube.lengths[200 * segments + 3]).toBeCloseTo(geometry.lengths[200], 3);
+  });
+
+  it('scales and pads the radius for the glow shell', () => {
+    const halo = buildTube(geometry, profile, 3, 2);
+    const v = 300 * segments * 3;
+    const offset = [0, 1, 2].map((k) => halo.positions[v + k] - halo.centres[300 * 3 + k]);
+    expect(Math.hypot(...offset)).toBeCloseTo(4 * 3 + 2, 2);
+  });
+
+  // Front faces must face out: the materials cull back faces.
+  it('winds every triangle to face away from its ring centre', () => {
+    const vertex = (n: number) => [0, 1, 2].map((k) => tube.positions[n * 3 + k]);
+    for (let t = 0; t < tube.indices.length; t += 6 * 97) {
+      const [a, b, c] = [tube.indices[t], tube.indices[t + 1], tube.indices[t + 2]].map(vertex);
+      const ab = [0, 1, 2].map((k) => b[k] - a[k]);
+      const ac = [0, 1, 2].map((k) => c[k] - a[k]);
+      const face = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
+      const ring = Math.floor(tube.indices[t] / segments);
+      const outward = [0, 1, 2].map((k) => a[k] - tube.centres[ring * 3 + k]);
+      expect(face.reduce((sum, f, k) => sum + f * outward[k], 0)).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('pointAtLength', () => {
+  const tube = buildTube(referenceGeometry(), profile);
+
+  it('lands on a ring at its own length, and between rings in proportion', () => {
+    expect(pointAtLength(tube, tube.ringLengths[100]).x).toBeCloseTo(tube.centres[300], 6);
+    const halfway = (tube.ringLengths[100] + tube.ringLengths[101]) / 2;
+    expect(pointAtLength(tube, halfway).y).toBeCloseTo((tube.centres[301] + tube.centres[304]) / 2, 6);
+  });
+
+  it('clamps before the start and past the end', () => {
+    expect(pointAtLength(tube, -50).x).toBe(tube.centres[0]);
+    const last = tube.ringLengths.length - 1;
+    expect(pointAtLength(tube, 1e9).y).toBe(tube.centres[last * 3 + 1]);
+  });
+});
+
+describe('hexToRgb', () => {
+  it('reads the palette token as sRGB channels', () => {
+    const [r, g, b] = hexToRgb('#FF4B54');
+    expect(r).toBe(1);
+    expect(g).toBeCloseTo(0x4b / 255, 9);
+    expect(b).toBeCloseTo(0x54 / 255, 9);
+    expect(hexToRgb('  #ff4b54 ')).toEqual([r, g, b]);
+  });
+});
+```
+
+In `tests/signal-geometry.test.ts`: remove the `strengthAt` describe block and its import; change the `geometry()` fixture to `{ points: [{ x: 0, y: tag }, { x: 0, y: tag + 10 }], lengths: [0, 10] }`.
+
+In `tests/gfx-camera.test.ts`: remove the two tests that use `heroDepthFor` (`draws a point behind the page…` and `keeps the deepest hero point…`) and drop it from the import.
+
+Run: `npx vitest run tests/signal-path.test.ts tests/gfx-tube-mesh.test.ts tests/signal-geometry.test.ts tests/gfx-camera.test.ts`
+Expected: FAIL (`DRAWN_FROM_T` is not exported; `TubeProfile.radius` does not match).
+
+- [ ] **Step 2: `path.ts` — where the line begins**
+
+After `SECTION_SPANS`, add:
+
+```ts
+/**
+ * Where the drawn line begins: the Nine Years seam, at the hero's bottom edge. The hero
+ * carries no line (Noel, 2026-09-30 — a line hovering mid-hero at first load read as a
+ * phantom). The hero's control points stay: they still set the curve's direction as it
+ * arrives at this seam, because Catmull-Rom takes point 7's tangent from points 6 and 8.
+ */
+export const DRAWN_FROM_T = SECTION_SPANS.find((span) => span.id === 'years')!.tStart;
+```
+
+Update the hero block's comment in `CONTROL_POINTS` to say that these points shape the entry and are not drawn.
+
+- [ ] **Step 3: `svg-signal.ts` — draw from there, publish the slimmer geometry**
+
+1. Import `DRAWN_FROM_T` from `./path`. In `sampleWholeCurve`, build the cuts from it:
+
+```ts
+  const cuts = [
+    DRAWN_FROM_T,
+    ...SECTION_SPANS.map((span) => span.tStart).filter((t) => t > DRAWN_FROM_T),
+    ...ANCHOR_T,
+    1,
+  ].sort((a, b) => a - b);
+```
+
+Update the function's comment to say the line is sampled from `DRAWN_FROM_T`, not from 0.
+
+2. Restore `applyStrength` to return `void` and write `strengthStops(...)` inline as it did before Task 1. Drop `strengthAt` and `StrengthStop` from the gutter import.
+3. Replace the `publishSignalGeometry({...})` call with:
+
+```ts
+    const boxLeftInPage = boxRect.left + window.scrollX;
+    publishSignalGeometry({
+      points: pixelPoints.map((p) => ({ x: boxLeftInPage + p.x, y: boxTopInPage + p.y })),
+      lengths: lengthTable,
+    });
+```
+
+and trim its comment to: *For the Phase 10 tube (tip.ts): the same points, in page px.*
+
+- [ ] **Step 4: `tip.ts` and `gutter.ts`**
+
+`tip.ts`: `SignalGeometryPoint` becomes `{ x: number; y: number }` (doc: *One drawn point, in page px.*). `SignalGeometry` loses `strength`. The module comment's geometry bullet becomes *the line's points and lengths*.
+`gutter.ts`: delete `strengthAt` and its doc comment.
+
+- [ ] **Step 5: Replace `src/lib/gfx/tube-mesh.ts`**
+
+```ts
+/**
+ * The tube's geometry, built straight from the points the SVG line is drawn through
+ * (`SignalGeometry`, tip.ts). Not `THREE.TubeGeometry`: that needs its own `Curve` and
+ * re-samples it — a second definition of the line (Phase 10 design, D4).
+ *
+ * One ring of vertices per published point, flat on the page (world z = 0, camera.ts) and
+ * one radius the whole way (revision R2, R4), oriented by rotation-minimising frames (the
+ * double-reflection method), which never twist or flip at a tight turn the way Frenet frames
+ * do. Pure: typed arrays out, no Three.js — tube-signal.ts turns them into buffers.
+ */
+
+import type { SignalGeometry } from '../signal/tip';
+
+export interface TubeProfile {
+  /** Half of `--signal-stroke`, px. */
+  radius: number;
+  radialSegments: number;
+}
+
+export interface TubeArrays {
+  positions: Float32Array;
+  normals: Float32Array;
+  lengths: Float32Array;
+  indices: Uint32Array;
+  centres: Float32Array;
+  ringLengths: Float32Array;
+}
+
+type Vec3 = [number, number, number];
+const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const scale = (a: Vec3, s: number): Vec3 => [a[0] * s, a[1] * s, a[2] * s];
+const cross = (a: Vec3, b: Vec3): Vec3 => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+const normalise = (a: Vec3): Vec3 => {
+  const length = Math.hypot(a[0], a[1], a[2]);
+  return length > 0 ? scale(a, 1 / length) : [0, 0, 1];
+};
+/** `v` reflected in the plane through the origin with normal `n` (`nn` = n·n). */
+const reflect = (v: Vec3, n: Vec3, nn: number): Vec3 => sub(v, scale(n, (2 * dot(n, v)) / nn));
+
+export function buildTube(
+  geometry: SignalGeometry,
+  profile: TubeProfile,
+  radiusScale = 1,
+  radiusPad = 0,
+): TubeArrays {
+  const rings = geometry.points.length;
+  const segments = profile.radialSegments;
+  const radius = profile.radius * radiusScale + radiusPad;
+  // Page px → world: x as is, y negated, on the page plane (camera.ts convention).
+  const centres: Vec3[] = geometry.points.map((p) => [p.x, -p.y, 0]);
+
+  const tangents: Vec3[] = centres.map((_, i) =>
+    normalise(sub(centres[Math.min(i + 1, rings - 1)], centres[Math.max(i - 1, 0)])),
+  );
+
+  // First frame: any vector perpendicular to the first tangent. After that each frame is the
+  // previous one carried along by two reflections — the rotation-minimising frame.
+  const frames: Vec3[] = new Array(rings);
+  const seed: Vec3 = Math.abs(tangents[0][2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+  frames[0] = normalise(cross(tangents[0], seed));
+  for (let i = 0; i < rings - 1; i++) {
+    const step = sub(centres[i + 1], centres[i]);
+    const stepLength = dot(step, step);
+    if (!(stepLength > 0)) {
+      frames[i + 1] = frames[i];
+      continue;
+    }
+    const carried = reflect(frames[i], step, stepLength);
+    const carriedTangent = reflect(tangents[i], step, stepLength);
+    const correction = sub(tangents[i + 1], carriedTangent);
+    const correctionLength = dot(correction, correction);
+    frames[i + 1] = normalise(correctionLength > 1e-18 ? reflect(carried, correction, correctionLength) : carried);
+  }
+
+  const vertexCount = rings * segments;
+  const positions = new Float32Array(vertexCount * 3);
+  const normals = new Float32Array(vertexCount * 3);
+  const lengths = new Float32Array(vertexCount);
+  const centreArray = new Float32Array(rings * 3);
+
+  for (let i = 0; i < rings; i++) {
+    centreArray.set(centres[i], i * 3);
+    const across = frames[i];
+    const around = cross(tangents[i], across);
+    for (let j = 0; j < segments; j++) {
+      const angle = (2 * Math.PI * j) / segments;
+      const out: Vec3 = [
+        across[0] * Math.cos(angle) + around[0] * Math.sin(angle),
+        across[1] * Math.cos(angle) + around[1] * Math.sin(angle),
+        across[2] * Math.cos(angle) + around[2] * Math.sin(angle),
+      ];
+      const v = i * segments + j;
+      positions.set([centres[i][0] + out[0] * radius, centres[i][1] + out[1] * radius, centres[i][2] + out[2] * radius], v * 3);
+      normals.set(out, v * 3);
+      lengths[v] = geometry.lengths[i];
+    }
+  }
+
+  const indices = new Uint32Array((rings - 1) * segments * 6);
+  let k = 0;
+  for (let i = 0; i < rings - 1; i++) {
+    for (let j = 0; j < segments; j++) {
+      const a = i * segments + j;
+      const b = i * segments + ((j + 1) % segments);
+      const c = a + segments;
+      const d = b + segments;
+      // Counter-clockwise seen from outside, so the default front-face culling keeps the
+      // outer surface only (the ring runs right-handed about the tangent).
+      indices.set([a, b, c, b, d, c], k);
+      k += 6;
+    }
+  }
+
+  return { positions, normals, lengths, indices, centres: centreArray, ringLengths: Float32Array.from(geometry.lengths) };
+}
+
+/** The tube's centre at `length` px along it — where the tip's cap sits. */
+export function pointAtLength(tube: TubeArrays, length: number): { x: number; y: number; z: number } {
+  const last = tube.ringLengths.length - 1;
+  const ringAt = (i: number) => ({ x: tube.centres[i * 3], y: tube.centres[i * 3 + 1], z: tube.centres[i * 3 + 2] });
+  if (!(length > tube.ringLengths[0])) return ringAt(0);
+  if (length >= tube.ringLengths[last]) return ringAt(last);
+
+  let lo = 1;
+  let hi = last;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (tube.ringLengths[mid] < length) lo = mid + 1;
+    else hi = mid;
+  }
+  const [before, after] = [ringAt(lo - 1), ringAt(lo)];
+  const span = tube.ringLengths[lo] - tube.ringLengths[lo - 1];
+  const t = span > 0 ? (length - tube.ringLengths[lo - 1]) / span : 1;
+  const mix = (a: number, b: number) => a + (b - a) * t;
+  return { x: mix(before.x, after.x), y: mix(before.y, after.y), z: mix(before.z, after.z) };
+}
+
+/**
+ * A `#RRGGBB` token as sRGB channels 0..1. The shaders write these straight to the canvas,
+ * which is sRGB — going through THREE.Color would convert to linear and darken the red.
+ */
+export function hexToRgb(hex: string): [number, number, number] {
+  const value = parseInt(hex.trim().replace('#', ''), 16);
+  return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
+}
+```
+
+- [ ] **Step 6: Replace `src/lib/signal/tube-signal.ts`**
+
+```ts
+/**
+ * The 3D renderer for the signal (Phase 10): Three.js meshes over `tube-mesh.ts`'s arrays.
+ * It measures nothing and samples nothing — the SVG renderer publishes the line
+ * (`SignalGeometry`, tip.ts) and this paints it, so the two can never disagree about where
+ * the line is (Phase 10 design, D3).
+ *
+ * Full `--signal` along its whole length (revision R3): the dim rule stays with the 2D line.
+ * Two meshes share the shape: the core, shaded round by its normal against the view, and an
+ * additive glow shell (design D5 — no post-processing). Both cut off at the tip in the
+ * fragment shader, so the reveal is exact rather than ring by ring, and a sphere caps the tip
+ * like the SVG's round linecap.
+ */
+
+import {
+  AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
+  Group,
+  Mesh,
+  ShaderMaterial,
+  SphereGeometry,
+  Vector3,
+} from 'three';
+import { buildTube, pointAtLength, type TubeArrays, type TubeProfile } from '../gfx/tube-mesh';
+import { lengthAtY } from './playhead';
+import type { SignalGeometry } from './tip';
+
+export interface TubeLook {
+  /** `--signal` as sRGB channels (tube-mesh.ts `hexToRgb`). */
+  color: [number, number, number];
+  /** Half of `--signal-stroke`. */
+  radius: number;
+}
+
+export interface TubeSignal {
+  group: Group;
+  rebuild(geometry: SignalGeometry): void;
+  /** The published tip's page y (tip.ts). */
+  setTip(pageY: number): void;
+  dispose(): void;
+}
+
+const RADIAL_SEGMENTS = 12;
+/** The glow shell: this many times the core's radius, plus this many px. Tuned at the checkpoint. */
+const GLOW_SCALE = 3;
+const GLOW_PAD = 2;
+const GLOW_STRENGTH = 0.35;
+
+const VERTEX = /* glsl */ `
+  attribute float aLength;
+  varying float vLength;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    vLength = aLength;
+    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+    vNormal = normalize(normalMatrix * normal);
+    vView = normalize(-viewPosition.xyz);
+    gl_Position = projectionMatrix * viewPosition;
+  }
+`;
+
+// Round without lights: bright where the surface faces the camera, darker toward the rim.
+const CORE_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uDrawn;
+  varying float vLength;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    #ifndef CAP
+      if (vLength > uDrawn) discard;
+    #endif
+    float facing = abs(dot(normalize(vNormal), normalize(vView)));
+    vec3 shaded = uColor * mix(0.45, 1.0, pow(facing, 0.6)) + vec3(pow(facing, 12.0) * 0.25);
+    gl_FragColor = vec4(shaded, 1.0);
+  }
+`;
+
+const GLOW_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uDrawn;
+  uniform float uGlow;
+  varying float vLength;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    #ifndef CAP
+      if (vLength > uDrawn) discard;
+    #endif
+    float facing = abs(dot(normalize(vNormal), normalize(vView)));
+    gl_FragColor = vec4(uColor, pow(facing, 2.0) * uGlow);
+  }
+`;
+
+export function createTubeSignal(look: TubeLook): TubeSignal {
+  const group = new Group();
+  const uniforms = {
+    uColor: { value: new Vector3(...look.color) },
+    uDrawn: { value: 0 },
+    uGlow: { value: GLOW_STRENGTH },
+  };
+
+  const material = (fragmentShader: string, isGlow: boolean, isCap: boolean) =>
+    new ShaderMaterial({
+      uniforms, // shared: one uDrawn moves every part
+      vertexShader: VERTEX,
+      fragmentShader,
+      defines: isCap ? { CAP: '' } : {},
+      // The core is opaque; only the glow blends. Front faces only (tube-mesh.ts winds them
+      // outward). Spread, not `blending: undefined`, which Three warns about.
+      transparent: isGlow,
+      depthWrite: !isGlow,
+      ...(isGlow ? { blending: AdditiveBlending } : {}),
+    });
+
+  const coreMesh = new Mesh(new BufferGeometry(), material(CORE_FRAGMENT, false, false));
+  const glowMesh = new Mesh(new BufferGeometry(), material(GLOW_FRAGMENT, true, false));
+  const capGeometry = new SphereGeometry(1, 16, 12);
+  const coreCap = new Mesh(capGeometry, material(CORE_FRAGMENT, false, true));
+  const glowCap = new Mesh(capGeometry, material(GLOW_FRAGMENT, true, true));
+  glowMesh.renderOrder = 1;
+  glowCap.renderOrder = 1;
+  coreCap.scale.setScalar(look.radius);
+  glowCap.scale.setScalar(look.radius * GLOW_SCALE + GLOW_PAD);
+  group.add(coreMesh, glowMesh, coreCap, glowCap);
+
+  let core: TubeArrays | null = null;
+  let points: SignalGeometry['points'] = [];
+  let lengths: SignalGeometry['lengths'] = [];
+  let tipY: number | null = null;
+
+  function toBufferGeometry(arrays: TubeArrays): BufferGeometry {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new BufferAttribute(arrays.positions, 3));
+    geometry.setAttribute('normal', new BufferAttribute(arrays.normals, 3));
+    geometry.setAttribute('aLength', new BufferAttribute(arrays.lengths, 1));
+    geometry.setIndex(new BufferAttribute(arrays.indices, 1));
+    return geometry;
+  }
+
+  function placeCaps(): void {
+    if (!core || tipY === null) return;
+    const drawn = lengthAtY(points, lengths, tipY);
+    uniforms.uDrawn.value = drawn;
+    const tip = pointAtLength(core, drawn);
+    coreCap.position.set(tip.x, tip.y, tip.z);
+    glowCap.position.set(tip.x, tip.y, tip.z);
+  }
+
+  function rebuild(geometry: SignalGeometry): void {
+    const profile: TubeProfile = { radius: look.radius, radialSegments: RADIAL_SEGMENTS };
+    core = buildTube(geometry, profile);
+    points = geometry.points;
+    lengths = geometry.lengths;
+    coreMesh.geometry.dispose();
+    glowMesh.geometry.dispose();
+    coreMesh.geometry = toBufferGeometry(core);
+    glowMesh.geometry = toBufferGeometry(buildTube(geometry, profile, GLOW_SCALE, GLOW_PAD));
+    placeCaps();
+  }
+
+  function setTip(pageY: number): void {
+    tipY = pageY;
+    placeCaps();
+  }
+
+  function dispose(): void {
+    for (const mesh of [coreMesh, glowMesh, coreCap, glowCap]) (mesh.material as ShaderMaterial).dispose();
+    coreMesh.geometry.dispose();
+    glowMesh.geometry.dispose();
+    capGeometry.dispose();
+  }
+
+  return { group, rebuild, setTip, dispose };
+}
+```
+
+One behaviour to check in the browser: above `DRAWN_FROM_T` the tip is clamped to the line's first point, so `lengthAtY` returns 0 and the cap sits at the line's start. The cap must not be visible before the line has started to draw. Hide both caps while `drawn <= 0` by adding `coreCap.visible = glowCap.visible = drawn > 0;` to `placeCaps`, after `uDrawn` is set.
+
+- [ ] **Step 7: `camera.ts` and `scene.ts`**
+
+`camera.ts`: delete `HERO_DEPTH_FACTOR` and `heroDepthFor`, and set `far: distance * 2`. Replace the module comment's hero sentence with: the tube lies on the page plane everywhere (revision R4), so this is 1:1 at every point; a perspective camera is kept so that depth (Phase 12's ring) needs no new rig.
+
+`scene.ts`:
+- Remove `heroDepthFor` from the camera import, and the `HERO_RADIUS` constant.
+- Create the tube with `createTubeSignal({ color: hexToRgb(tokens.getPropertyValue('--signal')), radius: parseFloat(tokens.getPropertyValue('--signal-stroke')) / 2 })`.
+- Delete `let heroDepth = …`. The geometry subscription becomes `onSignalGeometry((geometry) => { tube.rebuild(geometry); requestRender(); })`.
+- Replace the swap block (from `// Below the hero the tube and the line share every pixel…` to just before `render();`) with this comment only: `// The tube and the SVG line now share every pixel (revision R4), so the swap is instant.`
+- Update the module comment's "the swap from the SVG line" wording accordingly.
+
+- [ ] **Step 8: CSS**
+
+`tokens.css`: `--signal-stroke: 8px;`. Keep the comment above it and add: *8px since Phase 10's revision (2026-09-30): the tube reads as a tube at this weight, and every branch, drop and bar derives from it.*
+`global.css`: delete the `.signal-crossfade` rule and its comment.
+
+- [ ] **Step 9: Docs, in this same commit**
+
+- **Design doc** (`docs/superpowers/specs/2026-09-30-phase-10-webgl-tube-design.md`): add a "Revision — 2026-09-30" section after §2 with the R1–R4 table and the accepted-cost paragraph from this plan's revision header. Mark D1 and D2 "superseded by R1/R2/R4". Update §4.1's interface to `{ points: { x, y }[]; lengths }`. In §5, replace the Hero depth and Radius bullets with the uniform radius, and the Shading bullet's dim sentence with "full `--signal` everywhere (R3)". In §6, replace step 5 with "Swap: instant — the tube and the line share every pixel". Update §7's test list: remove the `heroWeight` and strength bullets, and add `DRAWN_FROM_T`.
+- **Parent spec** (`2026-09-19-signal-path-design.md`): in §6, the `TubeSignal` bullet becomes "…extruded through the same sampled points the SVG draws, with a glow; flat on the page, full strength, one weight (Phase 10 design, revision 2026-09-30)". The per-section table's Hero row becomes "No line: the signal begins at the hero's bottom edge (Phase 10 revision, 2026-09-30)". In §8's hero **Visual** line, replace "plus the signal tube entering from deep Z" with "; the signal begins below the hero".
+
+- [ ] **Step 10: Gates, browser check, commit**
+
+Run: `npx vitest run && npm run build && npm run budget` and record `/` and the enhanced figure.
+Browser, on the controller's machine: the hero shows no line in both `/` and `?signal=2d`, and the tip emerges at the hero's bottom edge. The tube is 8px and full strength everywhere, while `?signal=2d` is 8px and still dims over content. The ring's drops and the Work branches meet the tube at the same weight.
+
+```bash
+git add -A src tests docs/superpowers/specs
+git commit -m "feat: Phase 10 revision — line from the hero's bottom, 8px, full-strength tube" -m "Noel's first look: a line hovering mid-hero read as a phantom. Both renderers now start at the Nine Years seam; the stroke token doubles to 8px so branches and drops keep pace; the tube drops the dim rule (the 2D line keeps it for phones) and its hero depth code, which makes the swap instant."
+```
+
+Task 8's figures are recorded after Task 9, not before.
