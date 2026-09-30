@@ -287,6 +287,35 @@ describe.each(REFERENCE_LAYOUTS)('leaving the spine at $name', (layout) => {
   });
 });
 
+describe('holding centre below the ring split', () => {
+  // Measured sideways in normalised x, not by turn direction: the hold runs almost vertical,
+  // where a few px of wobble already reads as a bend to `turnReversals` but not to the eye.
+  // The line held x 0.03–0.04 right of the split and twitched right again at point 38 before
+  // turning left into the stack — a kink above `05 — pipe()` (Noel, 2026-09-30).
+  const samples = sampleSignalRange(controlPointT(RING_SPLIT_POINT), controlPointT(41), 3001);
+  const splitX = samples[0].x;
+
+  it('drifts no more than ~4px right of the split at 1440 — just the arc finishing', () => {
+    const drift = Math.max(...samples.map((p) => p.x)) - splitX;
+    expect(drift).toBeLessThan(0.005);
+  });
+
+  // Up to the line's leftmost point at the first operator, not past it: the operator's own
+  // arrive-and-dwell overshoots and settles back, and that belongs to the stack. Allowed
+  // ripple is under a pixel at 1440 — two equal-x hold points leave ~0.5px, which is float
+  // geometry, not a kink.
+  it('once it turns left toward the stack, never turns back right before the first operator', () => {
+    const peakIndex = samples.reduce((best, p, i) => (p.x > samples[best].x ? i : best), 0);
+    const operatorIndex = samples.reduce((best, p, i) => (p.x < samples[best].x ? i : best), 0);
+    const onePixelAt1440 = 2 / 1425;
+    let lowest = samples[peakIndex].x;
+    for (let i = peakIndex + 1; i <= operatorIndex; i++) {
+      lowest = Math.min(lowest, samples[i].x);
+      expect(samples[i].x - lowest).toBeLessThan(onePixelAt1440);
+    }
+  });
+});
+
 describe('mapCurveY — knots clamped onto one pixel', () => {
   // `work` missing and held at `years`; the spine clamped onto both of its seams; the split
   // clamped onto the ring's own seam. Four flat intervals, one of them zero-length in pixels.

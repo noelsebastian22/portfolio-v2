@@ -114,12 +114,14 @@ const CONTROL_POINTS: readonly SignalPoint[] = [
   { x: -0.16, y: 0.642, z: 0.33 },
   { x: -0.06, y: 0.662, z: 0.36 },
   { x: 0.00, y: 0.682, z: 0.37 }, // nearest the viewer on the whole curve
-  // Holds centre while the depth falls away, giving the five branches a stable spine.
-  { x: 0.03, y: 0.702, z: 0.36 },
-  { x: 0.04, y: 0.722, z: 0.33 },
-  { x: 0.03, y: 0.742, z: 0.28 },
-  { x: 0.02, y: 0.761, z: 0.22 },
-  { x: 0.00, y: 0.780, z: 0.16 }, // seam
+  // Holds centre while the depth falls away, giving the five branches a stable spine, then
+  // leans into the stack's first operator in growing steps — 0.01, 0.02, 0.05, 0.14. A
+  // drift right and back here, then the whole lean in one step at the seam, drew a kink.
+  { x: 0.00, y: 0.702, z: 0.36 },
+  { x: 0.00, y: 0.722, z: 0.33 },
+  { x: -0.01, y: 0.742, z: 0.28 },
+  { x: -0.03, y: 0.761, z: 0.22 },
+  { x: -0.08, y: 0.780, z: 0.16 }, // seam
 
   // ── stack ───────────────────────────────────────────────────────────────────────────
   // Passes through operator nodes rather than running straight. The first two nodes get a
