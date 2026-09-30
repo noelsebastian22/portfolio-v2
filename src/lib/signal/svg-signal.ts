@@ -100,6 +100,11 @@ const BAND_FADE_PX = 32;
  * at the years → work corner; inside the ring span it is 0.34px at 1440 and 0.58px at
  * 2560. The extra cut costs no vertices: the ring span's 115 intervals split 67 + 48.
  *
+ * Re-measured 2026-09-30, after the curve cleanup (a monotone cubic between anchors, a
+ * straight spine, opened-up years turns), on knots measured from the built page: 1440
+ * window (1425 box) 0.65 → 0.47px, the ~485px layout 0.22 → 0.17px. The years → work
+ * corner is no longer the worst — the stack's first operator (control point 41) is.
+ *
  * Pinning the curve to the sections (Task 6.1) stretches some spans more than the old
  * whole-document mapping did, but on the real page the worst corner sits in spans that are
  * stretched about as much as before, so the figures barely moved (1440: 0.69 → 0.66).
@@ -174,7 +179,7 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
   // Safe because the mount is inset by half the stroke (see #signal-layer in
   // global.css): whatever overflows at either edge paints inside the document rather than
   // past its last pixel, so it cannot grow scrollHeight. The curve's horizontal extremes
-  // are interior (13.0%–81.1% of the box), so nothing overflows sideways.
+  // are interior (13.0%–77.6% of the box), so nothing overflows sideways.
   svg.style.overflow = 'visible';
   svg.setAttribute('aria-hidden', 'true'); // decorative — a marble diagram, not content
 

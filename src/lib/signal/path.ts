@@ -35,7 +35,7 @@ export interface SectionSpan {
  *
  * Spacing is the design constraint, not just the positions. Sampling maps `t` uniformly
  * onto the point list, so the line's speed at a point is roughly `gap × (COUNT − 1)`.
- * With 51 points the widest gap here, 0.265, is ~13 units per unit-`t` — inside the
+ * With 51 points the widest gap here, 0.281, is ~14 units per unit-`t` — inside the
  * continuity budget even after Catmull-Rom's overshoot. Keep every gap under ~0.30 when
  * editing. Dramatic geometry and a smooth curve are not in tension; sparse control points
  * are. Where the line has a long way to travel — the Nine Years run, the sweep back to
@@ -63,23 +63,30 @@ const CONTROL_POINTS: readonly SignalPoint[] = [
   // ── years ───────────────────────────────────────────────────────────────────────────
   // Flattens to near-2D and runs horizontally: `x` travels the width of the page while
   // `y` advances at roughly half the rate it does elsewhere, so the run reads flat.
-  { x: -0.58, y: 0.161, z: -0.02 },
-  { x: -0.68, y: 0.178, z: -0.01 }, // the far left end — where the timeline starts, 2016
+  //
+  // Both ends are hairpins, and a hairpin's radius on the page grows with how far `y`
+  // travels while `x` turns round. So `y` is spent at the ends — bigger gaps into and out
+  // of each turn — and saved in the middle of the run, where the line is straight anyway.
+  { x: -0.56, y: 0.162, z: -0.02 },
+  { x: -0.64, y: 0.182, z: -0.01 }, // the far left end — where the timeline starts, 2016
   // Evenly spaced from here so emissions tick past at a constant rate across the years.
-  { x: -0.46, y: 0.192, z: 0.00 },
-  { x: -0.23, y: 0.205, z: 0.00 },
-  { x: 0.00, y: 0.218, z: 0.00 },
-  { x: 0.23, y: 0.231, z: 0.00 },
-  { x: 0.46, y: 0.245, z: 0.00 },
-  { x: 0.62, y: 0.260, z: 0.00 }, // seam: the present day, right side of the page
+  { x: -0.54, y: 0.199, z: 0.00 },
+  { x: -0.30, y: 0.210, z: 0.00 },
+  { x: -0.05, y: 0.220, z: 0.00 },
+  { x: 0.21, y: 0.229, z: 0.00 },
+  { x: 0.47, y: 0.241, z: 0.00 },
+  // Brakes into the corner rather than running at it: the turn back left starts here.
+  { x: 0.55, y: 0.260, z: 0.00 }, // seam: the present day, right side of the page
 
   // ── work ────────────────────────────────────────────────────────────────────────────
   // The longest single move on the curve: right edge back across to the left margin. Five
   // segments spend that distance instead of one, which is the whole reason the sweep can
-  // be this dramatic and still stay inside the continuity budget.
-  { x: 0.38, y: 0.277, z: 0.00 },
-  { x: 0.12, y: 0.296, z: 0.00 },
-  { x: -0.14, y: 0.317, z: 0.00 },
+  // be this dramatic and still stay inside the continuity budget. The first two gaps are
+  // deep in `y` to finish the turn at the present-day seam: the renderer squeezes this
+  // whole sweep into the section's head (anchors.ts), so every bit of drop counts there.
+  { x: 0.43, y: 0.290, z: 0.00 },
+  { x: 0.16, y: 0.311, z: 0.00 },
+  { x: -0.12, y: 0.321, z: 0.00 },
   { x: -0.40, y: 0.340, z: 0.00 },
   { x: -0.62, y: 0.365, z: 0.01 },
   // Parked at the left margin, descending dead straight — the spine the case studies

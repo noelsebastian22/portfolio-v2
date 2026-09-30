@@ -199,6 +199,49 @@ describe.each(REFERENCE_LAYOUTS)('mapCurveY — a monotone cubic through the kno
   });
 });
 
+/** The tightest turn along the drawn line: the smallest circumradius of three neighbours. */
+function tightestTurn(t0: number, t1: number, layout: (typeof REFERENCE_LAYOUTS)[number]) {
+  const points = toPixelPoints(
+    sampleSignalRange(t0, t1, 20001),
+    layout.width,
+    layout.seamPixels,
+    layout.anchors,
+  );
+  let tightest = Infinity;
+  for (let i = 1; i < points.length - 1; i++) {
+    const [a, b, c] = [points[i - 1], points[i], points[i + 1]];
+    const cross = Math.abs((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
+    if (cross === 0) continue;
+    const sides =
+      Math.hypot(b.x - a.x, b.y - a.y) *
+      Math.hypot(c.x - b.x, c.y - b.y) *
+      Math.hypot(c.x - a.x, c.y - a.y);
+    tightest = Math.min(tightest, sides / (2 * cross));
+  }
+  return tightest;
+}
+
+describe('the tightest turn on the drawn line', () => {
+  const years = SECTION_SPANS.find((s) => s.id === 'years')!;
+  const [desktop, narrow] = REFERENCE_LAYOUTS;
+
+  // Both hairpins of the Nine Years run. The left one clears 150px; the right one, at the
+  // present-day seam, reaches ~107px at 1440 — the turn has to fit into the work section's
+  // head, which the spine anchor squeezes to ~460px there (see path.ts).
+  it('keeps the years hairpins open: at least 100px at 1440, 85px on the narrow layout', () => {
+    expect(tightestTurn(years.tStart, years.tEnd, desktop)).toBeGreaterThanOrEqual(100);
+    expect(tightestTurn(years.tStart, years.tEnd, narrow)).toBeGreaterThanOrEqual(85);
+  });
+
+  // A floor under the whole curve, just below its tightest designed turn — the stack's
+  // first operator at 1440 (~60px), the sweep leaving the present-day seam on the narrow
+  // layout (~51px) — so a corner cannot creep back in anywhere.
+  it('has no corner anywhere: at least 55px at 1440 and 50px on the narrow layout', () => {
+    expect(tightestTurn(0, 1, desktop)).toBeGreaterThanOrEqual(55);
+    expect(tightestTurn(0, 1, narrow)).toBeGreaterThanOrEqual(50);
+  });
+});
+
 describe('mapCurveY — knots clamped onto one pixel', () => {
   // `work` missing and held at `years`; the spine clamped onto both of its seams; the split
   // clamped onto the ring's own seam. Four flat intervals, one of them zero-length in pixels.
