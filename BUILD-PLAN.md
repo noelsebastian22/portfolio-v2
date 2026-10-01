@@ -85,23 +85,23 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
 
-### Current figures — 2026-09-30
+### Current figures — 2026-10-01
 
 Replace values here when a session re-measures; do not add a new "Measured after" section.
 
 | Global Constraints budget | Target | Latest | Measured |
 |---|---|---|---|
-| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 10 branch): 98 / 98 / 98 · production ×1: 97 (2026-09-29) | 2026-09-30 |
-| LCP | ≤ 2.0s | preview median **2,263ms** on both `master` (2,281 / 2,264 / 2,265) and the Phase 10 branch (2,263 ×3), interleaved — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-09-30 |
+| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 10 branch, after Task 9): 98 / 99 / 99 · production ×1: 97 (2026-09-29) | 2026-10-01 |
+| LCP | ≤ 2.0s | preview median **2,175ms** on the Phase 10 branch after Task 9 (2,220 / 2,174 / 2,175); 2026-09-30 interleaved: `master` 2,264, branch 2,263 — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-01 |
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **61,772 (75.4%)** · Phase 10 branch 63,269 (77.2%) | 2026-09-30 |
-| Enhanced WebGL chunk gzip | ≤ 256,000 | Phase 10 branch **132,559 (51.8%)**; `npm run budget` gates it and fails if Three.js reaches an initial chunk | 2026-09-30 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **61,772 (75.4%)** · Phase 10 branch 63,150 (77.1%) | 2026-10-01 |
+| Enhanced WebGL chunk gzip | ≤ 256,000 | Phase 10 branch **132,088 (51.6%)**; `npm run budget` gates it and fails if Three.js reaches an initial chunk | 2026-10-01 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 173 live · 222 on the Phase 10 branch | 2026-09-30 |
+| Tests | — | 173 live · 215 on the Phase 10 branch | 2026-10-01 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -123,6 +123,7 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Task 9.4 · 2026-09-26 (`npm run budget` from here) | 61,370 | 74.9% | — |
 | Task 9.8 · 2026-09-29 (live) | 61,490 | 75.1% | 155 |
 | Curve cleanup · 2026-09-30 (live) | 61,772 | 75.4% | 173 |
+| Phase 10 · 2026-10-01 (branch) | 63,150 | 77.1% | 215 |
 
 ### How to measure
 
