@@ -166,11 +166,15 @@ function main() {
     if (!closure.some((file) => file.hasThree)) continue;
     for (const file of closure) if (!initialPaths.has(file.path)) enhanced.set(file.path, file);
   }
-  const enhancedTotal = [...enhanced.values()].reduce((sum, file) => sum + file.gzip, 0);
-  if (enhanced.size > 0) {
-    const pct = ((enhancedTotal / ENHANCED_BUDGET_BYTES) * 100).toFixed(1);
-    console.log(`\nEnhanced WebGL chunk (after interaction): ${enhancedTotal} gzip, ${pct}% of ${ENHANCED_BUDGET_BYTES}.`);
+  // Finding none is a failure, not a pass: if a Three upgrade drops `__THREE__` or the chunk
+  // stops being emitted, both Three.js checks above would otherwise go green measuring nothing.
+  if (enhanced.size === 0) {
+    console.error('\nNo enhanced chunk containing Three.js (`__THREE__`) found in dist/_astro — the Three.js checks cannot run.');
+    process.exit(1);
   }
+  const enhancedTotal = [...enhanced.values()].reduce((sum, file) => sum + file.gzip, 0);
+  const pct = ((enhancedTotal / ENHANCED_BUDGET_BYTES) * 100).toFixed(1);
+  console.log(`\nEnhanced WebGL chunk (after interaction): ${enhancedTotal} gzip, ${pct}% of ${ENHANCED_BUDGET_BYTES}.`);
   const enhancedOverBudget = enhancedTotal > ENHANCED_BUDGET_BYTES;
   if (enhancedOverBudget) console.error(`Enhanced chunk exceeds ${ENHANCED_BUDGET_BYTES} bytes.`);
   if (pagesLoadingThree.length > 0 || enhancedOverBudget) process.exit(1);
