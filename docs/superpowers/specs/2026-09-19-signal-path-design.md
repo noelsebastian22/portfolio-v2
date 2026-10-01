@@ -307,6 +307,9 @@ same particle system as the line's emissions. On load the line arrives, then res
 the face. On scroll the face dissolves back into the line, which continues down the page.
 The cursor pushes through the particle field.
 
+*Holding note (Phase 10 revision R1):* the line now begins at the hero's bottom edge, so
+there is no line in the hero to arrive or resolve; Phase 11 revisits this choreography.
+
 Conceptually exact — he is made of the signal — and technically a real demonstration:
 GPU particles decoded from an image.
 
@@ -435,9 +438,10 @@ runs behind the rows, dimmed. A node is an outline until the signal's tip reache
 then fills as an emission while the row's identifier comes up from `--type-dim` to `--type`.
 The chain is served lit: with JS off there is no line, and each node sits filled at the start
 of its rule, which is a marble diagram's own notation. The colour shift and thickness change
-on the line itself are per-vertex attributes on `TubeSignal` rather than a second renderer;
-the mesh carries them from Phase 10, and the effect itself waits for the Stack rework
-(Phase 10 design, D8).
+on the line itself are per-vertex attributes on `TubeSignal` rather than a second renderer.
+Since Phase 10's revision the mesh carries only a per-vertex length (for the reveal); the
+effect adds its colour and thickness attributes to the same mesh when it comes, and waits for
+the Stack rework (Phase 10 design, D8).
 
 Proficiency labels ("Expert", "Advanced") are dropped, including the resume's own
 "(Expert)". Self-assessed skill ratings read as filler to a hiring manager; the case-study

@@ -142,7 +142,7 @@ src/
       svg-signal.ts      2D renderer — stroke-dashoffset
       anchors.ts         pins the curve to sections and in-section anchors
       draw.ts            drawing marks off the tip; the §7.4 easings
-      tube-signal.ts     3D renderer — Three.js TubeGeometry   (phase 10)
+      tube-signal.ts     3D renderer — custom Three.js mesh over the published points (phase 10)
     motion/
       scroll.ts          Lenis init + global progress
       timeline.ts        GSAP master timeline, section registration
@@ -151,6 +151,7 @@ src/
     gfx/
       gate.ts            capability gate
       scene.ts           Three.js renderer lifecycle              (phase 10)
+      render-schedule.ts draws in the scroll tick, only when dirty (phase 10)
       particles.ts       portrait point cloud                      (phase 11)
       ring.ts            3D ring carousel                          (phase 12)
   islands/               one vanilla TS entry per interactive section
@@ -205,15 +206,16 @@ Expand the phase you are about to start into task-level steps before implementin
 **Deliverable:** the capability gate, and `TubeSignal` reading the **same**
 `sampleSignalRange` output as the SVG renderer.
 
-**Design:** `docs/superpowers/specs/2026-09-30-phase-10-webgl-tube-design.md` — real depth in
-the hero only, overlay on the running SVG, custom mesh (not `TubeGeometry`), shader glow.
-**Revised 2026-09-30 after Noel's first look** (plan Task 9, not yet built): the line starts at the
-hero's bottom edge in both renderers, `--signal-stroke` goes to 8px, the tube is full strength
-with no dim rule, and the hero depth code and the crossfade go. Plan:
+**Design:** `docs/superpowers/specs/2026-09-30-phase-10-webgl-tube-design.md` — overlay on the
+running SVG, custom mesh (not `TubeGeometry`), shader glow. Its original "real depth in the
+hero" was **revised 2026-09-30 after Noel's first look** (plan Task 9, built): the line starts at the
+hero's bottom edge in both renderers, `--signal-stroke` is 8px, the tube is full strength
+with no dim rule and flat on the page everywhere, and the hero depth code and the crossfade are
+gone. Plan:
 `docs/superpowers/plans/2026-09-30-phase-10-webgl-tube.md`; ledger in `.superpowers/sdd/`.
 
-**Files:** `src/lib/gfx/gate.ts`, `src/lib/gfx/scene.ts`, `src/lib/gfx/tube-mesh.ts`,
-`src/lib/gfx/camera.ts`, `src/lib/signal/tube-signal.ts`; `svg-signal.ts` and `tip.ts` gain the
+**Files:** `src/lib/gfx/gate.ts`, `src/lib/gfx/scene.ts`, `src/lib/gfx/render-schedule.ts`,
+`src/lib/gfx/tube-mesh.ts`, `src/lib/gfx/camera.ts`, `src/lib/signal/tube-signal.ts`; `svg-signal.ts` and `tip.ts` gain the
 geometry channel.
 
 ```ts

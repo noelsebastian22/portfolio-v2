@@ -98,8 +98,8 @@ body::after {
  * UA stylesheet clips them there no matter where the box is placed.
  *
  * The inset is what makes that safe. With it, the half-stroke the renderer now lets
- * overflow paints *inside* the document — y 0..2 at the top, and the last 2px at the
- * bottom — instead of past the document's last pixel. Bottom overflow is the one kind
+ * overflow paints *inside* the document — the first and last half-stroke (4px at an 8px
+ * stroke) — instead of past the document's last pixel. Bottom overflow is the one kind
  * that grows scrollHeight, which would feed straight back into `onPageProgress`.
  */
 #signal-layer {

@@ -4,8 +4,9 @@
  * Draws the whole canonical curve (`path.ts`) as a single `<path>` into one page-height
  * layer, and reveals it with `stroke-dashoffset`: page progress sets a page-`y` playhead
  * that stays inside the viewport, and the line is drawn down to it (see `playhead.ts`).
- * This is the fast, always-available path — the Phase 10 Three.js tube samples the same
- * curve so the two are identically choreographed rather than one approximating the other.
+ * This is the fast, always-available path. The Phase 10 Three.js tube samples nothing: it
+ * paints the points this renderer publishes (`publishSignalGeometry`), so the two are
+ * identically choreographed rather than one approximating the other.
  *
  * One renderer, one layer, one `<path>`. It draws the whole curve into the whole box, so
  * the line is continuous by construction. Splitting the line across per-section mounts

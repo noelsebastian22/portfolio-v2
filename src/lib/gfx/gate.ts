@@ -15,7 +15,7 @@ export interface Environment {
   viewportWidth: number;
   saveData: boolean;
   hardwareConcurrency: number;
-  /** Only the home page has the hero the tube rises through; `/websites` and `/404` do not. */
+  /** Only the home page has the hero the line begins below; `/websites` and `/404` do not. */
   hasHero: boolean;
   /** The tube already handed back to 2D once this session (see `rememberFallback`). */
   fallbackRemembered: boolean;

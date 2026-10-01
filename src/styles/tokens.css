@@ -27,8 +27,8 @@
   --font-body:    'Archivo', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
-  /* The signal's own stroke weight. A stroke is not spacing: --s-1 happens to be 4px
-     too, but reading a spacing token off a stroke-width line misleads the next editor.
+  /* The signal's own stroke weight. A stroke is not spacing; do not read a spacing
+     token off it, even where the two values happen to match.
      8px since Phase 10's revision (2026-09-30): the tube reads as a tube at this weight,
      and every branch, drop and bar derives from it. */
   --signal-stroke: 8px;
