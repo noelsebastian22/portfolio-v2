@@ -189,7 +189,8 @@ const collectionPageSchema = {
           .then(({ loadEnhanced }) => loadEnhanced({ skipProbe: capability.skipProbe }))
           .catch(() => {
             // A failed chunk load or a renderer that would not start: the SVG line was never
-            // hidden, so there is nothing to undo.
+            // hidden, and scene.ts inserts its canvas only once the renderer exists, so there
+            // is nothing to undo.
           });
       }
       const whenIdle = (fn: () => void) =>

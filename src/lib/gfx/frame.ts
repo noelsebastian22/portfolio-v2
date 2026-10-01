@@ -2,8 +2,9 @@
  * Frame timing for the tube: the probe that decides whether it starts, the watchdog that
  * decides whether it stays, and the one rule for handing back to the 2D line.
  *
- * Pure — the scene feeds in `requestAnimationFrame` intervals. The thresholds hold on 60Hz
- * and 120Hz displays alike, since both are judged in milliseconds rather than frames.
+ * Pure — the scene feeds the probe `requestAnimationFrame` intervals, and the watchdog the
+ * interval between drawn ticks (render-schedule.ts). The thresholds hold on 60Hz and 120Hz
+ * displays alike, since both are judged in milliseconds rather than frames.
  */
 
 import { MIN_VIEWPORT_WIDTH } from './gate';
