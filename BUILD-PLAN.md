@@ -79,29 +79,29 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired; Contact's form works with JS off |
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
 | 10 | WebGL — gate + signal tube | **complete — live 2026-10-03** | PR #1 (`0dfc45e`); tube over the 2D line, revision R1–R4. Section archived |
-| 11 | WebGL — particle portrait | not started | |
+| 11 | WebGL — particle portrait | **built — branch, awaiting final review** | `feat/phase-11-portrait`; cream still, 40k particles over it, revision R1. Noel approved the look 2026-10-03 |
 | 12 | WebGL — 3D ring | not started | |
 | 13 | Audio engine | not started | |
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
 
-### Current figures — 2026-10-01
+### Current figures — 2026-10-03
 
 Replace values here when a session re-measures; do not add a new "Measured after" section.
 
 | Global Constraints budget | Target | Latest | Measured |
 |---|---|---|---|
-| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 10 branch, after Task 9): 98 / 99 / 99 · production ×1: 97 (2026-09-29) | 2026-10-01 |
-| LCP | ≤ 2.0s | preview median **2,175ms** on the Phase 10 branch after Task 9 (2,220 / 2,174 / 2,175); 2026-09-30 interleaved: `master` 2,264, branch 2,263 — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-01 |
+| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 11 branch): 98 / 98 / 99, `master` interleaved 98 / 98 / 98 · production ×1: 97 (2026-09-29) | 2026-10-03 |
+| LCP | ≤ 2.0s | preview, interleaved ×3 (2026-10-03): Phase 11 branch median **2,264ms** (2,267 / 2,264 / 2,189), `master` 2,274 (2,274 / 2,289 / 2,272) — no regression; the cream still is the LCP element and nothing changes before `load` — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-03 |
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **63,151 (77.1%)** (Phase 10) | 2026-10-03 |
-| Enhanced WebGL chunk gzip | ≤ 256,000 | live **132,276 (51.7%)**; `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` **63,157 (77.1%)** (Phase 11 branch; +6 is Rollup exporting `playheadPageY` to the scene chunk) · live 63,151 | 2026-10-03 |
+| Enhanced WebGL chunk gzip | ≤ 256,000 | **135,768 (53.0%)** (Phase 11 branch, +3,492 for the portrait) · live 132,276; `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 222 | 2026-10-03 |
+| Tests | — | 246 | 2026-10-03 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -125,6 +125,7 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Curve cleanup · 2026-09-30 (live) | 61,772 | 75.4% | 173 |
 | Phase 10 · 2026-10-01 (branch) | 63,150 | 77.1% | 215 |
 | Phase 10 · 2026-10-03 (live, after the final-review fixes) | 63,151 | 77.1% | 222 |
+| Phase 11 · 2026-10-03 (branch) | 63,157 | 77.1% | 246 |
 
 ### How to measure
 
@@ -679,6 +680,11 @@ before then.
   since Task 9; check them at Noel's next look.
 
 ### Standing notes — limits and gotchas, not bugs
+
+- **At 900–960px the particle portrait dissolves as it scrolls into view.** The hero stacks below
+  961px, so the face starts below the fold and the dissolve (driven from scroll 0) is under way
+  by the time it is fully on screen. Accepted at the Phase 11 checkpoint (2026-10-03); the
+  alternative was to gate the particles at ≥ 961px.
 
 - **The tube draws after Lenis only by load order.** `render-schedule.ts` hooks `gsap.ticker`,
   which runs listeners in the order added; `initScroll()` registers Lenis's at page load and
