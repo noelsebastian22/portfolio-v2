@@ -26,6 +26,7 @@ import {
   HOOP_DROP_PX,
   RING_CARD_COUNT,
   dropEnd,
+  frontness,
   frontToWorld,
   hoopPoint,
   mirrorMatrix,
@@ -48,9 +49,14 @@ const FOG_STRENGTH = 0.78;
 /** The pulse's half-width along the hoop, degrees, and along a drop, as a share of it. */
 const PULSE_WIDTH_DEG = 12;
 const PULSE_WIDTH_DROP = 0.18;
-/** The emission glow: a quad this many px across, at this share of its strength between flares. */
+/**
+ * The emission glow: a quad this many px across. Its strength is a share on every card, more on
+ * the front one (by frontness), and more again for a moment at the flare: 0.5, 0.75, up to 1.
+ */
 const EMIT_GLOW_PX = 56;
-const EMIT_GLOW_REST = 0.5;
+const EMIT_GLOW_BASE = 0.5;
+const EMIT_GLOW_FRONT = 0.25;
+const EMIT_GLOW_FLARE = 0.25;
 /** The hoop's reflection on the floor, as a share of the hoop's own alpha. */
 const REFLECTION_ALPHA = 0.14;
 /** The floor glow: this many radii across, and its alpha at the ring's centre. */
@@ -359,7 +365,8 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
       glow.position.set(...dropEnd(card.angleDeg, frame.radius, frame.tiltDeg));
       // The card's opacity already carries its arrival, so the glow lands with the card.
       const flare = i === pulse.card ? pulse.flare : 0;
-      const opacity = card.opacity * (EMIT_GLOW_REST + (1 - EMIT_GLOW_REST) * flare);
+      const strength = EMIT_GLOW_BASE + EMIT_GLOW_FRONT * frontness(card.angleDeg) + EMIT_GLOW_FLARE * flare;
+      const opacity = card.opacity * strength;
       (glow.material as ShaderMaterial).uniforms.uOpacity.value = opacity;
       glow.visible = opacity > 0;
     });

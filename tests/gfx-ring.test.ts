@@ -14,6 +14,7 @@ import {
   SETTLE_NUDGE_SHARE,
   STAGE_MARGIN_PX,
   STEP_DEG,
+  POINTER_TILT_DEG,
   applyMatrix,
   arrival,
   cardAngle,
@@ -21,6 +22,7 @@ import {
   cardPose,
   cssMatrix3d,
   dropEnd,
+  frontness,
   frontToWorld,
   hoopPoint,
   hoopRiseAt,
@@ -28,6 +30,7 @@ import {
   multiply,
   nearestCard,
   pinLength,
+  pointerTiltRoom,
   project,
   pulseAt,
   rawSteps,
@@ -407,22 +410,60 @@ describe('pulseAt', () => {
   });
 
   it('runs down the drop and flares as the card arrives', () => {
-    const arriving = pulseAt(1 - DWELL_SHARE / 4);
+    const arriving = pulseAt(1 - (3 * DWELL_SHARE) / 8);
     expect(arriving.card).toBe(1);
     expect(arriving.dropAt).toBeGreaterThan(0);
     expect(arriving.dropAt).toBeLessThan(1);
-    expect(pulseAt(1).flare).toBeCloseTo(1, 9);
+    expect(arriving.flare).toBe(0);
+    const landed = pulseAt(1 - DWELL_SHARE / 4);
+    expect(landed.card).toBe(1);
+    expect(landed.flare).toBeCloseTo(1, 9);
+    const fading = pulseAt(1 - DWELL_SHARE / 8);
+    expect(fading.flare).toBeGreaterThan(0);
+    expect(fading.flare).toBeLessThan(1);
+    expect(pulseAt(1).flare).toBe(0);
     expect(pulseAt(1).dropAt).toBe(1);
   });
 
-  it('keeps the flare on the card that just landed, before the next pulse leaves', () => {
-    const after = pulseAt(1 + DWELL_SHARE / 4);
-    expect(after.card).toBe(1);
-    expect(after.hoopStrength).toBe(0);
-    expect(after.flare).toBeGreaterThan(0);
+  it('is quiet at rest on every card', () => {
+    for (const card of [1, 2, 3, 4]) {
+      expect(pulseAt(card).flare).toBe(0);
+      expect(pulseAt(card).hoopStrength).toBe(0);
+    }
   });
 
   it('is a pure function of scroll — the same raw gives the same pulse', () => {
     expect(pulseAt(2.37)).toEqual(pulseAt(2.37));
+  });
+});
+
+describe('frontness', () => {
+  it('is 1 dead front, 0 from half a step round, and the same either side', () => {
+    expect(frontness(0)).toBe(1);
+    expect(frontness(STEP_DEG / 2)).toBe(0);
+    expect(frontness(STEP_DEG)).toBe(0);
+    expect(frontness(180)).toBe(0);
+    expect(frontness(STEP_DEG / 4)).toBeCloseTo(0.5, 9);
+    expect(frontness(-20)).toBeCloseTo(frontness(20), 12);
+  });
+});
+
+describe('pointerTiltRoom', () => {
+  const roomAt = (w: number, h: number) => {
+    const distance = cameraRig(w, h, 0, 0).distance;
+    const { frontY } = stageLayout({ viewportHeight: h, cardHeight: 560, radius: R, distance, tiltDeg: RING_TILT_DEG });
+    return { frontY, distance, room: pointerTiltRoom({ frontY, viewportHeight: h, radius: R, distance }) };
+  };
+
+  it('gives the full tilt where the stage has room above the hoop', () => {
+    expect(roomAt(1920, 1080).room).toBe(POINTER_TILT_DEG);
+  });
+
+  it('keeps the tilted hoop clear of the margin where the layout sits on it', () => {
+    const { frontY, distance, room } = roomAt(CHECK_W, CHECK_H);
+    expect(room).toBeGreaterThanOrEqual(0);
+    expect(room).toBeLessThan(POINTER_TILT_DEG);
+    const top = frontY - hoopRiseAt(frontY, CHECK_H, R, RING_TILT_DEG + room, distance);
+    expect(top).toBeGreaterThanOrEqual(STAGE_MARGIN_PX - 1e-3);
   });
 });

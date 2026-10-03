@@ -22,13 +22,13 @@ import {
   cardMatrix,
   cardPose,
   cssMatrix3d,
-  nearestCard,
+  frontness,
   PIN_STEP_VH,
   POINTER_TILT_DEG,
   pinLength,
   pulseAt,
+  pointerTiltRoom,
   rawSteps,
-  SETTLE_ON_CARD_PX,
   ringRadius,
   settleTarget,
   stageLayout,
@@ -53,8 +53,9 @@ const SETTLE_S = 0.4;
 /** The pointer tilt's ease per drawn frame (the portrait's push), and when it has arrived, degrees. */
 const POINTER_TILT_EASE = 0.18;
 const POINTER_TILT_SETTLED_DEG = 0.01;
-/** How much bigger the emission grows at the height of its flare. */
-const FLARE_GROWTH = 0.6;
+/** How much bigger the emission is on the front card, and how much more at the height of its flare. */
+const FRONT_GROWTH = 0.25;
+const FLARE_GROWTH = 0.35;
 
 export interface RingFrame {
   /** Front point, page px — where the hoop meets the line this frame. */
@@ -108,7 +109,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   let isOn = false;
   let isDropped = false;
   /** Measured once the class is on: the rail's page top, the front point's page x. */
-  const measured = { railTop: 0, frontPageX: 0, frontY: 0, floorY: 0, pin: 0, viewportHeight: 0 };
+  const measured = { railTop: 0, frontPageX: 0, frontY: 0, floorY: 0, pin: 0, viewportHeight: 0, tiltRoom: 0 };
   /** The page scroll the ring last came to rest at — the settle reads the reader's direction from it. */
   let restY = 0;
 
@@ -130,7 +131,9 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     const curveX = signalXAtPageY(splitY);
     const frontPageX = curveX ?? railBox.left + window.scrollX + railBox.width / 2;
     section.style.setProperty('--ring-front-x', `${(frontPageX - (railBox.left + window.scrollX)).toFixed(2)}px`);
-    Object.assign(measured, { railTop, frontPageX, frontY: layout.frontY, floorY: layout.floorY, pin, viewportHeight });
+    // How far up the pointer may tilt the ring before the hoop's back runs under the nav.
+    const tiltRoom = pointerTiltRoom({ frontY: layout.frontY, viewportHeight, radius, distance: cameraDistance() });
+    Object.assign(measured, { railTop, frontPageX, frontY: layout.frontY, floorY: layout.floorY, pin, viewportHeight, tiltRoom });
     markDirty();
   }
 
@@ -296,12 +299,12 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     window.removeEventListener('resize', onResize);
     stopCurve();
     section.removeEventListener('focusin', onFocusIn);
-    stage.removeEventListener('pointerdown', onPointerDown);
+    stage!.removeEventListener('pointerdown', onPointerDown);
     window.removeEventListener('pointermove', onPointerMove);
     window.removeEventListener('pointerup', onPointerUp);
     window.removeEventListener('pointercancel', onPointerUp);
-    stage.removeEventListener('dragstart', onDragStart);
-    stage.removeEventListener('click', onClickCapture, true);
+    stage!.removeEventListener('dragstart', onDragStart);
+    stage!.removeEventListener('click', onClickCapture, true);
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('pointermove', onPointerTilt);
     document.documentElement.removeEventListener('pointerleave', onPointerLeave);
@@ -326,7 +329,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
 
   function update(): RingFrame | null {
     if (!isOn || isDropped) return null;
-    const { railTop, frontPageX, frontY, floorY, pin, viewportHeight } = measured;
+    const { railTop, frontPageX, frontY, floorY, pin, viewportHeight, tiltRoom } = measured;
     const scrollY = window.scrollY;
     const stageTop = stickyTop(scrollY, railTop, pin);
     const frontPageY = stageTop + frontY;
@@ -345,19 +348,15 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     section.style.setProperty('--ring-origin-x', `${(document.documentElement.clientWidth / 2 - stageLeft).toFixed(2)}px`);
     section.style.setProperty('--ring-origin-y', `${(viewportHeight / 2 - (stageTop - scrollY)).toFixed(2)}px`);
 
-    // The page scrolls in whole pixels, so a reader resting on a card can sit a fraction of a
-    // pixel short of it (settleTarget's reasoning): within SETTLE_ON_CARD_PX is on it. Otherwise
-    // the pulse parks, lit, at the foot of the drop instead of flaring — at 1280×800 on every card.
-    const pinOffset = scrollY - railTop;
-    const nearest = nearestCard(pinOffset, viewportHeight);
-    const isOnCard = Math.abs(pinOffset - stepOffset(nearest, viewportHeight)) <= SETTLE_ON_CARD_PX;
-    const raw = isOnCard ? nearest : rawSteps(pinOffset, viewportHeight);
+    const raw = rawSteps(scrollY - railTop, viewportHeight);
     const steps = turnSteps(raw);
     const splitY = railTop + frontY;
     const arrived = arrival(tipFraction(signalTipY(), splitY, ARRIVAL_DRAW_VH * viewportHeight));
-    // Pointer high opens the ellipse, low closes it. Eased toward the target, and drawing again
-    // until it gets there; then it snaps, so it is exactly 0 once the pointer has gone.
-    const targetTilt = isPointerOverStage ? -(pointer.clientY / viewportHeight - 0.5) * 2 * POINTER_TILT_DEG : 0;
+    // Pointer high opens the ellipse (as far as the stage has room above the hoop), low closes
+    // it. Eased toward the target, and drawing again until it gets there; then it snaps, so it
+    // is exactly 0 once the pointer has gone.
+    const pointerTarget = isPointerOverStage ? -(pointer.clientY / viewportHeight - 0.5) * 2 * POINTER_TILT_DEG : 0;
+    const targetTilt = Math.min(tiltRoom, pointerTarget);
     pointerTilt += (targetTilt - pointerTilt) * POINTER_TILT_EASE;
     if (Math.abs(targetTilt - pointerTilt) > POINTER_TILT_SETTLED_DEG) markDirty();
     else pointerTilt = targetTilt;
@@ -373,10 +372,12 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
       card.style.opacity = opacity.toFixed(4);
       card.classList.toggle('card--inert', pose.isInert || arrived.cards < 0.3);
       card.classList.toggle('card--front', pose.isFront);
-      // The emission flares as the pulse lands on it (design §4), and is its own size otherwise.
-      const isFlaring = i === pulse.card && pulse.flare > 0;
+      // The front card's emission rests lit, handing over smoothly as the ring turns; the flare
+      // adds to it for a moment as the pulse lands (design §4). Its own size elsewhere.
+      const flare = i === pulse.card ? pulse.flare : 0;
+      const scale = 1 + FRONT_GROWTH * frontness(angleDeg) + FLARE_GROWTH * flare;
       const emit = emits[i];
-      if (emit) emit.style.transform = isFlaring ? `scale(${(1 + FLARE_GROWTH * pulse.flare).toFixed(3)})` : '';
+      if (emit) emit.style.transform = scale === 1 ? '' : `scale(${scale.toFixed(3)})`;
       return { angleDeg, opacity };
     });
 

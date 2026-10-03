@@ -154,6 +154,14 @@ export function cardAngle(card: number, steps: number): number {
   return tidyZero(wrapped === -180 ? 180 : wrapped);
 }
 
+/**
+ * How far card at `angleDeg` is the front one: 1 dead front, easing to 0 half a step round, so
+ * the lit front state hands over smoothly as the ring turns.
+ */
+export function frontness(angleDeg: number): number {
+  return 1 - smooth(Math.abs(angleDeg) / (STEP_DEG / 2));
+}
+
 export function cardPose(angleDeg: number): { opacity: number; isFront: boolean; isInert: boolean } {
   const away = Math.abs(angleDeg);
   const opacity = 1 - smooth((away - FADE_FULL_DEG) / (FADE_GONE_DEG - FADE_FULL_DEG));
@@ -271,6 +279,37 @@ export function hoopRiseAt(frontY: number, viewportHeight: number, radius: numbe
 }
 
 /**
+ * How far the pointer may add to the look-down, degrees, 0..`POINTER_TILT_DEG`: as far as the
+ * hoop's back still clears `STAGE_MARGIN_PX` from the stage top. The rise grows with the tilt,
+ * so a bisection finds it. A window with room to spare gets the full tilt; one where the layout
+ * already sits on the margin (a 560px card at 800 tall) gets none upward.
+ */
+export function pointerTiltRoom({
+  frontY,
+  viewportHeight,
+  radius,
+  distance,
+}: {
+  frontY: number;
+  viewportHeight: number;
+  radius: number;
+  distance: number;
+}): number {
+  const clears = (extra: number) =>
+    frontY - hoopRiseAt(frontY, viewportHeight, radius, RING_TILT_DEG + extra, distance) >= STAGE_MARGIN_PX - 1e-6;
+  if (clears(POINTER_TILT_DEG)) return POINTER_TILT_DEG;
+  if (!clears(0)) return 0;
+  let low = 0;
+  let high = POINTER_TILT_DEG;
+  for (let i = 0; i < 24; i++) {
+    const mid = (low + high) / 2;
+    if (clears(mid)) low = mid;
+    else high = mid;
+  }
+  return low;
+}
+
+/**
  * Where the front point sits in a one-viewport stage: the hoop, drops and cards centred as one
  * block, never closer than `STAGE_MARGIN_PX` to the top. `floorY` is in front space. `fits` is
  * false when the cards would run off the bottom — the rail stays (D12). The floor is
@@ -318,12 +357,15 @@ export function arrival(a: number): { hoop: number; drops: number; cards: number
 
 /**
  * The pulse for linear steps `raw`. During each turn a pulse leaves the front point along the
- * hoop toward the arriving card, meets it halfway through the step and rides it in; as the card
- * reaches the front it runs down the card's drop, and the emission flares when it lands — at
- * the dwell's centre. Before the first turn begins (card 0 was lit by the arrival) all quiet.
+ * hoop toward the arriving card, meets it halfway through the step and rides it in. As the card
+ * reaches the front (its dwell begins) the pulse runs down the drop, over the first quarter of
+ * the dwell; the emission flares as it lands and fades by the dwell's centre, where the settle
+ * rests. The flare is a moment, so every card rests the same — quiet. Before the first turn
+ * begins (card 0 was lit by the arrival) all quiet.
  */
 export function pulseAt(raw: number): { card: number; hoopDeg: number; hoopStrength: number; dropAt: number; flare: number } {
   const half = DWELL_SHARE / 2;
+  const quarter = DWELL_SHARE / 4;
   // The card the turn is bringing in: raw in (c − 1, c] belongs to card c.
   const arriving = Math.min(lastCard, Math.max(1, Math.ceil(raw)));
   // 0 as the pulse leaves the front point — the end of the previous card's dwell.
@@ -332,13 +374,13 @@ export function pulseAt(raw: number): { card: number; hoopDeg: number; hoopStren
   // Out along the hoop until it meets the card halfway through the step, then riding it in.
   const out = easeLine(unit(sinceLeft / (PULSE_MEETS - half)));
   const hoopDeg = hasLeft ? Math.max(0, cardAngle(arriving, turnSteps(raw)) * out) : 0;
-  const dropAt = unit((raw - (arriving - half)) / half);
-  // The flare belongs to the card whose dwell this is, and fades over the dwell's second half.
-  const landed = Math.round(raw);
-  const flare = landed >= 1 && raw >= landed ? 1 - unit((raw - landed) / half) : 0;
-  const isFlaringPastLanding = flare > 0 && raw > landed;
+  // Down the drop from the dwell's start to its first quarter, where the flare peaks.
+  const dropAt = unit((raw - (arriving - half)) / quarter);
+  // Measured back from the dwell's centre, so it is exactly 0 where the settle rests.
+  const hasLanded = raw >= arriving - quarter;
+  const flare = hasLanded ? unit((arriving - raw) / quarter) : 0;
   return {
-    card: isFlaringPastLanding ? landed : arriving,
+    card: arriving,
     hoopDeg,
     hoopStrength: hasLeft ? 1 - dropAt : 0,
     dropAt,

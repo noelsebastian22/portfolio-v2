@@ -141,7 +141,10 @@ end.
 
 Always on in 3D: the back half of the hoop dimmed by depth; the floor reflection; the emission
 glow; the pointer tilt (±3° about `x` only — a turn about `y` would take the front card off its
-pure translation — eased like the portrait's push, touch ignored).
+pure translation — and upward only as far as the hoop's back still clears `STAGE_MARGIN_PX`, so
+none upward where the layout already sits on the margin; eased like the portrait's push, touch
+ignored). The front card's emission rests lit (1.25×, glow 0.75) by its frontness; the flare is a
+moment on top, peaking as the pulse lands and gone by the dwell's centre, so every card rests the same.
 
 **Input.** Arrow keys move focus (unchanged). Focus on any card, by any key, scrolls to that card's
 dwell — "focus moves the ring". Dragging horizontally on the stage scrolls the page by the drag.
