@@ -47,12 +47,13 @@ face, and the weights only trade a skull for grain. A count or placement limit, 
   fades over the same ~400ms to a rest opacity of 0.4 instead of to 0. It carries the likeness
   (eyes, smile, beard); the particles carry the light, the drift, the push and the whole dissolve.
 - **D12 — the still erodes bottom-up in step with the particles.** A second mask layer on the
-  still, a feathered edge driven by the same `p`, hides it from the bottom up exactly as fast as
-  particles start leaving: `stillErosion(p) = clamp(p / (lastArrival − window))`, the share of
-  the still's height hidden from the bottom. The lowest particles leave at `p = 0`, the highest
-  at `p = lastArrival − window`, so where particles have gone the photograph has gone too — never
-  a half-faded photo hanging where its particles left. It is fully hidden before the line starts
-  to draw. Reversing the scroll restores it, because it is the same pure function of scroll.
+  still, a feathered edge driven by the same `p`, hides it from the bottom up where particles are
+  **halfway** along their travel: `stillErosion(p) = clamp((p − window/2) / (lastArrival − window))`,
+  the share of the still's height hidden from the bottom. Halfway, not just started (first look,
+  same day): eroding where particles had only begun to move uncovered the sparse particle layer
+  over the dark beard and mouth, and the skull came back mid-scroll. Where particles have visibly
+  gone the photograph has gone too — never a half-faded photo hanging where its particles left.
+  It is fully hidden at `p = lastArrival − window/2`, before the line starts to draw. Reversing the scroll restores it, because it is the same pure function of scroll.
 
 No GPU or bundle cost beyond a few lines: one CSS custom property written when its value
 changes. On every fallback path the still returns to full opacity with no mask, as before.
