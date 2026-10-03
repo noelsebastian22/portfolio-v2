@@ -176,6 +176,10 @@ const srcset = (urls: Record<string, string>) =>
           ))}
         </ul>
       </div>
+
+      {/* Where the line's hold below the split ends (anchors.ts, RING_HOLD_END_POINT): the
+          cards' bottom edge in the rail, the pin's end in 3D. */}
+      <span class="ring__hold-end" data-signal-hold="end" aria-hidden="true"></span>
     </div>
   </div>
 </section>
@@ -307,6 +311,12 @@ const srcset = (urls: Record<string, string>) =>
     /* So the last card can clear the viewport's edge rather than sit on it. */
     padding: 0 var(--s-5) 0 0;
     list-style: none;
+  }
+
+  /* Zero-height: only its top edge is read, as the curve's anchor. */
+  .ring__hold-end {
+    display: block;
+    height: 0;
   }
 
   /* ── A card ─────────────────────────────────────────────────────────────────────── */

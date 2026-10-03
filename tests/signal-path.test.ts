@@ -8,6 +8,8 @@ import {
   SPINE_FIRST_POINT,
   SPINE_LAST_POINT,
   DRAWN_FROM_T,
+  RING_HOLD_END_POINT,
+  RING_SPLIT_POINT,
 } from '../src/lib/signal/path';
 
 describe('sampleSignal', () => {
@@ -126,5 +128,19 @@ describe('the work spine', () => {
       checked++;
     }
     expect(checked).toBeGreaterThan(4000);
+  });
+});
+
+describe('the ring hold — RING_SPLIT_POINT to RING_HOLD_END_POINT', () => {
+  // Phase 12 (D7): while the 3D ring's stage is stuck, the hoop's front point is fixed in the
+  // viewport and the page scrolls past it, so the line must be exactly vertical through the
+  // whole pinned stretch — any bow walks the meeting point off the line.
+  it('is exactly x 0 at every sample between the two points', () => {
+    const samples = sampleSignalRange(controlPointT(RING_SPLIT_POINT), controlPointT(RING_HOLD_END_POINT), 2001);
+    for (const p of samples) expect(p.x).toBe(0);
+  });
+
+  it('ends on the last point that holds centre', () => {
+    expect(RING_HOLD_END_POINT).toBe(RING_SPLIT_POINT + 2);
   });
 });

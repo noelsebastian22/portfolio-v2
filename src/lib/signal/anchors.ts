@@ -17,6 +17,7 @@
  */
 
 import {
+  RING_HOLD_END_POINT,
   RING_SPLIT_POINT,
   SECTION_SPANS,
   SPINE_FIRST_POINT,
@@ -95,6 +96,9 @@ export function resolveSeamPixels(
  * - **The ring's split** (`RING_SPLIT_POINT`, control point 34). The arc reaches the
  *   centre there, and §6 has the line split into five at that point. It is pinned to the
  *   centre line of the ring rail's track, so the curve meets the track exactly.
+ * - **The ring's hold end** (`RING_HOLD_END_POINT`, control point 36). With the split, it
+ *   brackets the stretch the curve holds centre. In the rail it is the cards' bottom edge; in
+ *   the 3D ring (Phase 12) it is where the hoop's front point sits when the pin releases.
  *
  * In curve order. Each must sit strictly inside one section's span, which the module
  * checks at import.
@@ -112,6 +116,7 @@ export const IN_SECTION_ANCHORS: readonly InSectionAnchor[] = [
   { point: SPINE_FIRST_POINT, selector: '[data-signal-spine="start"]', edge: 'top' },
   { point: SPINE_LAST_POINT, selector: '[data-signal-spine="end"]', edge: 'bottom' },
   { point: RING_SPLIT_POINT, selector: '[data-signal-split]', edge: 'centre' },
+  { point: RING_HOLD_END_POINT, selector: '[data-signal-hold="end"]', edge: 'top' },
 ];
 
 /** The global `t` of every in-section anchor, in `IN_SECTION_ANCHORS` order. */
