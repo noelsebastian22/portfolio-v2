@@ -26,7 +26,7 @@ export interface TubeArrays {
   ringLengths: Float32Array;
 }
 
-type Vec3 = [number, number, number];
+export type Vec3 = [number, number, number];
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const scale = (a: Vec3, s: number): Vec3 => [a[0] * s, a[1] * s, a[2] * s];
@@ -42,17 +42,26 @@ const normalise = (a: Vec3): Vec3 => {
 /** `v` reflected in the plane through the origin with normal `n` (`nn` = n·n). */
 const reflect = (v: Vec3, n: Vec3, nn: number): Vec3 => sub(v, scale(n, (2 * dot(n, v)) / nn));
 
-export function buildTube(
-  geometry: SignalGeometry,
+export function buildTube(geometry: SignalGeometry, profile: TubeProfile, radiusScale = 1, radiusPad = 0): TubeArrays {
+  // Page px → world: x as is, y negated, on the page plane (camera.ts convention).
+  const centres: Vec3[] = geometry.points.map((p) => [p.x, -p.y, 0]);
+  return buildTubeFromCentres(centres, geometry.lengths, profile, radiusScale, radiusPad);
+}
+
+/**
+ * The same tube round any centres, in depth too — the Phase 12 ring's hoop and drops are built
+ * in their own space and placed by a matrix. Centres are taken as given: no flip.
+ */
+export function buildTubeFromCentres(
+  centres: readonly Vec3[],
+  lengths: readonly number[],
   profile: TubeProfile,
   radiusScale = 1,
   radiusPad = 0,
 ): TubeArrays {
-  const rings = geometry.points.length;
+  const rings = centres.length;
   const segments = profile.radialSegments;
   const radius = profile.radius * radiusScale + radiusPad;
-  // Page px → world: x as is, y negated, on the page plane (camera.ts convention).
-  const centres: Vec3[] = geometry.points.map((p) => [p.x, -p.y, 0]);
 
   const tangents: Vec3[] = centres.map((_, i) =>
     normalise(sub(centres[Math.min(i + 1, rings - 1)], centres[Math.max(i - 1, 0)])),
@@ -80,7 +89,7 @@ export function buildTube(
   const vertexCount = rings * segments;
   const positions = new Float32Array(vertexCount * 3);
   const normals = new Float32Array(vertexCount * 3);
-  const lengths = new Float32Array(vertexCount);
+  const vertexLengths = new Float32Array(vertexCount);
   const centreArray = new Float32Array(rings * 3);
 
   for (let i = 0; i < rings; i++) {
@@ -97,7 +106,7 @@ export function buildTube(
       const v = i * segments + j;
       positions.set([centres[i][0] + out[0] * radius, centres[i][1] + out[1] * radius, centres[i][2] + out[2] * radius], v * 3);
       normals.set(out, v * 3);
-      lengths[v] = geometry.lengths[i];
+      vertexLengths[v] = lengths[i];
     }
   }
 
@@ -116,7 +125,7 @@ export function buildTube(
     }
   }
 
-  return { positions, normals, lengths, indices, centres: centreArray, ringLengths: Float32Array.from(geometry.lengths) };
+  return { positions, normals, lengths: vertexLengths, indices, centres: centreArray, ringLengths: Float32Array.from(lengths) };
 }
 
 /** The tube's centre at `length` px along it — where the tip's cap sits. */

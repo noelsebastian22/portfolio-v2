@@ -26,6 +26,8 @@ import { PORTRAIT_SEED, samplePortrait } from './portrait-sample';
 import { readPortraitGrid } from './portrait-source';
 import { createPortraitTiers, PORTRAIT_COUNTS, type PortraitTiers } from './portrait-tier';
 import { createRenderSchedule } from './render-schedule';
+import { ringRadius } from './ring';
+import { createRingMesh, type RingMesh } from './ring-mesh';
 import { mountRingStage, type RingStage } from './ring-stage';
 import { hexToRgb } from './tube-mesh';
 
@@ -131,6 +133,7 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
 
   // The 3D ring (Phase 12) — null until mounted, and again after it is dropped.
   let ring: RingStage | null = null;
+  let ringMesh: RingMesh | null = null;
 
   /** Everything the portrait's uniforms need for this frame; called just before `render()`. */
   function updatePortrait(): void {
@@ -219,7 +222,11 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
         dropPortrait();
       }
       try {
-        ring?.update();
+        const frame = ring?.update() ?? null;
+        if (ringMesh) {
+          ringMesh.group.visible = frame !== null;
+          if (frame) ringMesh.setFrame(frame);
+        }
       } catch {
         dropRing();
       }
@@ -254,6 +261,11 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
   function dropRing(): void {
     ring?.unmount();
     ring = null;
+    if (ringMesh) {
+      scene.remove(ringMesh.group);
+      ringMesh.dispose();
+      ringMesh = null;
+    }
     schedule.markDirty();
   }
 
@@ -266,15 +278,54 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
         section,
         cameraDistance: () => cameraRig(viewport().width, viewport().height, 0, 0).distance,
         markDirty: () => schedule.markDirty(),
-        onDrop: () => {
-          ring = null;
-          schedule.markDirty();
-        },
+        // The stage has already unmounted itself (unmount is idempotent); this takes the mesh too.
+        onDrop: () => dropRing(),
       });
     } catch {
       ring = null;
     }
-    if (ring) onHandBack(() => dropRing());
+    if (!ring) return;
+    onHandBack(() => dropRing());
+
+    let mesh: RingMesh;
+    try {
+      const cardWidth = section.querySelector<HTMLElement>('.card')!.getBoundingClientRect().width;
+      mesh = createRingMesh(
+        {
+          signal: hexToRgb(tokens.getPropertyValue('--signal')),
+          ground: hexToRgb(tokens.getPropertyValue('--ground')),
+          type: hexToRgb(tokens.getPropertyValue('--type')),
+          shipped: hexToRgb(tokens.getPropertyValue('--shipped')),
+          radius: parseFloat(tokens.getPropertyValue('--signal-stroke')) / 2,
+        },
+        ringRadius(cardWidth),
+      );
+    } catch {
+      dropRing();
+      return;
+    }
+    ringMesh = mesh;
+    scene.add(mesh.group);
+    // Three logs a failed shader compile and draws nothing — it never throws — so without this
+    // a broken program would leave the cards hanging from nothing. Three checks a program on its
+    // first draw, and the ring is usually off screen now — culled, never drawn, never checked —
+    // so culling is off for this one render.
+    let ringFailed = false;
+    const setCulling = (isCulled: boolean) => mesh.group.traverse((object) => (object.frustumCulled = isCulled));
+    renderer.debug.onShaderError = () => {
+      ringFailed = true;
+    };
+    setCulling(false);
+    try {
+      render();
+    } catch {
+      ringFailed = true;
+    } finally {
+      renderer.debug.onShaderError = null;
+      setCulling(true);
+    }
+    if (ringFailed) dropRing();
+    else schedule.markDirty(); // the next draw places the meshes from a frame, or hides them
   }
 
   /**
