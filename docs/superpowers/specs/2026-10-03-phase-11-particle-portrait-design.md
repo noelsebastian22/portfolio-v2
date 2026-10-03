@@ -33,6 +33,30 @@ it to arrive. The face is now the **source** of the line, not its destination.
 | D10 | **A ~400ms fade** from the still to the particles, once, after load. | A dot face and a photograph never match pixel for pixel, so an instant swap pops. A state change like the preloader, not choreography — §7.4's rule is about how the page moves under scroll. |
 | D11 | **Count steps down before it falls back:** 40k → 20k → 10k → the existing one-way fallback. | The verification line in `BUILD-PLAN.md`: scale down rather than drop frames. The face gets softer before it is dropped. |
 
+## Revision R1 — 2026-10-03, after the first look
+
+**Found:** at 1:1 the 40k-particle face read as a skull. A brightness-weighted stipple leaves the
+dark features — the eyes behind the glasses, the beard — empty, and at ~600px those voids read as
+holes. Six offline variants of the weighting (gamma 0.8–1.5, a density floor of 0–1, an alpha
+floor of 0–0.35) all failed at 1:1: 40k random dots cannot carry eye-level detail across the
+face, and the weights only trade a skull for grain. A count or placement limit, not a constant.
+
+**Decided (Noel):**
+
+- **D10, revised — the still stays under the particles.** When the particles mount, the still
+  fades over the same ~400ms to a rest opacity of 0.4 instead of to 0. It carries the likeness
+  (eyes, smile, beard); the particles carry the light, the drift, the push and the whole dissolve.
+- **D12 — the still erodes bottom-up in step with the particles.** A second mask layer on the
+  still, a feathered edge driven by the same `p`, hides it from the bottom up exactly as fast as
+  particles start leaving: `stillErosion(p) = clamp(p / (lastArrival − window))`, the share of
+  the still's height hidden from the bottom. The lowest particles leave at `p = 0`, the highest
+  at `p = lastArrival − window`, so where particles have gone the photograph has gone too — never
+  a half-faded photo hanging where its particles left. It is fully hidden before the line starts
+  to draw. Reversing the scroll restores it, because it is the same pure function of scroll.
+
+No GPU or bundle cost beyond a few lines: one CSS custom property written when its value
+changes. On every fallback path the still returns to full opacity with no mask, as before.
+
 ## 3. Structure
 
 Everything is behind the Phase 10 gate and `import('./scene')`; base-path JS does not change.

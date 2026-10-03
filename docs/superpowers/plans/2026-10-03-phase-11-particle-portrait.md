@@ -1335,6 +1335,168 @@ gzip (+<delta>)."
 
 ---
 
+### Task 6b: The still stays under the particles (spec revision R1)
+
+Added after the first look: at 1:1 the particle face alone read as a skull (spec, Revision R1).
+The still stays under the particles at a rest opacity and erodes bottom-up in step with them.
+
+**Files:**
+- Modify: `src/lib/gfx/portrait-dissolve.ts` (add `stillErosion`)
+- Modify: `tests/gfx-portrait-dissolve.test.ts` (add its tests)
+- Modify: `src/components/Hero.astro` (the `.hero__face` rules)
+- Modify: `src/lib/gfx/scene.ts` (`portraitFrame`, `updatePortrait`, `mountPortrait`'s unmount)
+- Modify: `docs/superpowers/specs/2026-09-19-signal-path-design.md` §9.01 (one sentence)
+
+**Interfaces:**
+- Consumes: `DISSOLVE`, `particleProgress` (Task 3); `updatePortrait`, `portraitFrame`, `mountPortrait`, `unmountPortrait` in `scene.ts` (Task 6).
+- Produces: `export function stillErosion(progress: number): number` in `portrait-dissolve.ts`; the CSS custom property `--portrait-erosion` (unitless 0..1) on `#hero`, written only by `scene.ts`.
+
+- [ ] **Step 1: Write the failing tests**
+
+Add `stillErosion` to the import list at the top of `tests/gfx-portrait-dissolve.test.ts`, and append:
+
+```ts
+describe('stillErosion', () => {
+  it('hides nothing at rest and all of the still once the highest particles have left', () => {
+    expect(stillErosion(0)).toBe(0);
+    expect(stillErosion(DISSOLVE.lastArrival - DISSOLVE.window)).toBe(1);
+    expect(stillErosion(1)).toBe(1);
+  });
+
+  it('hides the still exactly where particles have started to leave, and nowhere else', () => {
+    for (const p of steps) {
+      // The still is hidden below this height (v runs down, 0 at the top).
+      const edge = 1 - stillErosion(p);
+      for (const homeV of [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]) {
+        const isBelowEdge = homeV > edge + 1e-9;
+        const isAboveEdge = homeV < edge - 1e-9;
+        if (isBelowEdge && p > 0) expect(particleProgress(homeV, p)).toBeGreaterThan(0);
+        if (isAboveEdge) expect(particleProgress(homeV, p)).toBe(0);
+      }
+    }
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `npx vitest run tests/gfx-portrait-dissolve.test.ts`
+Expected: FAIL — `stillErosion` is not exported.
+
+- [ ] **Step 3: Implement `stillErosion`**
+
+Append to `src/lib/gfx/portrait-dissolve.ts`:
+
+```ts
+/**
+ * How much of the still is hidden, from the bottom, at dissolve progress `p` (design R1, D12):
+ * the share of its height whose particles have started to leave. The lowest particles leave at
+ * `p = 0` and the highest at `lastArrival − window`, so the photograph is gone exactly where its
+ * particles are, and never hangs half-faded where they left.
+ */
+export function stillErosion(progress: number): number {
+  return clamp01(progress / (DISSOLVE.lastArrival - DISSOLVE.window));
+}
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `npx vitest run tests/gfx-portrait-dissolve.test.ts`
+Expected: PASS, 11 tests.
+
+- [ ] **Step 5: `Hero.astro` — rest opacity and the erosion mask**
+
+Move `transition: opacity 400ms ease-out;` into the existing `.hero__face` rule (the one with the radial `mask-image`), and delete the standalone `.hero__face { transition … }` rule Task 6 added. Replace the `.hero--particles .hero__face` rule and its comment with:
+
+```css
+  /* Phase 11 (design R1): with the particles drawn over it, the still drops to a rest opacity
+     rather than leaving — it carries the likeness 40k particles cannot — and a second mask
+     layer hides it from the bottom up exactly as fast as the particles leave (D12).
+     `--portrait-erosion` (0..1) is written by scene.ts; the gradient's 10% feather is why the
+     edge runs to 110%. Opacity and mask, not display: the box stays, because the particles are
+     placed on it. */
+  .hero--particles .hero__face {
+    opacity: 0.4;
+    -webkit-mask-image:
+      radial-gradient(farthest-side at 50% 45%, #000 86%, transparent 100%),
+      linear-gradient(
+        to top,
+        transparent calc(var(--portrait-erosion, 0) * 110% - 10%),
+        #000 calc(var(--portrait-erosion, 0) * 110%)
+      );
+    -webkit-mask-composite: source-in;
+    mask-image:
+      radial-gradient(farthest-side at 50% 45%, #000 86%, transparent 100%),
+      linear-gradient(
+        to top,
+        transparent calc(var(--portrait-erosion, 0) * 110% - 10%),
+        #000 calc(var(--portrait-erosion, 0) * 110%)
+      );
+    mask-composite: intersect;
+  }
+```
+
+In the file header, replace "`hero--particles` then fades it out." with "`hero--particles` then drops it to a rest opacity under them, and it erodes with them on scroll."
+
+- [ ] **Step 6: `scene.ts` — write the erosion**
+
+Add `stillErosion` to the `./portrait-dissolve` import. Add two fields to `portraitFrame`:
+
+```ts
+    /** The hero the erosion is written to — set by `mountPortrait`, cleared by its unmount. */
+    hero: null as HTMLElement | null,
+    /** The last `--portrait-erosion` written; a drift frame that changes nothing writes nothing. */
+    erosion: -1,
+```
+
+In `updatePortrait`, replace the line `portrait.setProgress(dissolveProgress(playheadY, restPlayheadY, start.y, heroHeight));` with:
+
+```ts
+    const progress = dissolveProgress(playheadY, restPlayheadY, start.y, heroHeight);
+    portrait.setProgress(progress);
+    const erosion = stillErosion(progress);
+    if (erosion !== portraitFrame.erosion && portraitFrame.hero) {
+      portraitFrame.erosion = erosion;
+      portraitFrame.hero.style.setProperty('--portrait-erosion', erosion.toFixed(4));
+    }
+```
+
+In `mountPortrait`, directly before `tiers = createPortraitTiers();`, add:
+
+```ts
+    portraitFrame.hero = hero;
+    portraitFrame.erosion = -1;
+```
+
+In `unmountPortrait`, after `hero.classList.remove('hero--particles');`, add:
+
+```ts
+      hero.style.removeProperty('--portrait-erosion');
+      portraitFrame.hero = null;
+```
+
+- [ ] **Step 7: Parent spec §9.01**
+
+In `docs/superpowers/specs/2026-09-19-signal-path-design.md` §9.01, replace "At rest they hold the face, drifting faintly, and the cursor pushes through them." with "At rest they hold the face over the still, which stays beneath them at reduced opacity to carry the likeness; they drift faintly, and the cursor pushes through them." and replace "On scroll the face dissolves from the bottom up into a stream" with "On scroll the face — particles and still together — dissolves from the bottom up into a stream".
+
+- [ ] **Step 8: Gates**
+
+Run: `npx vitest run && npx tsc --noEmit -p . && npm run build && npm run budget`
+Expected: 246 tests pass; tsc exits 0; build completes; base JS on `/` 63,157; record the enhanced chunk in the commit body.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add src/lib/gfx/portrait-dissolve.ts tests/gfx-portrait-dissolve.test.ts src/components/Hero.astro src/lib/gfx/scene.ts docs/superpowers/specs/2026-09-19-signal-path-design.md
+git commit -m "feat: the still stays under the particle portrait
+
+At 1:1 the particles alone read as a skull: 40k dots cannot carry the
+eyes or the beard. The still now rests at 0.4 under them and erodes
+bottom-up exactly as fast as they leave. Enhanced chunk: <n> gzip."
+```
+
+---
+
 ### Task 7: Verification and figures (controller, with Noel)
 
 Run by the controller, not an implementer subagent: it needs the browser, judgement and Noel.
