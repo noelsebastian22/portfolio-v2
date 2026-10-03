@@ -1250,3 +1250,25 @@ probe passes.
 
 **Verification:** Three.js appears in **no** initial chunk. Force each gate condition false
 in turn and confirm the 2D path renders with identical choreography.
+
+## Archive pass 2026-10-03 — Phase 11
+
+Phase Status note as it stood before the pass:
+
+| 11 | WebGL — particle portrait | **built — branch, awaiting final review** | `feat/phase-11-portrait`; cream still, 40k particles over it, revision R1. Noel approved the look 2026-10-03 |
+
+## PHASE 11 — WebGL: Particle Portrait
+
+**Deliverable:** ~40k GPU particles sampled from the portrait, assembling out of the line
+and dissolving back on scroll, with cursor displacement.
+
+**Files:** `src/lib/gfx/{portrait-sample,portrait-dissolve,portrait-tier,portrait-source,particles}.ts`,
+`scene.ts`, `Hero.astro`, `scripts/portrait.mjs` (cream re-bake). No baked sample data: the
+particles are sampled at runtime from the still (design D8).
+
+**Spec:** `docs/superpowers/specs/2026-10-03-phase-11-particle-portrait-design.md` ·
+**Plan:** `docs/superpowers/plans/2026-10-03-phase-11-particle-portrait.md`
+
+**Verification:** holds 60fps on a mid-range laptop. Falls back to the Phase 5 duotone still
+whenever the gate fails. Particle count scales down on weaker hardware rather than dropping
+frames.

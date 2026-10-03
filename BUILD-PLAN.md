@@ -79,7 +79,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired; Contact's form works with JS off |
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
 | 10 | WebGL — gate + signal tube | **complete — live 2026-10-03** | PR #1 (`0dfc45e`); tube over the 2D line, revision R1–R4. Section archived |
-| 11 | WebGL — particle portrait | **built — branch, awaiting final review** | `feat/phase-11-portrait`; cream still, 40k particles over it, revision R1. Noel approved the look 2026-10-03 |
+| 11 | WebGL — particle portrait | **complete — live 2026-10-03** | PR #2 (`cf91bd9`); cream still, particles over it (R1). Section archived |
 | 12 | WebGL — 3D ring | not started | |
 | 13 | Audio engine | not started | |
 | 14 | `/websites` restyle | not started | |
@@ -96,8 +96,8 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` **63,157 (77.1%)** (Phase 11 branch; +6 is Rollup exporting `playheadPageY` to the scene chunk) · live 63,151 | 2026-10-03 |
-| Enhanced WebGL chunk gzip | ≤ 256,000 | **135,768 (53.0%)** (Phase 11 branch, +3,492 for the portrait) · live 132,276; `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **63,156 (77.1%)** (Phase 11; +5 vs Phase 10 is Rollup exporting `playheadPageY` to the scene chunk) | 2026-10-03 |
+| Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,768 (53.0%)** (Phase 11, +3,492 for the portrait); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
@@ -126,6 +126,7 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Phase 10 · 2026-10-01 (branch) | 63,150 | 77.1% | 215 |
 | Phase 10 · 2026-10-03 (live, after the final-review fixes) | 63,151 | 77.1% | 222 |
 | Phase 11 · 2026-10-03 (branch) | 63,157 | 77.1% | 246 |
+| Phase 11 · 2026-10-03 (live) | 63,156 | 77.1% | 246 |
 
 ### How to measure
 
@@ -199,25 +200,9 @@ For the interfaces those phases produced, the code is the source of truth (`src/
 
 ---
 
-# PHASES 11–15 — Phase-Level Detail
+# PHASES 12–15 — Phase-Level Detail
 
 Expand the phase you are about to start into task-level steps before implementing it.
-
-## PHASE 11 — WebGL: Particle Portrait
-
-**Deliverable:** ~40k GPU particles sampled from the portrait, assembling out of the line
-and dissolving back on scroll, with cursor displacement.
-
-**Files:** `src/lib/gfx/{portrait-sample,portrait-dissolve,portrait-tier,portrait-source,particles}.ts`,
-`scene.ts`, `Hero.astro`, `scripts/portrait.mjs` (cream re-bake). No baked sample data: the
-particles are sampled at runtime from the still (design D8).
-
-**Spec:** `docs/superpowers/specs/2026-10-03-phase-11-particle-portrait-design.md` ·
-**Plan:** `docs/superpowers/plans/2026-10-03-phase-11-particle-portrait.md`
-
-**Verification:** holds 60fps on a mid-range laptop. Falls back to the Phase 5 duotone still
-whenever the gate fails. Particle count scales down on weaker hardware rather than dropping
-frames.
 
 ## PHASE 12 — WebGL: 3D Ring
 
@@ -582,6 +567,13 @@ decision was made; this section records *what it is*.
   face), and red means *live*. The particles read the still's own pixels after load instead of
   shipping baked sample data, which would cost ~100–150 KB gzip against a 250 KB chunk with
   132 KB used, and could drift from the still. Phase 11 design D2, D3, D8.
+- **2026-10-03 (Noel)** — **The still stays under the particle portrait.** At 1:1, 40k
+  brightness-weighted particles alone read as a skull: the dark features (eyes behind the glasses,
+  the beard) sample to voids, and no weighting fixed it — six offline variants all failed. The
+  still now rests at opacity 0.4 under the particles and erodes bottom-up where they are halfway
+  to the line (`stillErosion`, `portrait-dissolve.ts`). Chosen over more, smaller particles (≈3×
+  the GPU work, still grainy) and blue-noise placement (a sampler rewrite). Phase 11 design R1,
+  D10 revised, D12.
 
 ## Known Gaps
 
