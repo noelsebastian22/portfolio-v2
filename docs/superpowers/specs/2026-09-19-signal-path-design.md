@@ -494,6 +494,11 @@ ships as AVIF + WebP at 480w (1x) and 960w (2x), and its size is recorded in
 mismatched screenshots become one system. `/websites` keeps its plain-colour hero crops
 (§14).
 
+The hero still follows the same rule (Phase 11, D2): `--ground` to `--type`, cream, not red.
+Red mapped onto a face read as horror, and the still is also the particle portrait's only
+source — the particles are sampled from its pixels at runtime and earn their red only as they
+join the line.
+
 **No video.** It is the heaviest thing that can go on a page and the entire pitch is
 performance; a recruiter can click through to five live sites instead. The hover-scroll
 trick on the ring cards covers the motion need at no additional asset cost.

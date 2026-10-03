@@ -207,7 +207,12 @@ Expand the phase you are about to start into task-level steps before implementin
 **Deliverable:** ~40k GPU particles sampled from the portrait, assembling out of the line
 and dissolving back on scroll, with cursor displacement.
 
-**Files:** `src/lib/gfx/particles.ts`, `scripts/portrait.mjs` (extended to emit sample data)
+**Files:** `src/lib/gfx/{portrait-sample,portrait-dissolve,portrait-tier,portrait-source,particles}.ts`,
+`scene.ts`, `Hero.astro`, `scripts/portrait.mjs` (cream re-bake). No baked sample data: the
+particles are sampled at runtime from the still (design D8).
+
+**Spec:** `docs/superpowers/specs/2026-10-03-phase-11-particle-portrait-design.md` ·
+**Plan:** `docs/superpowers/plans/2026-10-03-phase-11-particle-portrait.md`
 
 **Verification:** holds 60fps on a mid-range laptop. Falls back to the Phase 5 duotone still
 whenever the gate fails. Particle count scales down on weaker hardware rather than dropping
@@ -570,6 +575,12 @@ decision was made; this section records *what it is*.
   other fallbacks: the canvas is inserted only after `new WebGLRenderer` succeeds.
 - **2026-10-01 (Noel)** — **R3 re-confirmed:** the 2D line keeps its dim rule; the tube is full
   strength. Phones get 2D, where the whole line runs behind copy.
+- **2026-10-03 (Noel)** — **The portrait is cream, and the particles are sampled from it at
+  runtime.** The still is re-baked `--ground → --type` with a tighter key light: the red
+  duotone read as horror (every midtone red, no highlight above red, the arch as bright as the
+  face), and red means *live*. The particles read the still's own pixels after load instead of
+  shipping baked sample data, which would cost ~100–150 KB gzip against a 250 KB chunk with
+  132 KB used, and could drift from the still. Phase 11 design D2, D3, D8.
 
 ## Known Gaps
 
