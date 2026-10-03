@@ -115,8 +115,8 @@ the delta recorded (estimate +3–5 KB), and base JS on `/` is byte-identical.
 **Browser:** at 1440, 1280 and 900 — the rest-state face sits on the still's box and the fade
 shifts nothing; the stream clears the H1 and the CTAs; the line continues from the convergence
 point; scrolling up rebuilds the face. `?signal=2d` and reduced motion show the cream still with
-no canvas work. A forced step-down thins the face evenly. Preview LCP is no worse than the
-1,988ms median, because the still remains the LCP element and nothing changes before `load`.
+no canvas work. A forced step-down thins the face evenly. Preview LCP is no worse than `master`'s,
+measured interleaved as Phase 10 did (its branch median was 2,175ms), because the still remains the LCP element and nothing changes before `load`.
 
 **Checkpoint (Noel):** the likeness and feel at rest; the dissolve's pace and order; the drift and
 push amounts; the Phase 10 60Hz check (5s+ trackpad scroll over the hero, no
