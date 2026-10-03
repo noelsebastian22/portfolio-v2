@@ -78,7 +78,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2. The split is a track the curve is pinned to; Gallery retired |
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired; Contact's form works with JS off |
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
-| 10 | WebGL — gate + signal tube | **in progress** | Tasks 1–9 + final-review fixes on `feat/phase-10-webgl` (not merged); owed: Noel's 60Hz check, then merge |
+| 10 | WebGL — gate + signal tube | **complete — live 2026-10-03** | PR #1 (`0dfc45e`); tube over the 2D line, revision R1–R4. Section archived |
 | 11 | WebGL — particle portrait | not started | |
 | 12 | WebGL — 3D ring | not started | |
 | 13 | Audio engine | not started | |
@@ -96,12 +96,12 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **61,772 (75.4%)** · Phase 10 branch 63,150 (77.1%) | 2026-10-01 |
-| Enhanced WebGL chunk gzip | ≤ 256,000 | Phase 10 branch **132,088 (51.6%)**; `npm run budget` gates it and fails if Three.js reaches an initial chunk | 2026-10-01 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **63,151 (77.1%)** (Phase 10) | 2026-10-03 |
+| Enhanced WebGL chunk gzip | ≤ 256,000 | live **132,276 (51.7%)**; `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 173 live · 215 on the Phase 10 branch | 2026-10-01 |
+| Tests | — | 222 | 2026-10-03 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -124,6 +124,7 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Task 9.8 · 2026-09-29 (live) | 61,490 | 75.1% | 155 |
 | Curve cleanup · 2026-09-30 (live) | 61,772 | 75.4% | 173 |
 | Phase 10 · 2026-10-01 (branch) | 63,150 | 77.1% | 215 |
+| Phase 10 · 2026-10-03 (live, after the final-review fixes) | 63,151 | 77.1% | 222 |
 
 ### How to measure
 
@@ -197,39 +198,9 @@ For the interfaces those phases produced, the code is the source of truth (`src/
 
 ---
 
-# PHASES 10–15 — Phase-Level Detail
+# PHASES 11–15 — Phase-Level Detail
 
 Expand the phase you are about to start into task-level steps before implementing it.
-
-## PHASE 10 — WebGL: Gate + Signal Tube
-
-**Deliverable:** the capability gate, and `TubeSignal` reading the **same**
-`sampleSignalRange` output as the SVG renderer.
-
-**Design:** `docs/superpowers/specs/2026-09-30-phase-10-webgl-tube-design.md` — overlay on the
-running SVG, custom mesh (not `TubeGeometry`), shader glow. Its original "real depth in the
-hero" was **revised 2026-09-30 after Noel's first look** (plan Task 9, built): the line starts at the
-hero's bottom edge in both renderers, `--signal-stroke` is 8px, the tube is full strength
-with no dim rule and flat on the page everywhere, and the hero depth code and the crossfade are
-gone. Plan:
-`docs/superpowers/plans/2026-09-30-phase-10-webgl-tube.md`; ledger in `.superpowers/sdd/`.
-
-**Files:** `src/lib/gfx/gate.ts`, `src/lib/gfx/scene.ts`, `src/lib/gfx/render-schedule.ts`,
-`src/lib/gfx/tube-mesh.ts`, `src/lib/gfx/camera.ts`, `src/lib/signal/tube-signal.ts`; `svg-signal.ts` and `tip.ts` gain the
-geometry channel.
-
-```ts
-export interface Capability { enabled: boolean; reason?: string; }
-export function checkCapability(): Capability;
-export async function loadEnhanced(): Promise<void>;   // dynamic import boundary
-```
-
-Gate conditions, all required (spec §12): `prefers-reduced-motion: no-preference`, viewport
-≥ 900px, `saveData !== true`, `hardwareConcurrency >= 4`, WebGL2 available, frame-budget
-probe passes.
-
-**Verification:** Three.js appears in **no** initial chunk. Force each gate condition false
-in turn and confirm the 2D path renders with identical choreography.
 
 ## PHASE 11 — WebGL: Particle Portrait
 

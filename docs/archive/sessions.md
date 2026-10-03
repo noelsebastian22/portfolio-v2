@@ -5,6 +5,27 @@ bottom; never edit one. If an old entry turned out wrong, say so in a new live e
 
 <!-- archived, newest first -->
 
+## 2026-09-29 · claude-code · Handoff docs trimmed
+
+**Did**
+- Archive pass: `BUILD-PLAN.md` 129 KB → 47 KB, `docs/SESSIONS.md` 49 KB → 11 KB. Phases 0–9 detail, the per-phase "Measured after" snapshots and 24 closed Known Gaps moved verbatim to `docs/archive/plan-phases.md` and `plan-closed-gaps.md`; entries before 2026-09-27 to `docs/archive/sessions.md`.
+- `BUILD-PLAN.md` now has "Current figures", a "Measurement history" table, "Carried forward" for Phases 0–9, and Known Gaps grouped by kind. Two gaps still marked open were already fixed — the gutter (Task 6.1, `tokens.css`) and the gallery double-encode (Task 7.1, `695dc79`) — checked in code, archived with a closing line.
+- `session-handoff` split into `SKILL.md` (start) and `end.md`, plus `check.mjs` (`start`, `facts`, `lint`, `verify`). End mode reads JS from `npm run budget`, not a `dist/*.js` sum.
+- `check.mjs verify` against `3b9f412`: every line of the old docs is still present, live or archived. A deliberate one-line deletion was caught in a dry run.
+
+**Decided**
+- One fact, one place; `docs/archive/` is append-only and moves are verbatim (BUILD-PLAN → Decisions, 2026-09-29).
+
+**Open**
+- The final-review minors the last entry deferred are now a Known Gap ("Final-review minors, deferred").
+- Resolved in-session (Noel): `.agents/skills/session-handoff/` and the `.claude/skills/session-handoff` symlink are now tracked; the original `SKILL.md` is in `626c471`, the rework in `5c7d4e1`.
+- `feat/signal-path-rebuild` and `master` are at the same commit; decide which branch Phase 10 works from.
+
+**Next**
+After 1 Oct, work the Known Gap "Confirm the first scheduled rebuild". Then brainstorm Phase 10 (WebGL gate + signal tube) on a new branch off `master`.
+
+**Numbers** — build green (3 pages) · 155 tests · JS on `/` 61,490 gzip (±0, docs only)
+
 ## 2026-09-29 · claude-code · Phase 9 shipped live
 
 **Did**

@@ -9,6 +9,22 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-03 · claude-code · Phase 10 merged
+
+**Did**
+- Noel passed the 60Hz check (5s+ trackpad scroll: tube stays, no `signal-tube-fallback` key).
+- PR #1 opened and merged by Noel (`0dfc45e`); production serves the gate in the `BaseLayout` script.
+- Phase 10 marked complete; its section moved verbatim to `docs/archive/plan-phases.md`; figures now read live.
+- SDD workspace for the Phase 10 plan deleted; the local branch removed.
+
+**Open**
+- nothing open beyond Known Gaps (Phase 10's parked minors, the AA cost over the tube, LCP headroom).
+
+**Next**
+Start Phase 11 (particle portrait) with superpowers:brainstorming: it must settle the parent spec §8 holding note — the hero now has no line to "arrive" and "resolve into the face". Or the Stack rework brainstorm Noel asked for, if he prefers.
+
+**Numbers** — build green · 222 tests · JS on `/` live 63,151 gzip (+1,379 vs 61,772) · enhanced chunk 132,276 gzip (51.7%)
+
 ## 2026-10-03 · claude-code · Phase 10 revision and review
 
 **Did**
@@ -61,24 +77,3 @@ Noel checks on a 60Hz display (5s+ trackpad scroll on `/`: tube stays, no fallba
 Execute plan Task 9 (`docs/superpowers/plans/2026-09-30-phase-10-webgl-tube.md`; ledger `.superpowers/sdd/2026-09-30-phase-10-webgl-tube/progress.md`), then show Noel `/` and `?signal=2d` in a real browser (headless here has no WebGL2), then Task 8's figures and a final review before merging. After 1 Oct, the scheduled-rebuild gap.
 
 **Numbers** — build green · 222 tests on branch (173 live) · JS on `/` live 61,772 (+282), branch 63,269 (+1,497) · enhanced chunk 132,559 gzip (51.8%) · Lighthouse 98
-
-## 2026-09-29 · claude-code · Handoff docs trimmed
-
-**Did**
-- Archive pass: `BUILD-PLAN.md` 129 KB → 47 KB, `docs/SESSIONS.md` 49 KB → 11 KB. Phases 0–9 detail, the per-phase "Measured after" snapshots and 24 closed Known Gaps moved verbatim to `docs/archive/plan-phases.md` and `plan-closed-gaps.md`; entries before 2026-09-27 to `docs/archive/sessions.md`.
-- `BUILD-PLAN.md` now has "Current figures", a "Measurement history" table, "Carried forward" for Phases 0–9, and Known Gaps grouped by kind. Two gaps still marked open were already fixed — the gutter (Task 6.1, `tokens.css`) and the gallery double-encode (Task 7.1, `695dc79`) — checked in code, archived with a closing line.
-- `session-handoff` split into `SKILL.md` (start) and `end.md`, plus `check.mjs` (`start`, `facts`, `lint`, `verify`). End mode reads JS from `npm run budget`, not a `dist/*.js` sum.
-- `check.mjs verify` against `3b9f412`: every line of the old docs is still present, live or archived. A deliberate one-line deletion was caught in a dry run.
-
-**Decided**
-- One fact, one place; `docs/archive/` is append-only and moves are verbatim (BUILD-PLAN → Decisions, 2026-09-29).
-
-**Open**
-- The final-review minors the last entry deferred are now a Known Gap ("Final-review minors, deferred").
-- Resolved in-session (Noel): `.agents/skills/session-handoff/` and the `.claude/skills/session-handoff` symlink are now tracked; the original `SKILL.md` is in `626c471`, the rework in `5c7d4e1`.
-- `feat/signal-path-rebuild` and `master` are at the same commit; decide which branch Phase 10 works from.
-
-**Next**
-After 1 Oct, work the Known Gap "Confirm the first scheduled rebuild". Then brainstorm Phase 10 (WebGL gate + signal tube) on a new branch off `master`.
-
-**Numbers** — build green (3 pages) · 155 tests · JS on `/` 61,490 gzip (±0, docs only)

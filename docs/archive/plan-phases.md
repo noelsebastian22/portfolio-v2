@@ -1212,3 +1212,41 @@ M5, the hero clock's per-second tick, as Noel's design call.
   the URL. Contact's freelance line points at the form instead of the page. Found in the final
   review's re-check: without Tailwind, `/websites` renders essentially unstyled, and merging would
   have replaced production's working page (Decisions, 2026-09-27).
+
+---
+
+## Archive pass 2026-10-03 — Phase 10
+
+Phase Status note as it stood before the pass:
+
+| 10 | WebGL — gate + signal tube | **in progress** | Tasks 1–9 + final-review fixes on `feat/phase-10-webgl` (not merged); owed: Noel's 60Hz check, then merge |
+
+## PHASE 10 — WebGL: Gate + Signal Tube
+
+**Deliverable:** the capability gate, and `TubeSignal` reading the **same**
+`sampleSignalRange` output as the SVG renderer.
+
+**Design:** `docs/superpowers/specs/2026-09-30-phase-10-webgl-tube-design.md` — overlay on the
+running SVG, custom mesh (not `TubeGeometry`), shader glow. Its original "real depth in the
+hero" was **revised 2026-09-30 after Noel's first look** (plan Task 9, built): the line starts at the
+hero's bottom edge in both renderers, `--signal-stroke` is 8px, the tube is full strength
+with no dim rule and flat on the page everywhere, and the hero depth code and the crossfade are
+gone. Plan:
+`docs/superpowers/plans/2026-09-30-phase-10-webgl-tube.md`; ledger in `.superpowers/sdd/`.
+
+**Files:** `src/lib/gfx/gate.ts`, `src/lib/gfx/scene.ts`, `src/lib/gfx/render-schedule.ts`,
+`src/lib/gfx/tube-mesh.ts`, `src/lib/gfx/camera.ts`, `src/lib/signal/tube-signal.ts`; `svg-signal.ts` and `tip.ts` gain the
+geometry channel.
+
+```ts
+export interface Capability { enabled: boolean; reason?: string; }
+export function checkCapability(): Capability;
+export async function loadEnhanced(): Promise<void>;   // dynamic import boundary
+```
+
+Gate conditions, all required (spec §12): `prefers-reduced-motion: no-preference`, viewport
+≥ 900px, `saveData !== true`, `hardwareConcurrency >= 4`, WebGL2 available, frame-budget
+probe passes.
+
+**Verification:** Three.js appears in **no** initial chunk. Force each gate condition false
+in turn and confirm the 2D path renders with identical choreography.
