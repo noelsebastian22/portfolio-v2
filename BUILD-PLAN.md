@@ -78,7 +78,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2. The split is a track the curve is pinned to; Gallery retired |
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired; Contact's form works with JS off |
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
-| 10 | WebGL — gate + signal tube | **in progress** | Tasks 1–7 built on `feat/phase-10-webgl` (not merged); Task 9 revision planned, then Noel's checkpoint |
+| 10 | WebGL — gate + signal tube | **in progress** | Tasks 1–9 + final-review fixes on `feat/phase-10-webgl` (not merged); owed: Noel's 60Hz check, then merge |
 | 11 | WebGL — particle portrait | not started | |
 | 12 | WebGL — 3D ring | not started | |
 | 13 | Audio engine | not started | |
@@ -591,6 +591,14 @@ decision was made; this section records *what it is*.
   the Nine Years seam), `--signal-stroke` 8px, the tube full strength with no dim rule (the 2D line
   keeps it for phones), the tube flat everywhere so the swap is instant. Reason: a line hovering
   mid-hero at first load read as a phantom. The AA cost is accepted for now (Known Gaps).
+- **2026-10-01** — **The tube draws in the scroll driver's own tick, only when dirty**
+  (`render-schedule.ts`, design D6). A `requestAnimationFrame` booked from inside `gsap.ticker` can
+  only fire next frame, and under Lenis drew every other frame; the watchdog read 33ms at 60Hz
+  as a slow GPU and retired the tube (final review C1). Every change source only marks dirty.
+- **2026-10-01** — **A renderer that will not start is remembered for the session**, like the
+  other fallbacks: the canvas is inserted only after `new WebGLRenderer` succeeds.
+- **2026-10-01 (Noel)** — **R3 re-confirmed:** the 2D line keeps its dim rule; the tube is full
+  strength. Phones get 2D, where the whole line runs behind copy.
 
 ## Known Gaps
 
@@ -602,8 +610,6 @@ marked RESOLVED.
 
 - **Served CV is still the March PDF** (`public/noel-sebastian.pdf`); replace with a text-based
   export of the September resume. VoiceOver pass still owed (checklist in `task-9.5-report.md`).
-- **Confirm the first scheduled rebuild.** `VERCEL_DEPLOY_HOOK` is set (closed gap archived);
-  after the 1 Oct 00:00 UTC run, check it succeeded in Actions and the live copy says "a decade".
 
 ### Performance
 
@@ -614,6 +620,7 @@ marked RESOLVED.
   2026-09-30: preview ×3 now reads 2,263ms on both `master` and the Phase 10 branch, measured
   interleaved, so the rise is the measuring environment, not code — but as measured, LCP is over
   budget on the live build. Re-measure on production before acting.
+  2026-10-01: Phase 10 branch after Task 9, preview ×3 2,220 / 2,174 / 2,175ms.
 - The site has no automated performance regression check. Phase 9 establishes the numbers
   manually; consider a Lighthouse CI step afterwards.
 
@@ -675,7 +682,26 @@ before then.
   by the 2026-09-30 curvature scan and present before the curve cleanup. Left for the Stack
   rework, together with the node pattern above.
 
+### Parked by the Phase 10 final review — 2026-10-01 (not blocking merge)
+
+- **Any fallback is remembered for the session, not only a slow GPU.** `scene.ts` `fallBack`
+  sets the session flag for a narrow viewport or reduced motion too, though the gate re-checks
+  both on every load. Narrowing the window below 900px, widening it and reloading stays 2D until
+  the tab closes. Remembering only the watchdog, context loss and a probe `fail` is Noel's call.
+- **The tube's start is square; the SVG's is round.** Only the tip has a cap sphere
+  (`tube-signal.ts`), so at the Nine Years seam the tube ends 4px short and flat. Fix: a static
+  cap at `pointAtLength(core, 0)`.
+- **`hexToRgb` assumes `#RRGGBB`** (`tube-mesh.ts`). A shorthand, `rgb()` or `oklch()` value for
+  `--signal` would silently give the tube a wrong colour.
+- **The emission dots and the Stack's nodes were sized beside a 4px line.** The stroke is 8px
+  since Task 9; check them at Noel's next look.
+
 ### Standing notes — limits and gotchas, not bugs
+
+- **The tube draws after Lenis only by load order.** `render-schedule.ts` hooks `gsap.ticker`,
+  which runs listeners in the order added; `initScroll()` registers Lenis's at page load and
+  `scene.ts` is imported after `load` + idle. A later phase that adds a scroll-publishing ticker
+  listener after the scene loads would be drawn one frame late.
 
 - **The `/websites` redirect is only verifiable on a Vercel deployment** (`astro preview`
   ignores `vercel.json`). Verified on preview and production 2026-09-29.

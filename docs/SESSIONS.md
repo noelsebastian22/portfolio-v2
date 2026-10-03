@@ -9,6 +9,31 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-03 · claude-code · Phase 10 revision and review
+
+**Did**
+- Plan Task 9 built (`d1c0e6a`): both renderers start at `DRAWN_FROM_T` (Nine Years seam), `--signal-stroke` 8px, tube full strength and flat, instant swap; hero depth code, `strengthAt` and the crossfade removed. Noel checked the tube in a browser: approved.
+- Task 8 figures recorded (`7de4959`). Final whole-branch review (Opus): 1 Critical, 1 Important, 13 Minor.
+- Fix wave (`6123376..f9af4fe`): new `render-schedule.ts` draws in the `gsap.ticker` tick; probe checks `canvas.isConnected` after every await; zoom pixel ratio, `forceContextLoss`, guarded listeners, `npm run budget` fails with no Three chunk; stale comments and both specs corrected. Re-reviewed inline: clean.
+- Scheduled rebuild confirmed (gap archived): run fired 1 Oct 05:22 UTC, live copy reads "a decade".
+
+**Decided**
+- The tube draws in the scroll driver's tick, only when dirty (BUILD-PLAN → Decisions, 2026-10-01).
+- A renderer that will not start is remembered for the session.
+- R3 re-confirmed by Noel: the 2D line keeps its dim rule.
+
+**Didn't work**
+- Booking `requestAnimationFrame` from tip/progress listeners: they run inside GSAP's ticker (a rAF callback), so the render lands next frame and GSAP's next tick finds it pending — the tube drew every other frame (headless: 28 draws in 59 frames; after the fix 50 in 53). At 60Hz that is ~33ms, over the watchdog's 25ms median, so the tube retired itself after ~2s of scrolling. Noel's display likely hid it.
+
+**Open**
+- **Parked by the Phase 10 final review** (Known Gaps): session-wide fallback memory, square tube start, `hexToRgb` format, dot/node sizing beside 8px.
+- **The tube draws after Lenis only by load order** (Known Gaps → Standing notes).
+
+**Next**
+Noel checks on a 60Hz display (5s+ trackpad scroll on `/`: tube stays, no fallback key in Session Storage). If it passes, finish `feat/phase-10-webgl` (superpowers:finishing-a-development-branch → merge to `master`), then delete `.superpowers/sdd/2026-09-30-phase-10-webgl-tube/`.
+
+**Numbers** — build green · 222 tests on branch (173 live) · JS on `/` live 61,772, branch 63,151 (−118 vs last entry) · enhanced chunk 132,276 gzip (51.7%, −283) · Lighthouse preview 98/99/99, LCP 2,175 median
+
 ## 2026-09-30 · claude-code · Curve cleanup, Phase 10 tube
 
 **Did**
@@ -57,38 +82,3 @@ Execute plan Task 9 (`docs/superpowers/plans/2026-09-30-phase-10-webgl-tube.md`;
 After 1 Oct, work the Known Gap "Confirm the first scheduled rebuild". Then brainstorm Phase 10 (WebGL gate + signal tube) on a new branch off `master`.
 
 **Numbers** — build green (3 pages) · 155 tests · JS on `/` 61,490 gzip (±0, docs only)
-
-## 2026-09-29 · claude-code · Phase 9 shipped live
-
-**Did**
-- Pushed the branch and verified the preview with `x-vercel-protection-bypass` (secret in `.env.local`, gitignored). Pages, 404, OG PNG, PDF, form `action` fine; `/websites/` (trailing slash) returned 200.
-- Lighthouse ×3 on preview: LCP median 2,500ms (`p.hero__lede`, all render delay, no JS reveal) → applied the recorded font ruling.
-- Task 9.8 (subagent, reviewed inline): `scripts/fonts.mjs` + `npm run fonts` (`subset-font` devDep), masters in `font-masters/`. Archivo 90,104 → 57,188 B, JetBrains Mono 40,404 → 38,472 B. `tokens.css` `font-stretch: 100% 125%`. `vercel.json` gets an explicit `/websites/` source.
-- Re-verified preview: all three `/websites` forms 307; Lighthouse Perf 94/99/99, A11y 100, **LCP 1,988ms median** (2,645 / 1,941 / 1,988).
-- Tagged `v1-letterpress` on `6a4bac7` (pushed); fast-forwarded `master` to `c2b0e46` and pushed. Production smoke check passed; Lighthouse ×1 on live: Perf 97, A11y/BP/SEO 100, LCP 2,165.
-- Noel created the Vercel Deploy Hook and `VERCEL_DEPLOY_HOOK` secret; a manual `workflow_dispatch` got Vercel's `PENDING` job back.
-- Build green (3 pages), 155 tests, JS on `/` **61,490 gzip unchanged** (75.1%). `dist/` 3.8 MB.
-
-**Decided**
-- Noel: CV PDF swap and VoiceOver pass are post-launch, not merge blockers.
-- Archivo `wdth` narrowed to 100–125 (the only widths set); the script guards it. JetBrains Mono keeps `calt`.
-- Rollback = Vercel Instant Rollback to the `6a4bac7` deployment; code at tag `v1-letterpress`.
-
-**Didn't work**
-- Subsetting codepoints alone saves ~4%: the originals were already Google's Latin subset. The size is in the variable-axis data.
-- `/websites/:path*` does not match `/websites/` on Vercel; it needs its own source.
-- Lighthouse's `robots-txt` audit fetches without the bypass header, so previews always score SEO 61 (plus Vercel's preview `x-robots-tag: noindex`). Ignore SEO on previews.
-- Vercel's "Add Connection → Anthropic" is Vercel calling Claude, not an agent route into Vercel. Deploy-hook deploys don't create GitHub deployment records, so `gh api …/deployments` can't confirm them.
-- Python `fontTools` here has no `brotli`, so it can't read WOFF2.
-
-**Open**
-- LCP has almost no headroom (1,988 median; single runs 2,165–2,645). Next lever: drop the JetBrains Mono preload.
-- The `→` in "Bundle size, 100% → 40%" falls back (no U+2192 in either face); allowlisted. Consider "to".
-- Noel: September CV PDF, VoiceOver pass. Confirm the 1 Oct scheduled run flips the copy to "a decade".
-- Deferred minors from the last entry still stand (comment nits, sitemap domain, M5 clock tick).
-- `feat/signal-path-rebuild` and `master` are at the same commit; decide which branch Phase 10 works from.
-
-**Next**
-After 1 Oct, check the live site says "a decade" and the scheduled run succeeded in Actions. Then brainstorm Phase 10 (WebGL gate + signal tube) on a new branch off `master`.
-
-**Touched** — `scripts/fonts.mjs`, `font-masters/`, `public/fonts/*.woff2`, `src/styles/tokens.css`, `vercel.json`, `package.json`, `package-lock.json`, `BUILD-PLAN.md`, `.superpowers/sdd/BUILD-PLAN/task-9.8-brief.md`

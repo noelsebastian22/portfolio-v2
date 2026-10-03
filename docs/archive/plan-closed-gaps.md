@@ -338,3 +338,9 @@ gaps at the bottom under a dated heading, with a line saying what closed them. N
   an uneven, dirty line rather than as attachment points. Straightening them is a `path.ts` edit.
   Re-run the continuity and chord tests, and re-check the branch origins in `work.ts`, which
   read the curve's `x`.
+
+## Closed 2026-10-03
+
+- **CLOSED 2026-10-03 — the scheduled run fired 2026-10-01 05:22 UTC (Actions run 36819490932, success; GitHub ran it ~5h late) and the live copy reads "a decade".** Original:
+- **Confirm the first scheduled rebuild.** `VERCEL_DEPLOY_HOOK` is set (closed gap archived);
+  after the 1 Oct 00:00 UTC run, check it succeeded in Actions and the live copy says "a decade".
