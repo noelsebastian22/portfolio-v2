@@ -138,8 +138,9 @@ control points. Both renderers consume it:
 
 - `SvgSignal` — renders it as an SVG `<path>`, revealed by animating `stroke-dashoffset`
   against scroll progress.
-- `TubeSignal` — renders it as a Three.js `TubeGeometry` extruded along the same curve,
-  with bloom.
+- `TubeSignal` — renders it as a Three.js tube extruded through the same sampled points the
+  SVG draws, with a glow; flat on the page, full strength, one weight (Phase 10 design,
+  revision 2026-09-30).
 
 Because both read the same source, the 2D fallback and the WebGL version have **identical
 choreography** — not a degraded approximation. This is what makes the fast path honest.
@@ -149,7 +150,7 @@ choreography** — not a degraded approximation. This is what makes the fast pat
 | Section | The line does this |
 |---|---|
 | Preloader | Draws in from nothing, one stroke, against pure black |
-| Hero | A 3D tube entering from deep Z, banking as it passes through the headline |
+| Hero | No line: the signal begins at the hero's bottom edge (Phase 10 revision, 2026-09-30) |
 | Nine Years | Flattens to near-2D, runs horizontally, emissions ticking past |
 | Selected Work | Runs down the left margin, branching right into each case study on entry |
 | The Ring | **Splits** — one line becomes five, each terminating on a card |
@@ -299,12 +300,15 @@ and Figma Code Connect, shortening design-to-code. `content.ts` does not mention
 anywhere, and in 2026 it is the single most differentiating thing on the resume. It should
 not be buried in a skills list.
 
-**Visual:** the **particle portrait** plus the signal tube entering from deep Z.
+**Visual:** the **particle portrait**; the signal begins below the hero.
 
 The 3960×3960 portrait is sampled into approximately 40,000 GPU particles which are the
 same particle system as the line's emissions. On load the line arrives, then resolves into
 the face. On scroll the face dissolves back into the line, which continues down the page.
 The cursor pushes through the particle field.
+
+*Holding note (Phase 10 revision R1):* the line now begins at the hero's bottom edge, so
+there is no line in the hero to arrive or resolve; Phase 11 revisits this choreography.
 
 Conceptually exact — he is made of the signal — and technically a real demonstration:
 GPU particles decoded from an image.
@@ -434,8 +438,10 @@ runs behind the rows, dimmed. A node is an outline until the signal's tip reache
 then fills as an emission while the row's identifier comes up from `--type-dim` to `--type`.
 The chain is served lit: with JS off there is no line, and each node sits filled at the start
 of its rule, which is a marble diagram's own notation. The colour shift and thickness change
-on the line itself come with `TubeSignal` (Phase 10), where they are per-vertex attributes
-rather than a second renderer.
+on the line itself are per-vertex attributes on `TubeSignal` rather than a second renderer.
+Since Phase 10's revision the mesh carries only a per-vertex length (for the reveal); the
+effect adds its colour and thickness attributes to the same mesh when it comes, and waits for
+the Stack rework (Phase 10 design, D8).
 
 Proficiency labels ("Expert", "Advanced") are dropped, including the resume's own
 "(Expert)". Self-assessed skill ratings read as filler to a hiring manager; the case-study

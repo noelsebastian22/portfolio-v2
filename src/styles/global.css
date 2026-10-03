@@ -98,8 +98,8 @@ body::after {
  * UA stylesheet clips them there no matter where the box is placed.
  *
  * The inset is what makes that safe. With it, the half-stroke the renderer now lets
- * overflow paints *inside* the document — y 0..2 at the top, and the last 2px at the
- * bottom — instead of past the document's last pixel. Bottom overflow is the one kind
+ * overflow paints *inside* the document — the first and last half-stroke (4px at an 8px
+ * stroke) — instead of past the document's last pixel. Bottom overflow is the one kind
  * that grows scrollHeight, which would feed straight back into `onPageProgress`.
  */
 #signal-layer {
@@ -107,6 +107,30 @@ body::after {
   inset: calc(var(--signal-stroke) / 2) 0;
   z-index: var(--z-signal);
   pointer-events: none;
+}
+
+/**
+ * The Phase 10 tube's canvas (lib/gfx/scene.ts). Fixed to the viewport — the camera follows
+ * the scroll instead — and in #signal-layer's stacking slot, so the islands' emissions,
+ * drops and nodes still draw above it. Invisible until the scene has passed its probe.
+ */
+.signal-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: var(--z-signal);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.signal-canvas--on {
+  opacity: 1;
+}
+
+/* The SVG keeps measuring and publishing underneath; it is only hidden. */
+#signal-layer.signal-layer--tube svg {
+  opacity: 0;
 }
 
 /**

@@ -9,6 +9,59 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-03 · claude-code · Phase 10 revision and review
+
+**Did**
+- Plan Task 9 built (`d1c0e6a`): both renderers start at `DRAWN_FROM_T` (Nine Years seam), `--signal-stroke` 8px, tube full strength and flat, instant swap; hero depth code, `strengthAt` and the crossfade removed. Noel checked the tube in a browser: approved.
+- Task 8 figures recorded (`7de4959`). Final whole-branch review (Opus): 1 Critical, 1 Important, 13 Minor.
+- Fix wave (`6123376..f9af4fe`): new `render-schedule.ts` draws in the `gsap.ticker` tick; probe checks `canvas.isConnected` after every await; zoom pixel ratio, `forceContextLoss`, guarded listeners, `npm run budget` fails with no Three chunk; stale comments and both specs corrected. Re-reviewed inline: clean.
+- Scheduled rebuild confirmed (gap archived): run fired 1 Oct 05:22 UTC, live copy reads "a decade".
+
+**Decided**
+- The tube draws in the scroll driver's tick, only when dirty (BUILD-PLAN → Decisions, 2026-10-01).
+- A renderer that will not start is remembered for the session.
+- R3 re-confirmed by Noel: the 2D line keeps its dim rule.
+
+**Didn't work**
+- Booking `requestAnimationFrame` from tip/progress listeners: they run inside GSAP's ticker (a rAF callback), so the render lands next frame and GSAP's next tick finds it pending — the tube drew every other frame (headless: 28 draws in 59 frames; after the fix 50 in 53). At 60Hz that is ~33ms, over the watchdog's 25ms median, so the tube retired itself after ~2s of scrolling. Noel's display likely hid it.
+
+**Open**
+- **Parked by the Phase 10 final review** (Known Gaps): session-wide fallback memory, square tube start, `hexToRgb` format, dot/node sizing beside 8px.
+- **The tube draws after Lenis only by load order** (Known Gaps → Standing notes).
+
+**Next**
+Noel checks on a 60Hz display (5s+ trackpad scroll on `/`: tube stays, no fallback key in Session Storage). If it passes, finish `feat/phase-10-webgl` (superpowers:finishing-a-development-branch → merge to `master`), then delete `.superpowers/sdd/2026-09-30-phase-10-webgl-tube/`.
+
+**Numbers** — build green · 222 tests on branch (173 live) · JS on `/` live 61,772, branch 63,151 (−118 vs last entry) · enhanced chunk 132,276 gzip (51.7%, −283) · Lighthouse preview 98/99/99, LCP 2,175 median
+
+## 2026-09-30 · claude-code · Curve cleanup, Phase 10 tube
+
+**Did**
+- Curve cleanup shipped live (`master` `e06feda`): monotone-cubic stretching between anchors in `anchors.ts` (the corners were all at knots, up to 43°), a straight work spine (points 21–26 at `x −0.74`, zero `x` tangent at the ends) and respaced years turns (points 7–18) in `path.ts`, and two counter-bends Noel spotted, below the spine and below the ring split, fixed with tests.
+- Phase 10 designed (`docs/superpowers/specs/2026-09-30-phase-10-webgl-tube-design.md`), planned, and Tasks 1–7 built on `feat/phase-10-webgl`: geometry channel in `tip.ts`, `lib/gfx/{gate,camera,frame,tube-mesh,scene}.ts`, `lib/signal/tube-signal.ts`, gate wired in `BaseLayout.astro`, `npm run budget` guarding Three.js. Reviewed inline; every file matches the plan.
+- Noel saw the tube: the spine is right, the hero is not. Plan Task 9 (revision R1–R4) written, not built.
+
+**Decided**
+- Curve stretching is a monotone cubic; after a zero-tangent point the sideways steps must grow.
+- Phase 10 is an overlay on the running SVG, with a custom mesh, not `TubeGeometry`.
+- Revision R1–R4 (Noel): no line in the hero, 8px stroke, full-strength tube, instant swap.
+
+**Didn't work**
+- Counting curvature sign flips over 1500px radius to find wobbles: on near-vertical runs a 3px wobble already counts, so every candidate "failed". Sideways travel in px is the measure there.
+- Moving only control point 27 to fix the spine-exit counter-bend moved it to point 28; 27 and 28 had to move together.
+- The first implementer stalled once (600s watchdog) and was then killed by a revoked OAuth token; `/login` fixed it, and resuming the same agent kept its work.
+
+**Open**
+- **Text drawn over the full-strength tube fails AA at ≥ 900px** — accepted by Noel for now.
+- **LCP has ~0 headroom** — updated: preview 2,263ms today on `master` and the branch alike.
+- **Small counter-bends at the Stack's operator nodes** — left for the Stack rework.
+- Noel wants to rework the Stack ("Tools, composed" reads too technical): a brainstorm of its own.
+
+**Next**
+Execute plan Task 9 (`docs/superpowers/plans/2026-09-30-phase-10-webgl-tube.md`; ledger `.superpowers/sdd/2026-09-30-phase-10-webgl-tube/progress.md`), then show Noel `/` and `?signal=2d` in a real browser (headless here has no WebGL2), then Task 8's figures and a final review before merging. After 1 Oct, the scheduled-rebuild gap.
+
+**Numbers** — build green · 222 tests on branch (173 live) · JS on `/` live 61,772 (+282), branch 63,269 (+1,497) · enhanced chunk 132,559 gzip (51.8%) · Lighthouse 98
+
 ## 2026-09-29 · claude-code · Handoff docs trimmed
 
 **Did**
@@ -29,81 +82,3 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 After 1 Oct, work the Known Gap "Confirm the first scheduled rebuild". Then brainstorm Phase 10 (WebGL gate + signal tube) on a new branch off `master`.
 
 **Numbers** — build green (3 pages) · 155 tests · JS on `/` 61,490 gzip (±0, docs only)
-
-## 2026-09-29 · claude-code · Phase 9 shipped live
-
-**Did**
-- Pushed the branch and verified the preview with `x-vercel-protection-bypass` (secret in `.env.local`, gitignored). Pages, 404, OG PNG, PDF, form `action` fine; `/websites/` (trailing slash) returned 200.
-- Lighthouse ×3 on preview: LCP median 2,500ms (`p.hero__lede`, all render delay, no JS reveal) → applied the recorded font ruling.
-- Task 9.8 (subagent, reviewed inline): `scripts/fonts.mjs` + `npm run fonts` (`subset-font` devDep), masters in `font-masters/`. Archivo 90,104 → 57,188 B, JetBrains Mono 40,404 → 38,472 B. `tokens.css` `font-stretch: 100% 125%`. `vercel.json` gets an explicit `/websites/` source.
-- Re-verified preview: all three `/websites` forms 307; Lighthouse Perf 94/99/99, A11y 100, **LCP 1,988ms median** (2,645 / 1,941 / 1,988).
-- Tagged `v1-letterpress` on `6a4bac7` (pushed); fast-forwarded `master` to `c2b0e46` and pushed. Production smoke check passed; Lighthouse ×1 on live: Perf 97, A11y/BP/SEO 100, LCP 2,165.
-- Noel created the Vercel Deploy Hook and `VERCEL_DEPLOY_HOOK` secret; a manual `workflow_dispatch` got Vercel's `PENDING` job back.
-- Build green (3 pages), 155 tests, JS on `/` **61,490 gzip unchanged** (75.1%). `dist/` 3.8 MB.
-
-**Decided**
-- Noel: CV PDF swap and VoiceOver pass are post-launch, not merge blockers.
-- Archivo `wdth` narrowed to 100–125 (the only widths set); the script guards it. JetBrains Mono keeps `calt`.
-- Rollback = Vercel Instant Rollback to the `6a4bac7` deployment; code at tag `v1-letterpress`.
-
-**Didn't work**
-- Subsetting codepoints alone saves ~4%: the originals were already Google's Latin subset. The size is in the variable-axis data.
-- `/websites/:path*` does not match `/websites/` on Vercel; it needs its own source.
-- Lighthouse's `robots-txt` audit fetches without the bypass header, so previews always score SEO 61 (plus Vercel's preview `x-robots-tag: noindex`). Ignore SEO on previews.
-- Vercel's "Add Connection → Anthropic" is Vercel calling Claude, not an agent route into Vercel. Deploy-hook deploys don't create GitHub deployment records, so `gh api …/deployments` can't confirm them.
-- Python `fontTools` here has no `brotli`, so it can't read WOFF2.
-
-**Open**
-- LCP has almost no headroom (1,988 median; single runs 2,165–2,645). Next lever: drop the JetBrains Mono preload.
-- The `→` in "Bundle size, 100% → 40%" falls back (no U+2192 in either face); allowlisted. Consider "to".
-- Noel: September CV PDF, VoiceOver pass. Confirm the 1 Oct scheduled run flips the copy to "a decade".
-- Deferred minors from the last entry still stand (comment nits, sitemap domain, M5 clock tick).
-- `feat/signal-path-rebuild` and `master` are at the same commit; decide which branch Phase 10 works from.
-
-**Next**
-After 1 Oct, check the live site says "a decade" and the scheduled run succeeded in Actions. Then brainstorm Phase 10 (WebGL gate + signal tube) on a new branch off `master`.
-
-**Touched** — `scripts/fonts.mjs`, `font-masters/`, `public/fonts/*.woff2`, `src/styles/tokens.css`, `vercel.json`, `package.json`, `package-lock.json`, `BUILD-PLAN.md`, `.superpowers/sdd/BUILD-PLAN/task-9.8-brief.md`
-
-
-## 2026-09-27 · claude-code · Phase 9 ship pass
-
-**Did**
-- Planned Phase 9 as Tasks 9.1–9.6, with briefs in `.superpowers/sdd/BUILD-PLAN/task-9.*-brief.md`. Ran them with subagent implementers and inline reviews.
-- 9.1: `resolveSeamPixels(sectionTops, height, terminus?)`. The `|` bar moved to the footer's top, and `svg-signal.ts` `measureTerminus()` pins the curve's end to it. `●`→`|` is 72px at every width (was 392–526px).
-- 9.2: RxJS added to `architecture()` (`SITE_ONLY_ITEMS` in `tests/skill-groups.test.ts`). `text-wrap: balance` on `.contact__title`. `/dev/signal` and `createSvgSignal`'s `pageLayer` option deleted. `mountHeroClock()` is idempotent.
-- 9.3: `scripts/og-image.mjs` builds `public/og-image.png` (1200×630, 33.6 KB). It takes the curve from `path.ts` and draws the text as `opentype.js` outlines from TTFs in `scripts/og/fonts/`. `og-image.svg` deleted. One fix round: the glyph's position was hand-tuned; it is now worked out from the text's measured width.
-- 9.4: `npm run budget` (`scripts/budget.mjs` + `scripts/lib/budget.mjs`, tested). `inlineStylesheets: 'always'`. `src/integrations/modulepreload.ts` adds `fetchpriority="low"` preloads. `follow` folded into the `tip` chunk.
-- 9.5: ship audit. Fixed `role="list"`, the sound toggle (`aria-disabled`, "Sound · soon"), the ring's `aria-labelledby` order, and skip-link focus (`main tabindex=-1`). Removed the `if (layer)` guard.
-- Final whole-branch review (Opus): 0 Critical, 4 Important, 9 Minor. One fix wave, `c02fc7c..8918fc2`. Details in `BUILD-PLAN.md` → "Final whole-branch review".
-- 9.7: `vercel.json` 307s `/websites` → `/#contact`, the sitemap filter drops it, and Contact's freelance line is unlinked.
-- Pushed the branch (to 68f2c78) on Noel's word. Build green (3 pages), 155 tests. JS on `/` **61,790 → 61,490 gzip (−300)**, 75.1%. `/websites` 57,124; `/404` 55,215.
-
-**Decided**
-- Noel: RxJS in the Stack on the site only. The line ends above the footer. `text-wrap: balance`. The sound toggle stays, made honest. The four unreferenced gallery masters stay (312 KB, not 53 MB).
-- Noel: keep "industry-first". It is on the Winning Group study, not Direct Line, and is recorded in `docs/resume-transcript.md`. `AGENTS.md` and the plan now both name the transcript as the source.
-- Noel: `/websites` reuses `ContactForm.astro`, and is redirected until Phase 14. The year count gets build-time "a decade" copy plus `.github/workflows/scheduled-rebuild.yml`.
-- Controller: LCP 2,404ms (simulated) against 798ms (devtools throttling) is decided on the Vercel preview. Fonts are `swap`, so Lantern is charging the 130 KB of font preloads to LCP. If the preview is still over 2.0s, Latin-subset `archivo-var.woff2`.
-
-**Didn't work**
-- sharp cannot read WOFF2. Pointing `FONTCONFIG_FILE` at `public/fonts` rendered a generic sans. The macOS sharp build's Pango has only CoreText, and forcing fontconfig segfaults (lovell/sharp#4577). Glyph outlines via `opentype.js` replaced it.
-- Headless Chrome's `--disable-javascript` switch is not honoured. JS runs anyway, which gives false "JS-off" screenshots. Use CDP `Emulation.setScriptExecutionDisabled`.
-- `modulepreload` at default priority cost +373ms FCP, because it pulled 50 KB of GSAP ahead of the fonts. `fetchpriority="low"` fixed it.
-- Any attribute on an Astro component `<script>` (e.g. `fetchpriority`) stops Astro bundling it: the tag ships a raw `import` and throws `SyntaxError`.
-- Neither a `<head>` reorder nor preloading the entry scripts moved simulated LCP.
-- `overflow-x: hidden` on `#top` made it a scroll container, and the sticky nav had silently scrolled away since Phase 4.
-
-**Open**
-- The merge to `master` is blocked on Noel:
-  - a text-based export of the September resume for `public/noel-sebastian.pdf` (the served CV is March's; `Resume.pdf` has no text layer);
-  - a Vercel **Protection Bypass for Automation** secret (the preview 302s to login, so the redirect, OG card and LCP can't be verified);
-  - a VoiceOver pass (checklist in `task-9.5-report.md`).
-- Commits after 68f2c78 (the fix wave and 9.7) are local and unpushed.
-- A rebuild must run on or after 1 Oct 2026 for the "a decade" copy. After the merge, Noel creates a Vercel Deploy Hook and saves it as the `VERCEL_DEPLOY_HOOK` secret.
-- Deferred minors: comment nits in `global.css` (the wrap is below 360, not 390) and `404.astro` (no sitemap `filter` exists), and the sitemap filter hard-codes the domain. M5, the hero clock's per-second tick, is parked for Noel. `/websites` A11y is 96 (Phase 14).
-- `.superpowers/sdd/BUILD-PLAN/progress.md` holds every ruling; keep it until Phase 9 closes.
-
-**Next**
-Once Noel supplies the CV PDF and the bypass secret: swap in the PDF and push. On the preview, verify the pages, the `/websites` 307, `og-image.png` as `image/png`, and the form `action`, then run Lighthouse ×3 with `x-vercel-protection-bypass`. Rule on LCP (subset Archivo if it's over 2.0s). Then ask Noel to merge (`git merge --ff-only`) and run Task 9.6's smoke check.
-
-**Touched** — `src/lib/signal/{anchors,svg-signal}.ts`, `src/lib/career.ts`, `src/components/{Footer,Contact,ContactForm,Nav,Ring,Hero,SelectedWork}.astro`, `src/layouts/BaseLayout.astro`, `src/pages/{index,websites,404}.astro`, `src/islands/hero.ts`, `src/integrations/modulepreload.ts`, `src/styles/global.css`, `src/data/content.ts`, `scripts/{og-image,budget,portrait}.mjs`, `scripts/lib/budget.mjs`, `scripts/og/fonts/`, `astro.config.mjs`, `vercel.json`, `.github/workflows/scheduled-rebuild.yml`, `public/{og-image.png,robots.txt}`, `tests/`, `AGENTS.md`, `docs/resume-transcript.md`, `BUILD-PLAN.md`; deleted `src/pages/dev/signal.astro`, `public/og-image.svg`; moved `public/images/noel-sebastian.jpeg` → `gallery-masters/`.

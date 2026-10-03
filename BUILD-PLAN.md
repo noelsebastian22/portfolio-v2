@@ -78,30 +78,30 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 7 | Section 04 — The Ring (2D rail) | **complete** | Tasks 7.1–7.2. The split is a track the curve is pinned to; Gallery retired |
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired; Contact's form works with JS off |
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
-| 10 | WebGL — gate + signal tube | not started | |
+| 10 | WebGL — gate + signal tube | **in progress** | Tasks 1–9 + final-review fixes on `feat/phase-10-webgl` (not merged); owed: Noel's 60Hz check, then merge |
 | 11 | WebGL — particle portrait | not started | |
 | 12 | WebGL — 3D ring | not started | |
 | 13 | Audio engine | not started | |
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
 
-### Current figures — 2026-09-29
+### Current figures — 2026-10-01
 
 Replace values here when a session re-measures; do not add a new "Measured after" section.
 
 | Global Constraints budget | Target | Latest | Measured |
 |---|---|---|---|
-| Lighthouse mobile Performance | ≥ 95 | preview ×3: 94 / 99 / 99 · production ×1: 97 | 2026-09-29 |
-| LCP | ≤ 2.0s | preview median **1,988ms** (runs 2,645 / 1,941 / 1,988) · production ×1: 2,165ms | 2026-09-29 |
+| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 10 branch, after Task 9): 98 / 99 / 99 · production ×1: 97 (2026-09-29) | 2026-10-01 |
+| LCP | ≤ 2.0s | preview median **2,175ms** on the Phase 10 branch after Task 9 (2,220 / 2,174 / 2,175); 2026-09-30 interleaved: `master` 2,264, branch 2,263 — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-01 |
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` **61,490 (75.1%)** | 2026-09-29 |
-| Enhanced WebGL chunk gzip | ≤ 250KB | not built — Phase 10 | — |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **61,772 (75.4%)** · Phase 10 branch 63,150 (77.1%) | 2026-10-01 |
+| Enhanced WebGL chunk gzip | ≤ 256,000 | Phase 10 branch **132,088 (51.6%)**; `npm run budget` gates it and fails if Three.js reaches an initial chunk | 2026-10-01 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 155 passing | 2026-09-29 |
+| Tests | — | 173 live · 215 on the Phase 10 branch | 2026-10-01 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -122,6 +122,8 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Task 9.1 · 2026-09-26 | 61,847 | 75.5% | — |
 | Task 9.4 · 2026-09-26 (`npm run budget` from here) | 61,370 | 74.9% | — |
 | Task 9.8 · 2026-09-29 (live) | 61,490 | 75.1% | 155 |
+| Curve cleanup · 2026-09-30 (live) | 61,772 | 75.4% | 173 |
+| Phase 10 · 2026-10-01 (branch) | 63,150 | 77.1% | 215 |
 
 ### How to measure
 
@@ -140,7 +142,7 @@ src/
       svg-signal.ts      2D renderer — stroke-dashoffset
       anchors.ts         pins the curve to sections and in-section anchors
       draw.ts            drawing marks off the tip; the §7.4 easings
-      tube-signal.ts     3D renderer — Three.js TubeGeometry   (phase 10)
+      tube-signal.ts     3D renderer — custom Three.js mesh over the published points (phase 10)
     motion/
       scroll.ts          Lenis init + global progress
       timeline.ts        GSAP master timeline, section registration
@@ -149,6 +151,7 @@ src/
     gfx/
       gate.ts            capability gate
       scene.ts           Three.js renderer lifecycle              (phase 10)
+      render-schedule.ts draws in the scroll tick, only when dirty (phase 10)
       particles.ts       portrait point cloud                      (phase 11)
       ring.ts            3D ring carousel                          (phase 12)
   islands/               one vanilla TS entry per interactive section
@@ -203,7 +206,17 @@ Expand the phase you are about to start into task-level steps before implementin
 **Deliverable:** the capability gate, and `TubeSignal` reading the **same**
 `sampleSignalRange` output as the SVG renderer.
 
-**Files:** `src/lib/gfx/gate.ts`, `src/lib/gfx/scene.ts`, `src/lib/signal/tube-signal.ts`
+**Design:** `docs/superpowers/specs/2026-09-30-phase-10-webgl-tube-design.md` — overlay on the
+running SVG, custom mesh (not `TubeGeometry`), shader glow. Its original "real depth in the
+hero" was **revised 2026-09-30 after Noel's first look** (plan Task 9, built): the line starts at the
+hero's bottom edge in both renderers, `--signal-stroke` is 8px, the tube is full strength
+with no dim rule and flat on the page everywhere, and the hero depth code and the crossfade are
+gone. Plan:
+`docs/superpowers/plans/2026-09-30-phase-10-webgl-tube.md`; ledger in `.superpowers/sdd/`.
+
+**Files:** `src/lib/gfx/gate.ts`, `src/lib/gfx/scene.ts`, `src/lib/gfx/render-schedule.ts`,
+`src/lib/gfx/tube-mesh.ts`, `src/lib/gfx/camera.ts`, `src/lib/signal/tube-signal.ts`; `svg-signal.ts` and `tip.ts` gain the
+geometry channel.
 
 ```ts
 export interface Capability { enabled: boolean; reason?: string; }
@@ -560,6 +573,32 @@ decision was made; this section records *what it is*.
   verify` fails if a line present at `HEAD` is in neither the live docs nor the archive. It
   replaces the old "fold at ~40 entries, keep only Decided and Didn't-work lines" rule, which
   would have thrown data away and had not triggered by 180 KB.
+- **2026-09-30** — **The curve is stretched between its anchors along a monotone cubic, not in
+  straight pieces.** Piecewise-linear stretching jumped the slope at every seam and in-section
+  anchor, drawing corners up to 43° at one vertex. Fritsch–Carlson with interval-weighted starting
+  slopes still hits every knot exactly and never folds back up the page (`anchors.ts`).
+- **2026-09-30** — **Curve editing rule: after a point whose sideways tangent is zero, the
+  sideways steps must grow.** The spine ends (points 21, 26) have zero `x` tangent so the spine is
+  dead straight; a larger first step than second makes the line surge, ease and turn back. Found
+  twice (above `04 — mergeMap()` and below the ring split) and pinned by tests in
+  `tests/signal-anchors.test.ts`. For near-vertical runs, judge wobble in pixels of sideways travel,
+  not by turn direction — a few px already counts as a "bend" there.
+- **2026-09-30** — **Phase 10 is an overlay:** the SVG line keeps measuring and publishing, and
+  the tube paints its published geometry through a custom mesh (not `TubeGeometry`, which would
+  re-sample its own curve). The gate runs after `load` + idle; Three.js is only behind
+  `import('../lib/gfx/scene')`. Full design: `docs/superpowers/specs/2026-09-30-phase-10-webgl-tube-design.md`.
+- **2026-09-30 (Noel)** — **Phase 10 revision R1–R4:** no line in the hero (both renderers start at
+  the Nine Years seam), `--signal-stroke` 8px, the tube full strength with no dim rule (the 2D line
+  keeps it for phones), the tube flat everywhere so the swap is instant. Reason: a line hovering
+  mid-hero at first load read as a phantom. The AA cost is accepted for now (Known Gaps).
+- **2026-10-01** — **The tube draws in the scroll driver's own tick, only when dirty**
+  (`render-schedule.ts`, design D6). A `requestAnimationFrame` booked from inside `gsap.ticker` can
+  only fire next frame, and under Lenis drew every other frame; the watchdog read 33ms at 60Hz
+  as a slow GPU and retired the tube (final review C1). Every change source only marks dirty.
+- **2026-10-01** — **A renderer that will not start is remembered for the session**, like the
+  other fallbacks: the canvas is inserted only after `new WebGLRenderer` succeeds.
+- **2026-10-01 (Noel)** — **R3 re-confirmed:** the 2D line keeps its dim rule; the tube is full
+  strength. Phones get 2D, where the whole line runs behind copy.
 
 ## Known Gaps
 
@@ -571,8 +610,6 @@ marked RESOLVED.
 
 - **Served CV is still the March PDF** (`public/noel-sebastian.pdf`); replace with a text-based
   export of the September resume. VoiceOver pass still owed (checklist in `task-9.5-report.md`).
-- **Confirm the first scheduled rebuild.** `VERCEL_DEPLOY_HOOK` is set (closed gap archived);
-  after the 1 Oct 00:00 UTC run, check it succeeded in Actions and the live copy says "a decade".
 
 ### Performance
 
@@ -580,6 +617,10 @@ marked RESOLVED.
   Next lever: drop the JetBrains Mono preload (the LCP element is set in Archivo).
   Already tried in Phase 9 and not kept (archived LCP diagnosis): `fetchpriority` on the entry
   `<script>` tags (Astro stops bundling them), low-priority entry `modulepreload`, `<head>` reorder.
+  2026-09-30: preview ×3 now reads 2,263ms on both `master` and the Phase 10 branch, measured
+  interleaved, so the rise is the measuring environment, not code — but as measured, LCP is over
+  budget on the live build. Re-measure on production before acting.
+  2026-10-01: Phase 10 branch after Task 9, preview ×3 2,220 / 2,174 / 2,175ms.
 - The site has no automated performance regression check. Phase 9 establishes the numbers
   manually; consider a Lighthouse CI step afterwards.
 
@@ -629,22 +670,38 @@ before then.
   zig-zag in the sketch Noel chose, because the stack span's left bend falls in the heading. Noel
   may change the Stack after everything is done. Pinning control point 41 to row 1 would give a
   zig-zag through renderer scaling alone, with no coordinate change, but it is not to be done now.
-- **The line is not always smooth: some turns are sharp enough to read as corners, not a curve.**
-  Named instance: the start of `02 — scan()` and the turn after it. Control points 7–10
-  (`x` −0.38 → −0.58 → −0.68 → −0.46) reverse direction over only 0.017 of `y`, and uniform
-  Catmull-Rom over unevenly spaced points tightens exactly such reversals into cusps.
-  **Unverified second suspect:** `anchors.ts` scales `y` linearly and separately between each
-  pair of anchors, so the curve's slope in pixels jumps at every seam and in-section anchor. That
-  would turn a smooth normalised curve into visible corners wherever two neighbouring spans get
-  different scale factors. Measure the pixel tangent on both sides of each anchor before changing
-  any geometry.
-- **The work spine (`Problems, solved`) should be straight.** Control points 22–26 carry
-  deliberate "outward breaths" (`x` −0.72, −0.76, −0.74, −0.77, −0.75), and to Noel they read as
-  an uneven, dirty line rather than as attachment points. Straightening them is a `path.ts` edit.
-  Re-run the continuity and chord tests, and re-check the branch origins in `work.ts`, which
-  read the curve's `x`.
+
+### Deferred by Noel — 2026-09-30
+
+- **Text drawn over the full-strength tube fails AA at ≥ 900px** (after plan Task 9): `--type` on
+  `--signal` is 2.9:1, `--type-dim` on `--signal` 1.1:1, wherever the line runs behind copy — the
+  Nine Years run, the sweep into Work, the ring arc, the Stack weave. Accepted by Noel for now. His
+  idea for later: the line dives into a "hole" where a text block starts and resurfaces where it
+  ends.
+- **Small counter-bends at the Stack's operator nodes** (around control points 42 and 45), found
+  by the 2026-09-30 curvature scan and present before the curve cleanup. Left for the Stack
+  rework, together with the node pattern above.
+
+### Parked by the Phase 10 final review — 2026-10-01 (not blocking merge)
+
+- **Any fallback is remembered for the session, not only a slow GPU.** `scene.ts` `fallBack`
+  sets the session flag for a narrow viewport or reduced motion too, though the gate re-checks
+  both on every load. Narrowing the window below 900px, widening it and reloading stays 2D until
+  the tab closes. Remembering only the watchdog, context loss and a probe `fail` is Noel's call.
+- **The tube's start is square; the SVG's is round.** Only the tip has a cap sphere
+  (`tube-signal.ts`), so at the Nine Years seam the tube ends 4px short and flat. Fix: a static
+  cap at `pointAtLength(core, 0)`.
+- **`hexToRgb` assumes `#RRGGBB`** (`tube-mesh.ts`). A shorthand, `rgb()` or `oklch()` value for
+  `--signal` would silently give the tube a wrong colour.
+- **The emission dots and the Stack's nodes were sized beside a 4px line.** The stroke is 8px
+  since Task 9; check them at Noel's next look.
 
 ### Standing notes — limits and gotchas, not bugs
+
+- **The tube draws after Lenis only by load order.** `render-schedule.ts` hooks `gsap.ticker`,
+  which runs listeners in the order added; `initScroll()` registers Lenis's at page load and
+  `scene.ts` is imported after `load` + idle. A later phase that adds a scroll-publishing ticker
+  listener after the scene loads would be drawn one frame late.
 
 - **The `/websites` redirect is only verifiable on a Vercel deployment** (`astro preview`
   ignores `vercel.json`). Verified on preview and production 2026-09-29.

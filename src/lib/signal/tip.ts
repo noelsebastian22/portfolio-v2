@@ -5,11 +5,13 @@
  * islands only import modules. Vite emits this once as a shared chunk, so every importer
  * sees the same state.
  *
- * Two things are published, both by the renderer only:
+ * Three things are published, all by the renderer only:
  *
  * - the drawn **tip**, which moves with scroll;
  * - the **curve lookup** — the curve's page `x` at a page `y` — which changes only when
- *   the renderer re-measures (a resize, or the document changing height).
+ *   the renderer re-measures (a resize, or the document changing height);
+ * - the **geometry** — the line's points and lengths, for the Phase 10 tube, which paints
+ *   over the SVG instead of measuring anything itself.
  *
  * Every value is in **page** coordinates (document coordinates, comparable with
  * `getBoundingClientRect().top + scrollY`). The conversion from the layer's own box happens
@@ -77,4 +79,46 @@ export function onSignalCurve(fn: () => void): () => void {
 export function publishSignalCurve(lookup: CurveLookup): void {
   currentLookup = lookup;
   for (const fn of curveListeners) fn();
+}
+
+/** One drawn point, in page px. */
+export interface SignalGeometryPoint {
+  x: number;
+  y: number;
+}
+
+/**
+ * The line exactly as the SVG renderer has just drawn it — so a second renderer paints the
+ * same points rather than re-sampling `path.ts` or re-measuring the sections.
+ */
+export interface SignalGeometry {
+  points: readonly SignalGeometryPoint[];
+  /** Cumulative length along the line at each point, px. */
+  lengths: readonly number[];
+}
+
+let currentGeometry: SignalGeometry | null = null;
+const geometryListeners = new Set<(geometry: SignalGeometry) => void>();
+
+/** The latest geometry, or `null` before the renderer has measured. */
+export function signalGeometry(): SignalGeometry | null {
+  return currentGeometry;
+}
+
+/**
+ * Calls `fn` with every new geometry, and once immediately with the latest — the tube loads
+ * long after the first measure, and must not wait for a resize to see the line.
+ */
+export function onSignalGeometry(fn: (geometry: SignalGeometry) => void): () => void {
+  geometryListeners.add(fn);
+  if (currentGeometry !== null) fn(currentGeometry);
+  return () => {
+    geometryListeners.delete(fn);
+  };
+}
+
+/** Renderer-only: publishes the geometry it has just drawn. */
+export function publishSignalGeometry(geometry: SignalGeometry): void {
+  currentGeometry = geometry;
+  for (const fn of geometryListeners) fn(geometry);
 }

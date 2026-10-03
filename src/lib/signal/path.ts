@@ -46,7 +46,9 @@ export interface SectionSpan {
  */
 const CONTROL_POINTS: readonly SignalPoint[] = [
   // ── hero ────────────────────────────────────────────────────────────────────────────
-  // Enters from deep Z, far from the viewer and just left of centre, then sweeps forward.
+  // Not drawn (DRAWN_FROM_T): these points shape the curve's entry into the Nine Years
+  // seam — Catmull-Rom takes a control point's tangent from its neighbours either side —
+  // without ever appearing on the page themselves.
   { x: -0.12, y: 0.000, z: -1.00 },
   { x: -0.06, y: 0.016, z: -0.86 },
   { x: 0.04, y: 0.034, z: -0.72 },
@@ -192,6 +194,14 @@ export const SECTION_SPANS: readonly SectionSpan[] = SECTION_SEGMENTS.map(([id],
   tStart: SEAMS[i],
   tEnd: SEAMS[i + 1],
 }));
+
+/**
+ * Where the drawn line begins: the Nine Years seam, at the hero's bottom edge. The hero
+ * carries no line (Noel, 2026-09-30 — a line hovering mid-hero at first load read as a
+ * phantom). The hero's control points stay: they still set the curve's direction as it
+ * arrives at this seam, because Catmull-Rom takes point 7's tangent from points 6 and 8.
+ */
+export const DRAWN_FROM_T = SECTION_SPANS.find((span) => span.id === 'years')!.tStart;
 
 /**
  * The `work` section's spine: the run parked at the left margin that the case studies

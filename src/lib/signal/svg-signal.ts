@@ -4,8 +4,9 @@
  * Draws the whole canonical curve (`path.ts`) as a single `<path>` into one page-height
  * layer, and reveals it with `stroke-dashoffset`: page progress sets a page-`y` playhead
  * that stays inside the viewport, and the line is drawn down to it (see `playhead.ts`).
- * This is the fast, always-available path — the Phase 10 Three.js tube samples the same
- * curve so the two are identically choreographed rather than one approximating the other.
+ * This is the fast, always-available path. The Phase 10 Three.js tube samples nothing: it
+ * paints the points this renderer publishes (`publishSignalGeometry`), so the two are
+ * identically choreographed rather than one approximating the other.
  *
  * One renderer, one layer, one `<path>`. It draws the whole curve into the whole box, so
  * the line is continuous by construction. Splitting the line across per-section mounts
@@ -30,7 +31,7 @@
  * pads past its ends. The bands come from the same pixel points the path is drawn from.
  */
 
-import { SECTION_SPANS, sampleSignalRange, type SignalPoint } from './path';
+import { DRAWN_FROM_T, SECTION_SPANS, sampleSignalRange, type SignalPoint } from './path';
 import {
   ANCHOR_T,
   IN_SECTION_ANCHORS,
@@ -43,7 +44,7 @@ import {
 } from './anchors';
 import { gutterBands, strengthStops, type GutterRegion } from './gutter';
 import { cumulativeLengths, lengthAtY, playheadPageY } from './playhead';
-import { publishSignalCurve, publishSignalTip } from './tip';
+import { publishSignalCurve, publishSignalGeometry, publishSignalTip } from './tip';
 // Resize re-measurement is debounced — the viewBox and total length both change. Shared
 // with the section islands that follow the line, so they re-measure on the same beat.
 import { RESIZE_DEBOUNCE_MS } from './draw';
@@ -117,17 +118,20 @@ const BAND_FADE_PX = 32;
 const CURVE_SAMPLE_DENSITY = 480;
 
 /**
- * Samples the whole curve at roughly `CURVE_SAMPLE_DENSITY` intervals, span by span, so
- * every anchor — each seam and each in-section anchor — is a vertex of the drawn polyline.
- * The anchors are where the curve is pinned to the page, so they are exactly where a chord
- * cutting a corner would show.
+ * Samples the curve from `DRAWN_FROM_T` (the hero carries no line) at roughly
+ * `CURVE_SAMPLE_DENSITY` intervals, span by span, so every anchor — each seam and each
+ * in-section anchor — is a vertex of the drawn polyline. The anchors are where the curve is
+ * pinned to the page, so they are exactly where a chord cutting a corner would show.
  */
 function sampleWholeCurve(): SignalPoint[] {
   // The in-section anchors (see anchors.ts) are split points exactly like the seams: the
   // work span is sampled as sweep, spine and exit, and the ring span as arc and hold.
-  const cuts = [...SECTION_SPANS.map((span) => span.tStart), ...ANCHOR_T, 1].sort(
-    (a, b) => a - b,
-  );
+  const cuts = [
+    DRAWN_FROM_T,
+    ...SECTION_SPANS.map((span) => span.tStart).filter((t) => t > DRAWN_FROM_T),
+    ...ANCHOR_T,
+    1,
+  ].sort((a, b) => a - b);
 
   const points: SignalPoint[] = [];
   for (let i = 0; i < cuts.length - 1; i++) {
@@ -304,11 +308,7 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
   }
 
   /** Rewrites the gradient's stops: dim everywhere, full strength inside the gutter. */
-  function applyStrength(
-    pixelPoints: readonly PixelPoint[],
-    gutter: GutterRegion | null,
-    height: number,
-  ): void {
+  function applyStrength(pixelPoints: readonly PixelPoint[], gutter: GutterRegion | null, height: number): void {
     const bands = gutter ? gutterBands(pixelPoints, gutter) : [];
     gradient.setAttribute('y2', String(height));
     gradient.replaceChildren(
@@ -359,6 +359,13 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
     // Before the reduced-motion early return on purpose: dimming is contrast, not motion.
     const gutterIndex = SECTION_SPANS.findIndex((span) => span.id === GUTTER_FROM_SECTION);
     applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
+
+    // For the Phase 10 tube (tip.ts): the same points, in page px.
+    const boxLeftInPage = boxRect.left + window.scrollX;
+    publishSignalGeometry({
+      points: pixelPoints.map((p) => ({ x: boxLeftInPage + p.x, y: boxTopInPage + p.y })),
+      lengths: lengthTable,
+    });
 
     if (reduceMotion) {
       // Fully drawn, permanently. No dasharray at all rather than a dasharray equal to

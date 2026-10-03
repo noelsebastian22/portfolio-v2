@@ -319,3 +319,28 @@ gaps at the bottom under a dated heading, with a line saying what closed them. N
   **The dim line still crosses unrebuilt text below section 04**: About and Skills start at
   x=0 because their layout classes are dead Tailwind (Gallery is gone as of Task 7.2). It is
   dimmed to 0.15, so contrast holds, but it lies on the text. Phase 8 owns it.
+
+## Closed 2026-09-30
+
+- **CLOSED 2026-09-30 by the curve cleanup (`0951b88`..`e06feda`, live) — monotone-cubic stretching removed the anchor corners, points 7–18 were respaced, and two counter-bends were fixed; Noel approved in the browser.** Original:
+  **The line is not always smooth: some turns are sharp enough to read as corners, not a curve.**
+  Named instance: the start of `02 — scan()` and the turn after it. Control points 7–10
+  (`x` −0.38 → −0.58 → −0.68 → −0.46) reverse direction over only 0.017 of `y`, and uniform
+  Catmull-Rom over unevenly spaced points tightens exactly such reversals into cusps.
+  **Unverified second suspect:** `anchors.ts` scales `y` linearly and separately between each
+  pair of anchors, so the curve's slope in pixels jumps at every seam and in-section anchor. That
+  would turn a smooth normalised curve into visible corners wherever two neighbouring spans get
+  different scale factors. Measure the pixel tangent on both sides of each anchor before changing
+  any geometry.
+- **CLOSED 2026-09-30 by `0d93800` — points 21–26 share `x −0.74` with zero `x` tangent at both ends.** Original:
+  **The work spine (`Problems, solved`) should be straight.** Control points 22–26 carry
+  deliberate "outward breaths" (`x` −0.72, −0.76, −0.74, −0.77, −0.75), and to Noel they read as
+  an uneven, dirty line rather than as attachment points. Straightening them is a `path.ts` edit.
+  Re-run the continuity and chord tests, and re-check the branch origins in `work.ts`, which
+  read the curve's `x`.
+
+## Closed 2026-10-03
+
+- **CLOSED 2026-10-03 — the scheduled run fired 2026-10-01 05:22 UTC (Actions run 36819490932, success; GitHub ran it ~5h late) and the live copy reads "a decade".** Original:
+- **Confirm the first scheduled rebuild.** `VERCEL_DEPLOY_HOOK` is set (closed gap archived);
+  after the 1 Oct 00:00 UTC run, check it succeeded in Actions and the live copy says "a decade".
