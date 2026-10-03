@@ -14,15 +14,27 @@
 import { gsap } from 'gsap';
 import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { onPageProgress } from '../motion/timeline';
+import { playheadPageY } from '../signal/playhead';
 import { createTubeSignal } from '../signal/tube-signal';
 import { onSignalGeometry, onSignalTip } from '../signal/tip';
 import { cameraRig } from './camera';
 import { createFrameWatch, probeVerdict, PROBE_FRAMES, shouldFallBack, type ProbeVerdict } from './frame';
 import { rememberFallback } from './gate';
+import { createPortraitParticles, type PortraitParticles } from './particles';
+import { dissolveProgress } from './portrait-dissolve';
+import { PORTRAIT_SEED, samplePortrait } from './portrait-sample';
+import { readPortraitGrid } from './portrait-source';
+import { createPortraitTiers, PORTRAIT_COUNTS, type PortraitTiers } from './portrait-tier';
 import { createRenderSchedule } from './render-schedule';
 import { hexToRgb } from './tube-mesh';
 
 const MAX_PIXEL_RATIO = 2;
+/** Per drawn frame: how far the pushed field's centre and strength close on the real pointer. */
+const POINTER_EASE = 0.18;
+
+const whenIdle = (fn: () => void) =>
+  'requestIdleCallback' in window ? requestIdleCallback(fn) : setTimeout(fn, 0);
+
 /** The probe is retried this many times if the tab was hidden while it ran. */
 const PROBE_ATTEMPTS = 3;
 
@@ -95,6 +107,41 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
   let isLive = false;
   const watch = createFrameWatch();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  // The portrait (Phase 11) — null until it has sampled, and again after it is dropped.
+  let portrait: PortraitParticles | null = null;
+  let tiers: PortraitTiers | null = null;
+  let pageProgress = 0;
+  // Client px, so a page that scrolls under a still mouse moves the push with it. `hasMoved`
+  // lets the first move place the eased centre outright instead of sweeping it in from nowhere.
+  const pointer = { clientX: 0, clientY: 0, isInWindow: false, hasMoved: false, easedX: 0, easedY: 0, strength: 0 };
+  const portraitFrame = {
+    start: { x: 0, y: 0 },
+    heroTop: 0,
+    heroBottom: 0,
+    heroHeight: 0,
+    docHeight: 0,
+    viewportHeight: 0,
+  };
+
+  /** Everything the portrait's uniforms need for this frame; called just before `render()`. */
+  function updatePortrait(): void {
+    if (!portrait) return;
+    const { start, heroHeight, docHeight, viewportHeight } = portraitFrame;
+    const playheadY = playheadPageY(pageProgress, docHeight, viewportHeight);
+    const restPlayheadY = playheadPageY(0, docHeight, viewportHeight);
+    portrait.setProgress(dissolveProgress(playheadY, restPlayheadY, start.y, heroHeight));
+    portrait.setTime(gsap.ticker.time);
+    const pageX = pointer.clientX + window.scrollX;
+    const pageY = pointer.clientY + window.scrollY;
+    const isOverHero =
+      pointer.isInWindow && pointer.hasMoved && pageY >= portraitFrame.heroTop && pageY <= portraitFrame.heroBottom;
+    pointer.strength += ((isOverHero ? 1 : 0) - pointer.strength) * POINTER_EASE;
+    pointer.easedX += (pageX - pointer.easedX) * POINTER_EASE;
+    pointer.easedY += (pageY - pointer.easedY) * POINTER_EASE;
+    portrait.setPointer(pointer.easedX, pointer.easedY, pointer.strength);
+  }
+
   const cleanups: (() => void)[] = [];
 
   /** One way: `remember` is false only when the probe could not reach a verdict. */
@@ -141,8 +188,22 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
     },
     now: () => gsap.ticker.time * 1000, // gsap.ticker's time is seconds; the watch wants ms.
     draw: (sinceLastDrawMs) => {
-      const tripped = isLive && sinceLastDrawMs !== null && watch.push(sinceLastDrawMs);
+      let tripped = false;
+      if (isLive && sinceLastDrawMs !== null) {
+        if (tiers && portrait) {
+          const verdict = tiers.push(sinceLastDrawMs);
+          if (verdict === 'step') portrait.setCount(tiers.count);
+          tripped = verdict === 'fallBack';
+        } else {
+          tripped = watch.push(sinceLastDrawMs);
+        }
+      }
       if (!checkHealth(tripped)) return;
+      try {
+        updatePortrait();
+      } catch {
+        dropPortrait();
+      }
       render();
     },
   });
@@ -163,10 +224,132 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
       schedule.markDirty();
     };
 
+  /** Undo everything `mountPortrait` did; the still fades back. The tube is untouched. */
+  let unmountPortrait: (() => void) | null = null;
+  function dropPortrait(): void {
+    unmountPortrait?.();
+    unmountPortrait = null;
+    schedule.markDirty();
+  }
+
+  /**
+   * After the tube is live, in an idle callback: sample the still, put the particles on it, then
+   * fade the still. Any failure here leaves the still and the tube exactly as they were (design
+   * §5) — the portrait never hands the tube back.
+   */
+  async function mountPortrait(hero: HTMLElement, still: HTMLImageElement): Promise<void> {
+    let particles: PortraitParticles;
+    try {
+      const grid = await readPortraitGrid(still);
+      if (!canvas.isConnected) return;
+      particles = createPortraitParticles(samplePortrait(grid, PORTRAIT_COUNTS[0], PORTRAIT_SEED), {
+        cream: hexToRgb(tokens.getPropertyValue('--type')),
+        signal: hexToRgb(tokens.getPropertyValue('--signal')),
+      });
+    } catch {
+      return;
+    }
+
+    // Layout reads, kept out of the draw: the box, the hero, the document and the viewport.
+    const measure = () => {
+      const box = still.getBoundingClientRect();
+      particles.setBox({ x: box.left + window.scrollX, y: box.top + window.scrollY, width: box.width, height: box.height });
+      particles.setPixelRatio(renderer.getPixelRatio());
+      const heroBox = hero.getBoundingClientRect();
+      portraitFrame.heroTop = heroBox.top + window.scrollY;
+      portraitFrame.heroBottom = heroBox.bottom + window.scrollY;
+      portraitFrame.heroHeight = heroBox.height;
+      portraitFrame.docHeight = document.documentElement.scrollHeight;
+      portraitFrame.viewportHeight = window.innerHeight;
+      schedule.markDirty();
+    };
+
+    let heroVisible = true;
+    const visibility = new IntersectionObserver(([entry]) => {
+      heroVisible = entry.isIntersecting;
+    });
+    visibility.observe(hero);
+
+    // The drift loop (design D7): dirty every tick while the hero is on screen and the tab is
+    // visible. Appended after the schedule's own listener, so it draws on the following tick.
+    const keepDrifting = () => {
+      if (heroVisible && !document.hidden) schedule.markDirty();
+    };
+    gsap.ticker.add(keepDrifting);
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return;
+      pointer.clientX = event.clientX;
+      pointer.clientY = event.clientY;
+      pointer.isInWindow = true;
+      if (!pointer.hasMoved) {
+        pointer.hasMoved = true;
+        pointer.easedX = event.clientX + window.scrollX;
+        pointer.easedY = event.clientY + window.scrollY;
+      }
+    };
+    const onPointerLeave = () => {
+      pointer.isInWindow = false;
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    document.documentElement.addEventListener('pointerleave', onPointerLeave);
+    window.addEventListener('resize', measure);
+    const stopGeometry = onSignalGeometry((geometry) => {
+      const first = geometry.points[0];
+      if (first) portraitFrame.start = { x: first.x, y: first.y };
+      if (first) particles.setStart(first.x, first.y);
+      measure();
+    });
+
+    unmountPortrait = () => {
+      stopGeometry();
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('pointermove', onPointerMove);
+      document.documentElement.removeEventListener('pointerleave', onPointerLeave);
+      gsap.ticker.remove(keepDrifting);
+      visibility.disconnect();
+      scene.remove(particles.points);
+      particles.dispose();
+      hero.classList.remove('hero--particles');
+      portrait = null;
+      tiers = null;
+    };
+    onHandBack(() => unmountPortrait?.());
+
+    tiers = createPortraitTiers();
+    particles.setCount(tiers.count);
+    scene.add(particles.points);
+    portrait = particles;
+    measure();
+    // Three logs a failed shader compile and draws nothing — it never throws — so without this
+    // a broken program would fade the still out over an empty hero.
+    let portraitFailed = false;
+    renderer.debug.onShaderError = () => {
+      portraitFailed = true;
+    };
+    try {
+      updatePortrait();
+      render();
+    } catch {
+      portraitFailed = true;
+    } finally {
+      renderer.debug.onShaderError = null;
+    }
+    if (portraitFailed) {
+      dropPortrait();
+      return;
+    }
+    // The particles are on screen under the still; now the still can go (D10).
+    hero.classList.add('hero--particles');
+  }
+
   onHandBack(
     onSignalGeometry(whileLive((geometry) => tube.rebuild(geometry))),
     onSignalTip(whileLive((pageY) => tube.setTip(pageY))),
-    onPageProgress(() => schedule.markDirty()),
+    onPageProgress((t) => {
+      pageProgress = t;
+      schedule.markDirty();
+    }),
   );
   const onResize = whileLive(resize);
   const onContextLost = () => {
@@ -217,4 +400,9 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
   isLive = true;
   layer.classList.add('signal-layer--tube');
   canvas.classList.add('signal-canvas--on');
+
+  // Phase 11: the portrait follows the tube and never delays it.
+  const hero = document.getElementById('hero');
+  const still = hero?.querySelector<HTMLImageElement>('img[data-portrait-still]');
+  if (hero && still) whenIdle(() => void mountPortrait(hero, still));
 }

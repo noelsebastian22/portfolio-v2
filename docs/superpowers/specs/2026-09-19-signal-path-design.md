@@ -302,19 +302,19 @@ not be buried in a skills list.
 
 **Visual:** the **particle portrait**; the signal begins below the hero.
 
-The 3960×3960 portrait is sampled into approximately 40,000 GPU particles which are the
-same particle system as the line's emissions. On load the line arrives, then resolves into
-the face. On scroll the face dissolves back into the line, which continues down the page.
-The cursor pushes through the particle field.
-
-*Holding note (Phase 10 revision R1):* the line now begins at the hero's bottom edge, so
-there is no line in the hero to arrive or resolve; Phase 11 revisits this choreography.
+The 3960×3960 photograph is baked into a cream duotone still (§10), and on a capable desktop
+the still's own pixels are sampled into approximately 40,000 GPU particles. At rest they hold
+the face, drifting faintly, and the cursor pushes through them. On scroll the face dissolves
+from the bottom up into a stream that pours down to the point at the hero's bottom edge where
+the line begins, turning from cream to signal red as it joins it; the face is gone exactly as
+the line starts to draw. Scrolling back rebuilds it. The face is the line's source, not its
+destination (Phase 11 design, 2026-10-03).
 
 Conceptually exact — he is made of the signal — and technically a real demonstration:
 GPU particles decoded from an image.
 
-**Fallback:** a duotoned still portrait, baked at build time with `sharp`, on mobile,
-reduced-motion, or when the WebGL gate (§12) fails.
+**Fallback:** the cream duotone still, baked at build time with `sharp`, on mobile,
+reduced-motion, or when the WebGL gate (§12) fails. It is also the particles' only source.
 
 ### 02 — Nine Years: `scan()`
 

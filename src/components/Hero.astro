@@ -16,7 +16,9 @@
  * The portrait is mounted bare — no panel, no border, no radius, no shadow. Task 5.1
  * dissolved its edges to exactly `--ground`, so any frame drawn around it would be a
  * frame around an asset engineered to have none. It does carry a mask, for the opposite
- * reason: see `.hero__face`. Particles replace the still in Phase 11.
+ * reason: see `.hero__face`. On a capable desktop, Phase 11's particles are sampled from
+ * this still's pixels and drawn over it (`src/lib/gfx/scene.ts`); `hero--particles` then
+ * fades it out.
  */
 import { status } from '../data/content';
 
@@ -84,6 +86,7 @@ const PORTRAIT_BASE = '/images/portrait/portrait';
         />
         <img
           class="hero__face"
+          data-portrait-still
           src={`${PORTRAIT_BASE}-640w.jpg`}
           sizes={PORTRAIT_SIZES}
           srcset={`${PORTRAIT_BASE}-640w.jpg 640w, ${PORTRAIT_BASE}-1280w.jpg 1280w`}
@@ -312,6 +315,18 @@ const PORTRAIT_BASE = '/images/portrait/portrait';
        the corners came out 22,21,18 — a lighter rectangle instead of a darker one. */
     -webkit-mask-image: radial-gradient(farthest-side at 50% 45%, #000 86%, transparent 100%);
     mask-image: radial-gradient(farthest-side at 50% 45%, #000 86%, transparent 100%);
+  }
+
+  /* Phase 11: once the particles are drawn over it, the still fades out (design D10). Opacity,
+     not display: the box stays, because the particles are placed on it and re-measure it on
+     every resize. A one-off state change, not choreography — the scroll still drives all of
+     the motion. */
+  .hero__face {
+    transition: opacity 400ms ease-out;
+  }
+
+  .hero--particles .hero__face {
+    opacity: 0;
   }
 
   .hero__caption {
