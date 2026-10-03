@@ -68,3 +68,13 @@ export function particleAt(home: PagePoint, homeV: number, start: PagePoint, pro
     y: rest * rest * home.y + 2 * rest * travelled * control.y + travelled * travelled * start.y,
   };
 }
+
+/**
+ * How much of the still is hidden, from the bottom, at dissolve progress `p` (design R1, D12):
+ * the share of its height whose particles have started to leave. The lowest particles leave at
+ * `p = 0` and the highest at `lastArrival − window`, so the photograph is gone exactly where its
+ * particles are, and never hangs half-faded where they left.
+ */
+export function stillErosion(progress: number): number {
+  return clamp01(progress / (DISSOLVE.lastArrival - DISSOLVE.window));
+}

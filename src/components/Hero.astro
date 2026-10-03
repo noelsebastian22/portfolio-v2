@@ -18,7 +18,7 @@
  * frame around an asset engineered to have none. It does carry a mask, for the opposite
  * reason: see `.hero__face`. On a capable desktop, Phase 11's particles are sampled from
  * this still's pixels and drawn over it (`src/lib/gfx/scene.ts`); `hero--particles` then
- * fades it out.
+ * drops it to a rest opacity under them, and it erodes with them on scroll.
  */
 import { status } from '../data/content';
 
@@ -315,18 +315,33 @@ const PORTRAIT_BASE = '/images/portrait/portrait';
        the corners came out 22,21,18 — a lighter rectangle instead of a darker one. */
     -webkit-mask-image: radial-gradient(farthest-side at 50% 45%, #000 86%, transparent 100%);
     mask-image: radial-gradient(farthest-side at 50% 45%, #000 86%, transparent 100%);
-  }
-
-  /* Phase 11: once the particles are drawn over it, the still fades out (design D10). Opacity,
-     not display: the box stays, because the particles are placed on it and re-measure it on
-     every resize. A one-off state change, not choreography — the scroll still drives all of
-     the motion. */
-  .hero__face {
     transition: opacity 400ms ease-out;
   }
 
+  /* Phase 11 (design R1): with the particles drawn over it, the still drops to a rest opacity
+     rather than leaving — it carries the likeness 40k particles cannot — and a second mask
+     layer hides it from the bottom up exactly as fast as the particles leave (D12).
+     `--portrait-erosion` (0..1) is written by scene.ts; the gradient's 10% feather is why the
+     edge runs to 110%. Opacity and mask, not display: the box stays, because the particles are
+     placed on it. */
   .hero--particles .hero__face {
-    opacity: 0;
+    opacity: 0.4;
+    -webkit-mask-image:
+      radial-gradient(farthest-side at 50% 45%, #000 86%, transparent 100%),
+      linear-gradient(
+        to top,
+        transparent calc(var(--portrait-erosion, 0) * 110% - 10%),
+        #000 calc(var(--portrait-erosion, 0) * 110%)
+      );
+    -webkit-mask-composite: source-in;
+    mask-image:
+      radial-gradient(farthest-side at 50% 45%, #000 86%, transparent 100%),
+      linear-gradient(
+        to top,
+        transparent calc(var(--portrait-erosion, 0) * 110% - 10%),
+        #000 calc(var(--portrait-erosion, 0) * 110%)
+      );
+    mask-composite: intersect;
   }
 
   .hero__caption {

@@ -304,10 +304,12 @@ not be buried in a skills list.
 
 The 3960×3960 photograph is baked into a cream duotone still (§10), and on a capable desktop
 the still's own pixels are sampled into approximately 40,000 GPU particles. At rest they hold
-the face, drifting faintly, and the cursor pushes through them. On scroll the face dissolves
-from the bottom up into a stream that pours down to the point at the hero's bottom edge where
-the line begins, turning from cream to signal red as it joins it; the face is gone exactly as
-the line starts to draw. Scrolling back rebuilds it. The face is the line's source, not its
+the face over the still, which stays beneath them at reduced opacity to carry the likeness;
+they drift faintly, and the cursor pushes through them. On scroll the face — particles and
+still together — dissolves from the bottom up into a stream that pours down to the point at
+the hero's bottom edge where the line begins, turning from cream to signal red as it joins it;
+the face is gone exactly as the line starts to draw. Scrolling back rebuilds it. The face is
+the line's source, not its
 destination (Phase 11 design, 2026-10-03).
 
 Conceptually exact — he is made of the signal — and technically a real demonstration:

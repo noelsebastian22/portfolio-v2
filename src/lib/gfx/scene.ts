@@ -21,7 +21,7 @@ import { cameraRig } from './camera';
 import { createFrameWatch, probeVerdict, PROBE_FRAMES, shouldFallBack, type ProbeVerdict } from './frame';
 import { rememberFallback } from './gate';
 import { createPortraitParticles, type PortraitParticles } from './particles';
-import { dissolveProgress } from './portrait-dissolve';
+import { dissolveProgress, stillErosion } from './portrait-dissolve';
 import { PORTRAIT_SEED, samplePortrait } from './portrait-sample';
 import { readPortraitGrid } from './portrait-source';
 import { createPortraitTiers, PORTRAIT_COUNTS, type PortraitTiers } from './portrait-tier';
@@ -122,6 +122,10 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
     heroHeight: 0,
     docHeight: 0,
     viewportHeight: 0,
+    /** The hero the erosion is written to — set by `mountPortrait`, cleared by its unmount. */
+    hero: null as HTMLElement | null,
+    /** The last `--portrait-erosion` written; a drift frame that changes nothing writes nothing. */
+    erosion: -1,
   };
 
   /** Everything the portrait's uniforms need for this frame; called just before `render()`. */
@@ -130,7 +134,13 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
     const { start, heroHeight, docHeight, viewportHeight } = portraitFrame;
     const playheadY = playheadPageY(pageProgress, docHeight, viewportHeight);
     const restPlayheadY = playheadPageY(0, docHeight, viewportHeight);
-    portrait.setProgress(dissolveProgress(playheadY, restPlayheadY, start.y, heroHeight));
+    const progress = dissolveProgress(playheadY, restPlayheadY, start.y, heroHeight);
+    portrait.setProgress(progress);
+    const erosion = stillErosion(progress);
+    if (erosion !== portraitFrame.erosion && portraitFrame.hero) {
+      portraitFrame.erosion = erosion;
+      portraitFrame.hero.style.setProperty('--portrait-erosion', erosion.toFixed(4));
+    }
     portrait.setTime(gsap.ticker.time);
     const pageX = pointer.clientX + window.scrollX;
     const pageY = pointer.clientY + window.scrollY;
@@ -311,11 +321,15 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
       scene.remove(particles.points);
       particles.dispose();
       hero.classList.remove('hero--particles');
+      hero.style.removeProperty('--portrait-erosion');
+      portraitFrame.hero = null;
       portrait = null;
       tiers = null;
     };
     onHandBack(() => unmountPortrait?.());
 
+    portraitFrame.hero = hero;
+    portraitFrame.erosion = -1;
     tiers = createPortraitTiers();
     particles.setCount(tiers.count);
     scene.add(particles.points);
