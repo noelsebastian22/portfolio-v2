@@ -26,6 +26,7 @@ import { PORTRAIT_SEED, samplePortrait } from './portrait-sample';
 import { readPortraitGrid } from './portrait-source';
 import { createPortraitTiers, PORTRAIT_COUNTS, type PortraitTiers } from './portrait-tier';
 import { createRenderSchedule } from './render-schedule';
+import { mountRingStage, type RingStage } from './ring-stage';
 import { hexToRgb } from './tube-mesh';
 
 const MAX_PIXEL_RATIO = 2;
@@ -128,6 +129,9 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
     erosion: -1,
   };
 
+  // The 3D ring (Phase 12) — null until mounted, and again after it is dropped.
+  let ring: RingStage | null = null;
+
   /** Everything the portrait's uniforms need for this frame; called just before `render()`. */
   function updatePortrait(): void {
     if (!portrait) return;
@@ -214,6 +218,11 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
       } catch {
         dropPortrait();
       }
+      try {
+        ring?.update();
+      } catch {
+        dropRing();
+      }
       render();
     },
   });
@@ -240,6 +249,32 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
     unmountPortrait?.();
     unmountPortrait = null;
     schedule.markDirty();
+  }
+
+  function dropRing(): void {
+    ring?.unmount();
+    ring = null;
+    schedule.markDirty();
+  }
+
+  /** After the portrait's mount is booked: the ring never delays the tube or the face. */
+  function mountRing(): void {
+    const section = document.querySelector<HTMLElement>('[data-ring]');
+    if (!section || !canvas.isConnected) return;
+    try {
+      ring = mountRingStage({
+        section,
+        cameraDistance: () => cameraRig(viewport().width, viewport().height, 0, 0).distance,
+        markDirty: () => schedule.markDirty(),
+        onDrop: () => {
+          ring = null;
+          schedule.markDirty();
+        },
+      });
+    } catch {
+      ring = null;
+    }
+    if (ring) onHandBack(() => dropRing());
   }
 
   /**
@@ -419,4 +454,7 @@ export async function loadEnhanced({ skipProbe }: { skipProbe: boolean }): Promi
   const hero = document.getElementById('hero');
   const still = hero?.querySelector<HTMLImageElement>('img[data-portrait-still]');
   if (hero && still) whenIdle(() => void mountPortrait(hero, still));
+
+  // Phase 12: the ring follows the tube, and never delays it.
+  whenIdle(mountRing);
 }

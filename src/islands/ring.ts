@@ -151,6 +151,8 @@ function mountArrowKeys(section: HTMLElement, links: HTMLAnchorElement[]): void 
  */
 function mountFocusSnap(scroller: HTMLElement): void {
   scroller.addEventListener('focusin', (event) => {
+    // In the 3D ring (Phase 12) focus turns the ring through the scroll instead.
+    if (scroller.closest('.ring--3d')) return;
     const card = (event.target as Element).closest<HTMLElement>('.card');
     if (!card) return;
     const view = scroller.getBoundingClientRect();

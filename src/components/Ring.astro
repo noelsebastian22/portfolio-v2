@@ -505,6 +505,73 @@ const srcset = (urls: Record<string, string>) =>
     clip-path: inset(50%);
     white-space: nowrap;
   }
+
+  /* ── The 3D ring (Phase 12) — on only while ring-stage.ts has mounted it ─────────── */
+
+  /* The rail grows by the pin; the stage sticks for that distance (design D6). */
+  .ring--3d .ring__rail {
+    position: relative;
+    height: calc(100vh + var(--ring-pin, 0px));
+  }
+
+  /* The meeting point and the hold's end stay in the rail, never in the sticky stage: the
+     renderer measures them with getBoundingClientRect, and a stuck element measures where it
+     is stuck, not where the curve should pass. */
+  .ring--3d .ring__track {
+    position: absolute;
+    top: var(--ring-front-y, 0px);
+    left: 0;
+    right: 0;
+    margin-top: calc(var(--signal-stroke) / -2);
+    visibility: hidden;
+  }
+
+  .ring--3d .ring__hold-end {
+    position: absolute;
+    top: calc(var(--ring-front-y, 0px) + var(--ring-pin, 0px));
+    left: 0;
+  }
+
+  .ring--3d .ring__scroller {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  /* One 3D context for all five, so they depth-sort; its perspective is the camera's. */
+  .ring--3d .ring__cards {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    padding: 0;
+    perspective: var(--ring-perspective, 1000px);
+    perspective-origin: var(--ring-origin-x, 50%) var(--ring-origin-y, 50%);
+    transform-style: preserve-3d;
+  }
+
+  /* Each card's top-centre sits on the front point; ring-stage.ts writes its matrix3d. */
+  .ring--3d .card {
+    position: absolute;
+    top: var(--ring-front-y, 0px);
+    left: var(--ring-front-x, 50%);
+    margin-left: calc(var(--ring-card) / -2);
+    transform-origin: 50% 0;
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+
+  .ring--3d .card--inert {
+    pointer-events: none;
+  }
+
+  /* WebGL draws the hoop and the drops; the emissions stay DOM, on their cards. */
+  .ring--3d .card__drop {
+    display: none;
+  }
 </style>
 
 <script>

@@ -63,6 +63,23 @@ export function initScroll(): void {
 }
 
 /**
+ * Scrolls the page to `y` along the same transport as everything else: Lenis when it runs,
+ * native otherwise. The 3D ring (Phase 12) turns by moving the scroll, so focus, drag and the
+ * settle all come through here and the angle has one source of truth.
+ */
+export function scrollToY(y: number, { immediate = false, duration }: { immediate?: boolean; duration?: number } = {}): void {
+  if (typeof window === 'undefined') return;
+  if (lenis) {
+    // Lenis clamps to the page height it last measured, and its own observer is debounced:
+    // after the document has just grown (the ring's pin) a target past the old end would stop short.
+    lenis.dimensions.resize();
+    lenis.scrollTo(y, { immediate, ...(duration === undefined ? {} : { duration }) });
+    return;
+  }
+  window.scrollTo({ top: y, behavior: 'instant' });
+}
+
+/**
  * Page scroll progress, 0..1. Pulled out of `globalProgress()` as pure arithmetic so it
  * can be unit tested without a browser — everything else in this module only a browser
  * can exercise.
