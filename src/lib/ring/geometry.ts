@@ -28,18 +28,25 @@ export type Mat4 = readonly number[];
 
 export const RING_CARD_COUNT = 5;
 export const STEP_DEG = 360 / RING_CARD_COUNT;
-/** The look-down, degrees (D8). Tuned at the checkpoint (revision R1). */
-export const RING_TILT_DEG = 17;
+/**
+ * The look-down, degrees (D8), tuned by eye (revision R4). The eye sits below the ring (the
+ * perspective origin is the viewport's centre), so with none the side cards' tops fall below the
+ * front card's and the ring droops; at 8° they sit ~10px above it, a gentle arc, at all three
+ * checked windows. More reads as looking down on a table.
+ */
+export const RING_TILT_DEG = 8;
 /** How far the pointer can add to the look-down, either way, degrees. */
 export const POINTER_TILT_DEG = 3;
 /** Radius per card width: clears the side cards from the front one with room for a focus ring. */
 export const RADIUS_PER_CARD_WIDTH = 1.1;
-/** The share of each step the arriving card holds at the front (D10). */
-export const DWELL_SHARE = 0.35;
-/** The pin, in viewport heights: a lead-in on the first card, a step per turn, a tail. */
-export const PIN_LEAD_VH = 0.25;
-export const PIN_STEP_VH = 0.6;
-export const PIN_TAIL_VH = 0.25;
+/**
+ * The pin, in viewport heights: a lead-in on the first card, a step per turn, a tail. Short, so
+ * the ring turns at once under the reader's scroll and a step is a flick, not a stretch
+ * (revision R4).
+ */
+export const PIN_LEAD_VH = 0.15;
+export const PIN_STEP_VH = 0.4;
+export const PIN_TAIL_VH = 0.15;
 /** How far the tip travels past the split while the cards arrive, in viewport heights. */
 export const ARRIVAL_DRAW_VH = 0.35;
 /** Clear space above the ring's highest card top, px: the stage sits under the sticky nav (67px), so this clears it by 8. */
@@ -49,7 +56,8 @@ export const FIT_MARGIN_PX = 8;
 /**
  * The stage's CSS `perspective`, px. Chosen for the look, no longer the WebGL camera's distance
  * (revision R4): the front card sits on the page plane, so it is exact under any perspective.
- * About the old camera's at 900 tall (1679); Task 12 tunes it.
+ * Tuned by eye: at 1200 the side cards pinch into trapezoids, at 2200 the ring flattens into a
+ * strip; 1600 reads as a circle with the side cards still plainly cards.
  */
 export const PERSPECTIVE_PX = 1600;
 /**
@@ -64,8 +72,12 @@ export const MIN_RING_SCALE = 0.7;
  */
 export const CARD_FACING_SHARE = 0.5;
 
-/** Opacity is 1 within this many degrees of the front, and 0 past `FADE_GONE_DEG` (D3). */
-const FADE_FULL_DEG = 30;
+/**
+ * Opacity is 1 out to the side cards' place, and 0 past `FADE_GONE_DEG` (D3): only the back two
+ * fade. The sides recede under the overlay instead (`recede`) — a see-through side card would
+ * show the line and the cards behind it.
+ */
+const FADE_FULL_DEG = STEP_DEG;
 const FADE_GONE_DEG = 110;
 /** Below this a faded card takes no pointer events, so it never eats the front card's click. */
 const INERT_BELOW_OPACITY = 0.3;
@@ -101,15 +113,15 @@ export function rawSteps(pinOffset: number, viewportHeight: number): number {
 }
 
 /**
- * Steps turned with a dwell either side of every card: within `DWELL_SHARE / 2` of a whole
- * step the ring holds, and between dwells it eases across. Monotonic, so a reversed scroll
- * unturns it exactly.
+ * Steps turned: the scroll itself, 1:1 (revision R4 — a dwell on every card made the ring feel
+ * late). The settle, not the turn, is what lands a card dead front — and the page scrolls in
+ * whole pixels, so it lands up to half a pixel short: within `SETTLE_ON_CARD_PX` of a card is
+ * on it, exactly, so a resting front card's transform is the identity and its text stays crisp.
  */
-export function turnSteps(raw: number): number {
-  const step = Math.min(Math.floor(raw), lastCard - 1);
-  const within = raw - step;
-  const half = DWELL_SHARE / 2;
-  return step + smooth((within - half) / (1 - DWELL_SHARE));
+export function turnSteps(raw: number, viewportHeight: number): number {
+  const card = Math.round(raw);
+  const isOnCard = Math.abs(raw - card) * PIN_STEP_VH * viewportHeight <= SETTLE_ON_CARD_PX;
+  return isOnCard ? card : raw;
 }
 
 /** The card nearest the front at this pin offset. */
@@ -170,6 +182,21 @@ export function cardAngle(card: number, steps: number): number {
  */
 export function frontness(angleDeg: number): number {
   return 1 - smooth(Math.abs(angleDeg) / (STEP_DEG / 2));
+}
+
+/**
+ * How far a side card recedes under the `--ground` overlay, at most: enough that the front card
+ * is plainly the one being shown, not so much that the sides stop reading as the next sites.
+ */
+export const SIDE_DIM = 0.6;
+
+/**
+ * The overlay's strength on card at `angleDeg`: none at the front, `SIDE_DIM` a step round and
+ * beyond. Over the whole step, not half (`frontness`), so mid-turn the two cards either side of
+ * the front are half dimmed, not both dark.
+ */
+export function recede(angleDeg: number): number {
+  return SIDE_DIM * smooth(Math.abs(angleDeg) / STEP_DEG);
 }
 
 export function cardPose(angleDeg: number): { opacity: number; isFront: boolean; isInert: boolean } {
@@ -240,15 +267,41 @@ export function tiltMatrix(tiltDeg: number): Mat4 {
   return [1, 0, 0, 0, 0, c, -s, 0, 0, s, c, 0, 0, 0, 0, 1];
 }
 
+const NO_OFFSET: Vec3 = [0, 0, 0];
+
 /**
  * A card's CSS transform, applied about its top-centre (`transform-origin: 50% 0`, placed on
- * the front point): its top-centre on `cardTop`, `rise` px lower while it arrives, turned
- * `CARD_FACING_SHARE` of the way to facing outward, at the ring's `scale` (`radius` is already
- * scaled). At scale 1 the front card's is the identity.
+ * the front point): its top-centre on `cardTop`, moved by `offset` (the pointer's lift, the
+ * stack's order), turned `facingShare` of the way to facing outward, at the ring's `scale`
+ * (`radius` is already scaled). At scale 1 and no offset the front card's is the identity.
+ *
+ * The fan-out passes `CARD_FACING_SHARE × spread`: within ~26° of the front a card turned the
+ * full share swings its near edge in front of the front card's plane and cuts through it, and
+ * in the fan all five are that close at once.
  */
-export function cardMatrix(phiDeg: number, radius: number, tiltDeg: number, rise: number, scale = 1): Mat4 {
+export function cardMatrix(
+  phiDeg: number,
+  radius: number,
+  tiltDeg: number,
+  scale = 1,
+  offset: Vec3 = NO_OFFSET,
+  facingShare = CARD_FACING_SHARE,
+): Mat4 {
   const [x, y, z] = cardTop(phiDeg, radius, tiltDeg);
-  return multiply(multiply(translate(x, y + rise, z), rotateY(phiDeg * CARD_FACING_SHARE)), scaleMatrix(scale));
+  const placed = translate(x + offset[0], y + offset[1], z + offset[2]);
+  return multiply(multiply(placed, rotateY(phiDeg * facingShare)), scaleMatrix(scale));
+}
+
+/**
+ * The move that brings a point `lift` px toward the viewer along its own line of sight to
+ * `eye` (the perspective origin, `distance` in front of the page), so it grows on screen but
+ * stays where it is: a card lifted by its top-centre keeps that point — and on the front card,
+ * the line's landing on its dot — exactly in place. `point` and `eye` share front space.
+ */
+export function liftOffset([x, y, z]: Vec3, [eyeX, eyeY, eyeZ]: Vec3, lift: number): Vec3 {
+  if (lift === 0) return NO_OFFSET;
+  const along = lift / (eyeZ - z);
+  return [(eyeX - x) * along, (eyeY - y) * along, lift];
 }
 
 /** Rounded to 1e-6 with no `-0`, so a front card's transform prints as exactly the identity. */
@@ -291,7 +344,7 @@ function riseLines({ viewportHeight, cardWidth, scale, tiltDeg, distance }: Rise
   const eye = { x: 0, y: viewportHeight / 2 };
   const lines = [{ a: 0, b: 0 }];
   for (const side of [1, -1]) {
-    const m = cardMatrix(side * STEP_DEG, radius, tiltDeg, 0, scale);
+    const m = cardMatrix(side * STEP_DEG, radius, tiltDeg, scale);
     for (const cornerX of [cardWidth / 2, -cardWidth / 2]) {
       const [x, y, z] = applyMatrix(m, [cornerX, 0, 0]);
       const riseAt = (frontY: number) => frontY - project([x, frontY + y, z], eye, distance).y;
@@ -398,10 +451,26 @@ export function stageLayout({
 
 // ── Choreography ───────────────────────────────────────────────────────────────────
 
+/** The stacked cards' depth apart, px, so they sort by DOM order — card 0 on top — before they spread. */
+export const STACK_GAP_PX = 2;
+
+/** The share of the fan-out by which the cards are fully opaque: before they reach the circle. */
+const FAN_OPAQUE_AT = 0.5;
+
 /**
- * The arrival, from tip travel `a` (0..1) past the split: the cards rise into place over its
- * last 40%. (Task 12 replaces this with the fan-out.)
+ * The arrival, from tip travel `a` (0..1) past the split: the cards fan out from one stack at
+ * the front into the circle (each card's angle is its `cardAngle × spread`), coming up out of
+ * the ground as they go (the stage shows `opacity` through the ground overlay, so the stack is
+ * never see-through). Driven by the tip, so a reversed scroll gathers them back. The opacity leads — the stack
+ * is seen before it opens — and is full a little before the cards arrive, so the end of the
+ * move is the cards easing onto the circle, not appearing.
  */
-export function arrival(a: number): { cards: number } {
-  return { cards: smooth((a - 0.6) / 0.4) };
+export function fanOut(a: number): { spread: number; opacity: number } {
+  const t = unit(a);
+  return { spread: smooth(t), opacity: smooth(t / FAN_OPAQUE_AT) };
+}
+
+/** The stacked card `card`'s nudge back, in front space, while `spread` < 1. */
+export function stackOffset(card: number, spread: number): Vec3 {
+  return [0, 0, tidyZero(-card * STACK_GAP_PX * (1 - spread))];
 }

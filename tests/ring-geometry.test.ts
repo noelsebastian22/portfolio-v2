@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   CARD_FACING_SHARE,
-  DWELL_SHARE,
   FIT_MARGIN_PX,
   MIN_RING_SCALE,
   PERSPECTIVE_PX,
@@ -14,8 +13,13 @@ import {
   STAGE_MARGIN_PX,
   STEP_DEG,
   POINTER_TILT_DEG,
+  SIDE_DIM,
+  STACK_GAP_PX,
   applyMatrix,
-  arrival,
+  fanOut,
+  liftOffset,
+  recede,
+  stackOffset,
   cardAngle,
   cardMatrix,
   cardPose,
@@ -65,7 +69,7 @@ describe('the ring holds the shipped sites', () => {
 describe('ringRadius', () => {
   // Side cards at ±72° must clear the front card on screen, with room for a focus ring.
   it('keeps the side cards clear of the front card', () => {
-    const sideNearEdge = applyMatrix(cardMatrix(STEP_DEG, R, 0, 0), [-CARD / 2, 0, 0])[0];
+    const sideNearEdge = applyMatrix(cardMatrix(STEP_DEG, R, 0), [-CARD / 2, 0, 0])[0];
     expect(sideNearEdge - CARD / 2).toBeGreaterThan(24);
   });
 
@@ -74,7 +78,7 @@ describe('ringRadius', () => {
     const frontX = CHECK_W / 2;
     const eye = { x: CHECK_W / 2, y: CHECK_H / 2 };
     for (const side of [1, -1]) {
-      const [x, y, z] = applyMatrix(cardMatrix(side * STEP_DEG, R, RING_TILT_DEG, 0), [(-side * CARD) / 2, 0, 0]);
+      const [x, y, z] = applyMatrix(cardMatrix(side * STEP_DEG, R, RING_TILT_DEG), [(-side * CARD) / 2, 0, 0]);
       const nearEdge = project([frontX + x, frontY + y, z], eye, D).x;
       const frontEdge = frontX + (side * CARD) / 2;
       expect(side * (nearEdge - frontEdge)).toBeGreaterThanOrEqual(8);
@@ -89,20 +93,42 @@ describe('the pin', () => {
 
   it('puts card i dead front at stepOffset(i)', () => {
     for (let i = 0; i < RING_CARD_COUNT; i++) {
-      const steps = turnSteps(rawSteps(stepOffset(i, VH), VH));
+      const steps = turnSteps(rawSteps(stepOffset(i, VH), VH), VH);
       expect(steps).toBeCloseTo(i, 9);
       expect(cardAngle(i, steps)).toBeCloseTo(0, 9);
     }
   });
 
-  it('holds the front card still across the lead, the tail and every dwell', () => {
-    expect(turnSteps(rawSteps(0, VH))).toBe(0);
-    expect(turnSteps(rawSteps(pinLength(VH), VH))).toBe(RING_CARD_COUNT - 1);
-    for (let i = 1; i < RING_CARD_COUNT - 1; i++) {
-      const halfDwell = (DWELL_SHARE / 2) * PIN_STEP_VH * VH;
-      expect(turnSteps(rawSteps(stepOffset(i, VH) - halfDwell * 0.9, VH))).toBeCloseTo(i, 9);
-      expect(turnSteps(rawSteps(stepOffset(i, VH) + halfDwell * 0.9, VH))).toBeCloseTo(i, 9);
+  it('holds the front card still across the lead and the tail', () => {
+    expect(turnSteps(rawSteps(0, VH), VH)).toBe(0);
+    expect(turnSteps(rawSteps(stepOffset(0, VH) * 0.5, VH), VH)).toBe(0);
+    expect(turnSteps(rawSteps(pinLength(VH), VH), VH)).toBe(RING_CARD_COUNT - 1);
+  });
+
+  it('shows a card dead front within a pixel of its place — the page scrolls in whole pixels', () => {
+    for (let i = 0; i < RING_CARD_COUNT; i++) {
+      for (const px of [-0.9, -0.4, 0.4, 0.9]) {
+        const raw = rawSteps(stepOffset(i, VH) + px, VH);
+        expect(turnSteps(raw, VH)).toBe(i);
+      }
     }
+    const justOff = rawSteps(stepOffset(2, VH) + 3, VH);
+    expect(turnSteps(justOff, VH)).toBeCloseTo(justOff, 12);
+  });
+
+  it('tracks the scroll 1:1 — no dwell: a share of a step scrolled is that share of a step turned', () => {
+    const stepPx = PIN_STEP_VH * VH;
+    for (let i = 0; i < RING_CARD_COUNT - 1; i++) {
+      for (const share of [0.05, 0.25, 0.5, 0.9]) {
+        expect(turnSteps(rawSteps(stepOffset(i, VH) + share * stepPx, VH), VH)).toBeCloseTo(i + share, 9);
+      }
+    }
+  });
+
+  it('is short: a step of 0.4 of a viewport, a lead and a tail of 0.15 (revision R4)', () => {
+    expect(PIN_STEP_VH).toBe(0.4);
+    expect(PIN_LEAD_VH).toBe(0.15);
+    expect(PIN_TAIL_VH).toBe(0.15);
   });
 
   it('clamps outside the pin', () => {
@@ -113,7 +139,7 @@ describe('the pin', () => {
   it('turns monotonically, so scrolling back reverses it exactly', () => {
     let previous = -Infinity;
     for (let offset = 0; offset <= pinLength(VH); offset += 3) {
-      const steps = turnSteps(rawSteps(offset, VH));
+      const steps = turnSteps(rawSteps(offset, VH), VH);
       expect(steps).toBeGreaterThanOrEqual(previous);
       previous = steps;
     }
@@ -204,9 +230,11 @@ describe('cardAngle and cardPose', () => {
     }
   });
 
-  it('is full strength at the front, gone at the back, and symmetric', () => {
+  it('is full strength at the front and the sides, gone at the back, and symmetric', () => {
     expect(cardPose(0)).toEqual({ opacity: 1, isFront: true, isInert: false });
     expect(cardPose(30).opacity).toBe(1);
+    // The sides recede under the overlay (recede), not by opacity: a see-through card shows the line and the cards behind it.
+    expect(cardPose(STEP_DEG).opacity).toBe(1);
     expect(cardPose(110).opacity).toBe(0);
     expect(cardPose(144).opacity).toBe(0);
     for (const a of [40, 60, 72, 90, 100]) expect(cardPose(a).opacity).toBeCloseTo(cardPose(-a).opacity, 12);
@@ -254,7 +282,7 @@ describe('ringRiseAt', () => {
   const sideCornerRise = (frontY: number, viewportHeight: number, tiltDeg: number) => {
     const rises: number[] = [];
     for (const side of [1, -1]) {
-      const m = cardMatrix(side * STEP_DEG, R, tiltDeg, 0);
+      const m = cardMatrix(side * STEP_DEG, R, tiltDeg);
       for (const corner of [CARD / 2, -CARD / 2]) {
         const [x, y, z] = applyMatrix(m, [corner, 0, 0]);
         rises.push(frontY - project([x, frontY + y, z], { x: 0, y: viewportHeight / 2 }, D).y);
@@ -285,35 +313,43 @@ describe('ringRiseAt', () => {
 
 describe('cardMatrix', () => {
   it('is the identity for the front card at full size — pixel-crisp, its top-centre on the front point', () => {
-    const m = cardMatrix(0, R, RING_TILT_DEG, 0);
+    const m = cardMatrix(0, R, RING_TILT_DEG);
     expect(cssMatrix3d(m)).toBe('matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)');
   });
 
-  it('carries the card top-centre to its place, lowered by the rise', () => {
+  it('carries the card top-centre to its place, moved by the offset', () => {
+    const offset: [number, number, number] = [3, -5, 18];
     for (const phi of [-144, -72, 0, 36, 72, 144]) {
       const top = cardTop(phi, R, RING_TILT_DEG);
-      const placed = applyMatrix(cardMatrix(phi, R, RING_TILT_DEG, 0), [0, 0, 0]);
+      const placed = applyMatrix(cardMatrix(phi, R, RING_TILT_DEG), [0, 0, 0]);
       placed.forEach((v, i) => expect(v).toBeCloseTo(top[i], 9));
-      const risen = applyMatrix(cardMatrix(phi, R, RING_TILT_DEG, 24), [0, 0, 0]);
-      expect(risen[1]).toBeCloseTo(top[1] + 24, 9);
+      const moved = applyMatrix(cardMatrix(phi, R, RING_TILT_DEG, 1, offset), [0, 0, 0]);
+      moved.forEach((v, i) => expect(v).toBeCloseTo(top[i] + offset[i], 9));
     }
+  });
+
+  it('moves the whole card by the offset, without turning or scaling it', () => {
+    const plain = cardMatrix(72, R, RING_TILT_DEG, 0.9);
+    const moved = cardMatrix(72, R, RING_TILT_DEG, 0.9, [0, 0, -4]);
+    for (let i = 0; i < 12; i++) expect(moved[i]).toBeCloseTo(plain[i], 12);
+    expect(moved[14]).toBeCloseTo(plain[14] - 4, 12);
   });
 
   it('scales the card about its top-centre', () => {
     const scale = 0.8;
     for (const phi of [-144, -72, 0, 36, 72, 144]) {
-      const m = cardMatrix(phi, R * scale, RING_TILT_DEG, 0, scale);
+      const m = cardMatrix(phi, R * scale, RING_TILT_DEG, scale);
       const origin = applyMatrix(m, [0, 0, 0]);
       const widthTip = applyMatrix(m, [1, 0, 0]);
       expect(Math.hypot(...widthTip.map((v, i) => v - origin[i]))).toBeCloseTo(scale, 9);
     }
-    expect(cssMatrix3d(cardMatrix(0, R * scale, RING_TILT_DEG, 0, scale))).toBe(
+    expect(cssMatrix3d(cardMatrix(0, R * scale, RING_TILT_DEG, scale))).toBe(
       'matrix3d(0.8,0,0,0,0,0.8,0,0,0,0,0.8,0,0,0,0,1)',
     );
   });
 
   it('turns the card part of the way to its angle', () => {
-    const m = cardMatrix(72, R, RING_TILT_DEG, 0);
+    const m = cardMatrix(72, R, RING_TILT_DEG);
     const origin = applyMatrix(m, [0, 0, 0]);
     const normalTip = applyMatrix(m, [0, 0, 1]);
     const normal = normalTip.map((v, i) => v - origin[i]);
@@ -328,7 +364,7 @@ describe('parity — the CSS transform puts every card’s top-centre on its pla
   it.each([1, 0.8])('at scale %f', (scale) => {
     for (const phi of [-144, -72, 0, 50, 72, 144]) {
       for (const tilt of [RING_TILT_DEG, RING_TILT_DEG + POINTER_TILT_DEG, 0]) {
-        const placed = applyMatrix(cardMatrix(phi, R * scale, tilt, 0, scale), [0, 0, 0]);
+        const placed = applyMatrix(cardMatrix(phi, R * scale, tilt, scale), [0, 0, 0]);
         const top = cardTop(phi, R * scale, tilt);
         placed.forEach((v, i) => expect(v).toBeCloseTo(top[i], 9));
       }
@@ -337,7 +373,7 @@ describe('parity — the CSS transform puts every card’s top-centre on its pla
 
   it('multiply composes right-to-left like CSS', () => {
     const a = tiltMatrix(10);
-    const b = cardMatrix(30, R, 0, 12);
+    const b = cardMatrix(30, R, 0, 1, [0, 12, 0]);
     const p: [number, number, number] = [3, 4, 5];
     const once = applyMatrix(multiply(b, a), p);
     const twice = applyMatrix(b, applyMatrix(a, p));
@@ -369,8 +405,8 @@ describe('stageLayout', () => {
   });
 
   it('sits on the margin when centring would put the ring under the nav', () => {
-    const layout = layoutAt(720);
-    expect(layout.frontY - riseOf(layout.frontY, 720)).toBeCloseTo(STAGE_MARGIN_PX, 9);
+    const layout = layoutAt(700);
+    expect(layout.frontY - riseOf(layout.frontY, 700)).toBeCloseTo(STAGE_MARGIN_PX, 9);
   });
 
   it('centres on the front card when nothing rises above it (no look-down)', () => {
@@ -413,22 +449,129 @@ describe('stageLayout scales the ring to fit a short window', () => {
   });
 
   it('gives up below the floor scale — the rail stays', () => {
-    const layout = layoutAt(520, CARD_H);
+    const layout = layoutAt(470, CARD_H);
     expect(layout.fits).toBe(false);
     expect(layout.scale).toBe(MIN_RING_SCALE);
   });
 });
 
-describe('arrival', () => {
-  it('raises the cards into place as the tip passes the split', () => {
-    expect(arrival(0)).toEqual({ cards: 0 });
-    expect(arrival(1)).toEqual({ cards: 1 });
-    let previous = arrival(0);
-    for (let a = 0; a <= 1; a += 0.01) {
-      const now = arrival(a);
-      expect(now.cards).toBeGreaterThanOrEqual(previous.cards);
+describe('fanOut', () => {
+  it('starts stacked and transparent, ends on the circle and opaque', () => {
+    expect(fanOut(0)).toEqual({ spread: 0, opacity: 0 });
+    expect(fanOut(1)).toEqual({ spread: 1, opacity: 1 });
+  });
+
+  it('spreads and fades in monotonically, so a reversed scroll gathers the stack exactly', () => {
+    let previous = fanOut(0);
+    for (let a = 0; a <= 1.0001; a += 0.01) {
+      const now = fanOut(a);
+      expect(now.spread).toBeGreaterThanOrEqual(previous.spread);
+      expect(now.opacity).toBeGreaterThanOrEqual(previous.opacity);
       previous = now;
     }
+  });
+
+  it('is fully opaque a little before the cards reach the circle', () => {
+    const opaqueEarly = [0.6, 0.7, 0.8].some((a) => fanOut(a).opacity === 1 && fanOut(a).spread < 1);
+    expect(opaqueEarly).toBe(true);
+    // The stack shows before it opens.
+    expect(fanOut(0.3).opacity).toBeGreaterThan(fanOut(0.3).spread);
+  });
+
+  it('clamps outside 0..1', () => {
+    expect(fanOut(-1)).toEqual(fanOut(0));
+    expect(fanOut(2)).toEqual(fanOut(1));
+  });
+});
+
+describe('the fan stays in depth order', () => {
+  it('turns the cards outward only as they spread, so no fanned card cuts through the front one', () => {
+    for (let card = 1; card < RING_CARD_COUNT; card++) {
+      for (let spread = 0.01; spread <= 1; spread += 0.01) {
+        const shown = cardAngle(card, 0) * spread;
+        const m = cardMatrix(shown, R, RING_TILT_DEG, 1, stackOffset(card, spread), CARD_FACING_SHARE * spread);
+        for (const corner of [-CARD / 2, CARD / 2]) {
+          for (const down of [0, 560]) {
+            const [, , z] = applyMatrix(m, [corner, down, 0]);
+            // The front card is the page plane, z = 0 (tilt raises the back, never the front).
+            expect(z).toBeLessThan(1e-9);
+          }
+        }
+      }
+    }
+  });
+
+  it('a card turned the full share at a small angle would cut through — why the facing follows the spread', () => {
+    const m = cardMatrix(13, R, 0, 1);
+    expect(applyMatrix(m, [-CARD / 2, 0, 0])[2]).toBeGreaterThan(0);
+  });
+
+  it('is the ordinary pose once spread', () => {
+    expect(cssMatrix3d(cardMatrix(72, R, RING_TILT_DEG, 1, stackOffset(1, 1), CARD_FACING_SHARE))).toBe(
+      cssMatrix3d(cardMatrix(72, R, RING_TILT_DEG)),
+    );
+  });
+});
+
+describe('stackOffset', () => {
+  it('sorts the stack by DOM order — card 0 on top — and is gone once spread', () => {
+    expect(stackOffset(0, 0)).toEqual([0, 0, 0]);
+    expect(stackOffset(1, 0)[2]).toBe(-STACK_GAP_PX);
+    expect(stackOffset(4, 0)[2]).toBe(-4 * STACK_GAP_PX);
+    expect(stackOffset(3, 0.5)[2]).toBeCloseTo(-1.5 * STACK_GAP_PX, 12);
+    for (let i = 0; i < RING_CARD_COUNT; i++) expect(stackOffset(i, 1)).toEqual([0, 0, 0]);
+  });
+});
+
+describe('recede', () => {
+  it('leaves the front card clear and dims the side cards by SIDE_DIM', () => {
+    expect(recede(0)).toBe(0);
+    expect(recede(STEP_DEG)).toBeCloseTo(SIDE_DIM, 12);
+    expect(recede(-STEP_DEG)).toBeCloseTo(SIDE_DIM, 12);
+    expect(recede(STEP_DEG / 2)).toBeCloseTo(SIDE_DIM / 2, 9);
+  });
+
+  it('ramps over a whole step, so mid-turn neither card is fully dimmed', () => {
+    let previous = -1;
+    for (let a = 0; a <= STEP_DEG; a += 2) {
+      expect(recede(a)).toBeGreaterThanOrEqual(previous);
+      previous = recede(a);
+    }
+    expect(recede(STEP_DEG / 2)).toBeLessThan(SIDE_DIM);
+    expect(recede(144)).toBeCloseTo(SIDE_DIM, 12);
+  });
+});
+
+describe('liftOffset', () => {
+  const eye: [number, number, number] = [80, 320, D];
+  const viewAt = ([x, y, z]: readonly number[]) => project([x, y, z], { x: eye[0], y: eye[1] }, eye[2]);
+
+  it('moves a point toward the viewer by `lift` without moving it on screen', () => {
+    for (const top of [
+      [0, 0, 0],
+      [400, -30, -300],
+      [-420, -20, -310],
+    ] as [number, number, number][]) {
+      const offset = liftOffset(top, eye, 18);
+      expect(offset[2]).toBeCloseTo(18, 12);
+      const lifted: [number, number, number] = [top[0] + offset[0], top[1] + offset[1], top[2] + offset[2]];
+      const before = viewAt(top);
+      const after = viewAt(lifted);
+      expect(after.x).toBeCloseTo(before.x, 9);
+      expect(after.y).toBeCloseTo(before.y, 9);
+    }
+  });
+
+  it('is nothing at no lift', () => {
+    expect(liftOffset([10, 20, -30], eye, 0)).toEqual([0, 0, 0]);
+  });
+
+  it('keeps the front card’s top-centre — the line’s landing point — on screen through a card matrix', () => {
+    const top = cardTop(0, R, RING_TILT_DEG);
+    const m = cardMatrix(0, R, RING_TILT_DEG, 1, liftOffset(top, eye, 18));
+    const after = viewAt(applyMatrix(m, [0, 0, 0]));
+    expect(after.x).toBeCloseTo(0, 9);
+    expect(after.y).toBeCloseTo(0, 9);
   });
 });
 

@@ -67,13 +67,16 @@ export function initScroll(): void {
  * native otherwise. The 3D ring (Phase 12) turns by moving the scroll, so focus, drag and the
  * settle all come through here and the angle has one source of truth.
  */
-export function scrollToY(y: number, { immediate = false, duration }: { immediate?: boolean; duration?: number } = {}): void {
+export function scrollToY(
+  y: number,
+  { immediate = false, duration, easing }: { immediate?: boolean; duration?: number; easing?: (t: number) => number } = {},
+): void {
   if (typeof window === 'undefined') return;
   if (lenis) {
     // Lenis clamps to the page height it last measured, and its own observer is debounced:
     // after the document has just grown (the ring's pin) a target past the old end would stop short.
     lenis.dimensions.resize();
-    lenis.scrollTo(y, { immediate, ...(duration === undefined ? {} : { duration }) });
+    lenis.scrollTo(y, { immediate, ...(duration === undefined ? {} : { duration }), ...(easing ? { easing } : {}) });
     return;
   }
   window.scrollTo({ top: y, behavior: 'instant' });

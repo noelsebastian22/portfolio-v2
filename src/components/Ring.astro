@@ -575,6 +575,14 @@ const srcset = (urls: Record<string, string>) =>
     perspective: var(--ring-perspective, 1000px);
     perspective-origin: var(--ring-origin-x, 50%) var(--ring-origin-y, 50%);
     transform-style: preserve-3d;
+    /* The list's own box is the 3D context's z = 0 plane, in front of every side card (they
+       sit behind the front one): it would take their hover and their clicks. The cards take
+       pointer events themselves; the stage under the list still takes the drag. */
+    pointer-events: none;
+  }
+
+  .ring--3d .card {
+    pointer-events: auto;
   }
 
   /* Each card's top-centre sits on the front point; stage.ts writes its matrix3d. */
@@ -590,6 +598,44 @@ const srcset = (urls: Record<string, string>) =>
 
   .ring--3d .card--inert {
     pointer-events: none;
+  }
+
+  /* Depth without a filter (cost): the side cards recede under the ground, the front one stands
+     off it on a soft, low shadow. stage.ts writes `--ring-dim` (0 dead front, rising a step
+     round; 1 before the cards arrive, which come up out of the ground) and `--ring-lit` (1 dead
+     front, 0 half a step round) per drawn frame. Both drive pseudo-elements' opacity only. */
+  .ring--3d .card::before,
+  .ring--3d .card::after {
+    position: absolute;
+    border-radius: inherit;
+    content: '';
+    pointer-events: none;
+  }
+
+  /* Under the card, so only the shadow outside its box shows. */
+  .ring--3d .card::before {
+    z-index: -1;
+    inset: 0;
+    box-shadow: 0 40px 80px -32px color-mix(in srgb, black 70%, transparent);
+    opacity: var(--ring-lit, 0);
+  }
+
+  /* Over everything on the card, its emission and border included. */
+  .ring--3d .card::after {
+    z-index: 2;
+    inset: -1px;
+    /* Out by the border, so its corners are rounder by as much, or the border's corners show. */
+    border-radius: calc(var(--radius) + 1px);
+    background: var(--ground);
+    opacity: var(--ring-dim, 0);
+  }
+
+  /* The line lands on the front card's dot: lit, a touch larger, with a soft glow. */
+  .ring--3d .card__emit {
+    /* Half of it sits above the card, out of the overlay's reach: it recedes with its card. */
+    opacity: calc(1 - var(--ring-dim, 0));
+    box-shadow: 0 0 12px 2px color-mix(in srgb, var(--shipped) calc(55% * var(--ring-lit, 0)), transparent);
+    transform: scale(calc(1 + 0.25 * var(--ring-lit, 0)));
   }
 
   /* Dragging the stage turns the ring (stage.ts); the link still reads as a link. */

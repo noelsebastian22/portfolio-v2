@@ -19,46 +19,62 @@ import { onSignalCurve, onSignalTip, signalTipY, signalXAtPageY } from '../signa
 import { tipFraction } from '../signal/draw';
 import {
   ARRIVAL_DRAW_VH,
+  CARD_FACING_SHARE,
   PERSPECTIVE_PX,
   RING_CARD_COUNT,
   RING_TILT_DEG,
-  arrival,
   cardAngle,
   cardMatrix,
   cardPose,
+  cardTop,
   cssMatrix3d,
+  fanOut,
   frontness,
+  liftOffset,
   PIN_STEP_VH,
   POINTER_TILT_DEG,
   pinLength,
   pointerTiltRoom,
   rawSteps,
+  recede,
   ringRadius,
   settleTarget,
+  stackOffset,
   stageLayout,
   stepOffset,
   stickyTop,
   turnSteps,
 } from './geometry';
 
-/** How far below its place a card starts before it arrives, px. */
-const ARRIVAL_RISE_PX = 24;
-
 /** A turn the reader asked for by focusing a card, not choreography, s. */
-const FOCUS_TURN_S = 0.6;
+const FOCUS_TURN_S = 0.45;
 
 /** A drag past this many px is a drag, and the click that ends it is swallowed. */
 const DRAG_THRESHOLD_PX = 6;
 
-/** Scroll that has been still this long has stopped. */
-const SETTLE_AFTER_MS = 140;
-const SETTLE_S = 0.4;
+/**
+ * Scroll that has been still this long has stopped; the snap then lands the card in the
+ * direction of travel over `SETTLE_S`, on a crisp ease-out — it starts at speed, as the scroll
+ * it follows was moving, and slows onto the card (revision R4).
+ */
+const SETTLE_AFTER_MS = 110;
+const SETTLE_S = 0.3;
+const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
 
-/** The pointer tilt's ease per drawn frame (the portrait's push), and when it has arrived, degrees. */
-const POINTER_TILT_EASE = 0.18;
+/** The pointer float's ease per drawn frame (the portrait's push), and when each part has arrived. */
+const POINTER_EASE = 0.18;
 const POINTER_TILT_SETTLED_DEG = 0.01;
-/** How much bigger the emission is on the front card. */
-const FRONT_GROWTH = 0.25;
+const POINTER_LIFT_SETTLED_PX = 0.05;
+/**
+ * How far a side card under the pointer lifts toward the viewer, px at full size. Along its
+ * top-centre's line of sight (liftOffset), so it grows a little on screen about the point it
+ * hangs from. Side cards only, fading out with `frontness`: any lift takes the front card off
+ * the identity matrix, and its text visibly softens (checked at 1440×900) — the front card
+ * answers the pointer with its hover-scroll instead.
+ */
+const POINTER_LIFT_PX = 18;
+/** How much of its overlay a fully lifted side card sheds, so the lift reads as coming forward. */
+const LIFT_BRIGHTEN = 0.35;
 
 export interface RingStage {
   /** Reads scroll and tip; writes the cards. A no-op when not switched on. */
@@ -75,7 +91,7 @@ export interface RingStage {
 export function mountRingStage({ section }: { section: HTMLElement }): RingStage | null {
   const rail = section.querySelector<HTMLElement>('.ring__rail');
   const cards = Array.from(section.querySelectorAll<HTMLElement>('.card'));
-  const emits = cards.map((card) => card.querySelector<HTMLElement>('[data-emit]'));
+  const emits = Array.from(section.querySelectorAll<HTMLElement>('[data-emit]'));
   const track = section.querySelector<HTMLElement>('[data-signal-split]');
   const stage = section.querySelector<HTMLElement>('.ring__scroller');
   if (!rail || !track || !stage || cards.length !== RING_CARD_COUNT) return null;
@@ -92,7 +108,7 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
   let isOn = false;
   let isDropped = false;
   /** Measured once the class is on: the rail's page top, the front point's place in the stage. */
-  const measured = { railTop: 0, frontY: 0, pin: 0, viewportHeight: 0, tiltRoom: 0, scale: 1, radius: fullRadius };
+  const measured = { railTop: 0, frontX: 0, frontY: 0, pin: 0, viewportHeight: 0, tiltRoom: 0, scale: 1, radius: fullRadius };
 
   // Draws on the scroll driver's tick, only when something marked it dirty. gsap.ticker.add
   // appends, and this chunk loads long after BaseLayout's initScroll() registered Lenis's
@@ -142,12 +158,13 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     // The curve's own x at the split, as the rail's track reads it — never the viewport centre.
     const curveX = signalXAtPageY(splitY);
     const frontPageX = curveX ?? railBox.left + window.scrollX + railBox.width / 2;
-    section.style.setProperty('--ring-front-x', `${(frontPageX - (railBox.left + window.scrollX)).toFixed(2)}px`);
+    const frontX = Number((frontPageX - (railBox.left + window.scrollX)).toFixed(2));
+    section.style.setProperty('--ring-front-x', `${frontX}px`);
     const { scale } = layout;
     const radius = fullRadius * scale;
     // How far up the pointer may tilt the ring before the side cards' tops run under the nav.
     const tiltRoom = pointerTiltRoom({ frontY: layout.frontY, viewportHeight, cardWidth, scale, distance: PERSPECTIVE_PX });
-    Object.assign(measured, { railTop, frontY: layout.frontY, pin, viewportHeight, tiltRoom, scale, radius });
+    Object.assign(measured, { railTop, frontX, frontY: layout.frontY, pin, viewportHeight, tiltRoom, scale, radius });
     markDirty();
   }
 
@@ -160,6 +177,9 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     const isAboveViewport = section.getBoundingClientRect().bottom <= 0;
     const heightBefore = section.offsetHeight;
     section.classList.add('ring--3d');
+    // The rail's island draws the emissions off the tip with an inline scale, and stands down
+    // in 3D wherever it left them: here they are lit by Ring.astro's CSS from `--ring-lit`.
+    for (const emit of emits) emit.style.removeProperty('transform');
     measure();
     if (isAboveViewport && !isDropped) scrollToY(window.scrollY + section.offsetHeight - heightBefore, { immediate: true });
     restY = window.scrollY;
@@ -202,7 +222,7 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     const target = measured.railTop + stepOffset(index, measured.viewportHeight);
     restY = target;
     if (Math.abs(window.scrollY - target) < 1) return;
-    scrollToY(target, { duration: FOCUS_TURN_S });
+    scrollToY(target, { duration: FOCUS_TURN_S, easing: easeOutCubic });
   };
   section.addEventListener('focusin', onFocusIn);
 
@@ -252,10 +272,14 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
   stage.addEventListener('dragstart', onDragStart);
   stage.addEventListener('click', onClickCapture, true);
 
-  // The pointer tilt (D13): mouse and pen over the stage add up to POINTER_TILT_DEG to the
-  // look-down, eased per drawn frame in update(). Pointer-driven, so a still pointer goes quiet.
+  // The pointer float: mouse and pen over the stage add up to POINTER_TILT_DEG to the
+  // look-down and lift the card under them, both eased per drawn frame in update().
+  // Pointer-driven, so a still pointer goes quiet.
   const pointer = { clientX: 0, clientY: 0, isInWindow: false };
   let pointerTilt = 0;
+  const lifts = cards.map(() => 0);
+  /** Still easing back from a pointer that has gone: it must keep drawing until it arrives. */
+  const isFloating = () => pointerTilt !== 0 || lifts.some((lift) => lift !== 0);
   /** Whether a pointer at viewport y is in the stage's band — from measured numbers, no layout. */
   const isInStageBand = (clientY: number) => {
     const stageTop = stickyTop(window.scrollY, measured.railTop, measured.pin) - window.scrollY;
@@ -267,11 +291,11 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     pointer.clientY = event.clientY;
     pointer.isInWindow = true;
     // Only a pointer that can move the ring draws: over the stage, or easing back from it.
-    if (isOn && (pointerTilt !== 0 || isInStageBand(event.clientY))) markDirty();
+    if (isOn && (isFloating() || isInStageBand(event.clientY))) markDirty();
   };
   const onPointerLeave = () => {
     pointer.isInWindow = false;
-    if (isOn && pointerTilt !== 0) markDirty();
+    if (isOn && isFloating()) markDirty();
   };
   window.addEventListener('pointermove', onPointerTilt, { passive: true });
   document.documentElement.addEventListener('pointerleave', onPointerLeave);
@@ -297,7 +321,7 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     if (card === null) return;
     const target = railTop + stepOffset(card, viewportHeight);
     restY = target;
-    if (Math.abs(window.scrollY - target) > 1) scrollToY(target, { duration: SETTLE_S });
+    if (Math.abs(window.scrollY - target) > 1) scrollToY(target, { duration: SETTLE_S, easing: easeOutCubic });
   }
   // Lenis drives native scroll, so this fires for wheel, keys, drag and Lenis's own easing; the
   // settle's own scroll ends on its target, where the next settle is a no-op.
@@ -343,11 +367,10 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
       section.style.removeProperty(name);
     }
     for (const card of cards) {
-      card.style.removeProperty('transform');
-      card.style.removeProperty('opacity');
+      for (const name of ['transform', 'opacity', '--ring-dim', '--ring-lit']) card.style.removeProperty(name);
       card.classList.remove('card--inert', 'card--front');
     }
-    for (const emit of emits) emit?.style.removeProperty('transform');
+    for (const emit of emits) emit.style.removeProperty('transform');
     refreshScroll();
     if (wasInsideRing) window.scrollTo({ top: section.getBoundingClientRect().top + window.scrollY, behavior: 'instant' });
     else if (wasPastPin) scrollToY(scrollYBefore - (heightBefore - section.offsetHeight), { immediate: true });
@@ -355,11 +378,13 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
 
   function update(): void {
     if (!isOn || isDropped) return;
-    const { railTop, frontY, pin, viewportHeight, tiltRoom, scale, radius } = measured;
+    const { railTop, frontX, frontY, pin, viewportHeight, tiltRoom, scale, radius } = measured;
     const scrollY = window.scrollY;
     const stageTop = stickyTop(scrollY, railTop, pin);
 
-    // Reads first, then writes: the stage's box is where the pointer tilt looks for the pointer.
+    // Reads first, then writes: the stage's box is where the pointer float looks for the
+    // pointer, and the hit test which card it is over (last frame's transforms, inert cards
+    // excluded by their pointer-events).
     const stageLeft = rail!.getBoundingClientRect().left;
     const stageBox = stage!.getBoundingClientRect();
     const isPointerOverStage =
@@ -368,39 +393,59 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
       pointer.clientX <= stageBox.right &&
       pointer.clientY >= stageBox.top &&
       pointer.clientY <= stageBox.bottom;
+    const cardUnderPointer = isPointerOverStage
+      ? document.elementFromPoint(pointer.clientX, pointer.clientY)?.closest<HTMLElement>('.card')
+      : null;
+    const hovered = cardUnderPointer ? cards.indexOf(cardUnderPointer) : -1;
 
-    // The perspective origin is the viewport's centre, wherever the stage is: the eye stageLayout fits through.
-    section.style.setProperty('--ring-origin-x', `${(document.documentElement.clientWidth / 2 - stageLeft).toFixed(2)}px`);
-    section.style.setProperty('--ring-origin-y', `${(viewportHeight / 2 - (stageTop - scrollY)).toFixed(2)}px`);
+    // The perspective origin is the viewport's centre, wherever the stage is: the eye stageLayout
+    // fits through. In front space too, for the lift.
+    const originX = document.documentElement.clientWidth / 2 - stageLeft;
+    const originY = viewportHeight / 2 - (stageTop - scrollY);
+    section.style.setProperty('--ring-origin-x', `${originX.toFixed(2)}px`);
+    section.style.setProperty('--ring-origin-y', `${originY.toFixed(2)}px`);
+    const eye = [originX - frontX, originY - frontY, PERSPECTIVE_PX] as const;
 
-    const raw = rawSteps(scrollY - railTop, viewportHeight);
-    const steps = turnSteps(raw);
+    const steps = turnSteps(rawSteps(scrollY - railTop, viewportHeight), viewportHeight);
     const splitY = railTop + frontY;
-    const arrived = arrival(tipFraction(signalTipY(), splitY, ARRIVAL_DRAW_VH * viewportHeight));
+    const fan = fanOut(tipFraction(signalTipY(), splitY, ARRIVAL_DRAW_VH * viewportHeight));
     // Pointer high opens the ellipse (as far as the stage has room above the ring), low closes
     // it. Eased toward the target, and drawing again until it gets there; then it snaps, so it
     // is exactly 0 once the pointer has gone.
     const pointerTarget = isPointerOverStage ? -(pointer.clientY / viewportHeight - 0.5) * 2 * POINTER_TILT_DEG : 0;
     const targetTilt = Math.min(tiltRoom, pointerTarget);
-    pointerTilt += (targetTilt - pointerTilt) * POINTER_TILT_EASE;
+    pointerTilt += (targetTilt - pointerTilt) * POINTER_EASE;
     if (Math.abs(targetTilt - pointerTilt) > POINTER_TILT_SETTLED_DEG) markDirty();
     else pointerTilt = targetTilt;
     const tiltDeg = RING_TILT_DEG + pointerTilt;
 
     cards.forEach((card, i) => {
       const angleDeg = cardAngle(i, steps);
-      const pose = cardPose(angleDeg);
-      const opacity = pose.opacity * arrived.cards;
-      const rise = (1 - arrived.cards) * ARRIVAL_RISE_PX * scale;
-      card.style.transform = cssMatrix3d(cardMatrix(angleDeg, radius, tiltDeg, rise, scale));
-      card.style.opacity = opacity.toFixed(4);
-      card.classList.toggle('card--inert', pose.isInert || arrived.cards < 0.3);
-      card.classList.toggle('card--front', pose.isFront);
-      // The front card's emission rests lit, handing over smoothly as the ring turns. Its own
-      // size elsewhere.
-      const growth = 1 + FRONT_GROWTH * frontness(angleDeg);
-      const emit = emits[i];
-      if (emit) emit.style.transform = growth === 1 ? '' : `scale(${growth.toFixed(3)})`;
+      // Where the fan-out has it: all five stacked at the front, opening onto the circle.
+      const shownDeg = angleDeg * fan.spread;
+      const pose = cardPose(shownDeg);
+      const isInert = pose.isInert || fan.opacity < 0.3;
+      const fullLift = POINTER_LIFT_PX * scale;
+      const liftTarget = i === hovered && !isInert ? fullLift * (1 - frontness(angleDeg)) : 0;
+      lifts[i] += (liftTarget - lifts[i]) * POINTER_EASE;
+      if (Math.abs(liftTarget - lifts[i]) > POINTER_LIFT_SETTLED_PX) markDirty();
+      else lifts[i] = liftTarget;
+      const [liftX, liftY, liftZ] = liftOffset(cardTop(shownDeg, radius, tiltDeg), eye, lifts[i]);
+      const offset = [liftX, liftY, liftZ + stackOffset(i, fan.spread)[2]] as const;
+      // The cards turn outward only as they spread, so none cuts through the front one.
+      const facing = CARD_FACING_SHARE * fan.spread;
+      card.style.transform = cssMatrix3d(cardMatrix(shownDeg, radius, tiltDeg, scale, offset, facing));
+      // Opacity only for the back two (D3). The side cards recede under the ground overlay, and
+      // the arrival comes up out of it too: a card faded by opacity is see-through, and the
+      // stack would show the line and each other through the front card.
+      card.style.opacity = pose.opacity.toFixed(4);
+      const visibility = (1 - recede(shownDeg) * (1 - (LIFT_BRIGHTEN * lifts[i]) / fullLift)) * fan.opacity;
+      card.style.setProperty('--ring-dim', (1 - visibility).toFixed(3));
+      // The front card is lit — its shadow and its dot — handing over smoothly as the ring turns
+      // (Ring.astro's CSS reads both).
+      card.style.setProperty('--ring-lit', (frontness(angleDeg) * fan.opacity).toFixed(3));
+      card.classList.toggle('card--inert', isInert);
+      card.classList.toggle('card--front', cardPose(angleDeg).isFront);
     });
   }
 
