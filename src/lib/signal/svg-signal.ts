@@ -150,8 +150,11 @@ function clamp01(value: number): number {
   return value;
 }
 
-/** The first section that reserves the gutter (§7.3): above it, nothing is inside one. */
-const GUTTER_FROM_SECTION = 'work';
+/**
+ * The one section that reserves the gutter (§7.3), for its spine: above and below it,
+ * nothing is inside one.
+ */
+const GUTTER_SECTION = 'work';
 
 let gradientCount = 0;
 
@@ -294,14 +297,18 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
 
   /**
    * The gutter in the `<svg>`'s coordinates, read off the probe so the CSS stays the one
-   * definition of it. `null` when the page has no section that reserves one.
+   * definition of it. `null` when the page has no section that reserves one. It ends where
+   * the next section starts, or at the box's bottom on a page with none after it.
    */
-  function measureGutter(gutterTop: number | null): GutterRegion | null {
+  function measureGutter(sectionTops: readonly (number | null)[], height: number): GutterRegion | null {
+    const gutterIndex = SECTION_SPANS.findIndex((span) => span.id === GUTTER_SECTION);
+    const gutterTop = sectionTops[gutterIndex] ?? null;
     if (gutterTop === null) return null;
     const probeStyle = getComputedStyle(gutterProbe);
     const probeLeft = gutterProbe.getBoundingClientRect().left - svg.getBoundingClientRect().left;
     return {
       top: gutterTop,
+      bottom: sectionTops[gutterIndex + 1] ?? height,
       contentLeft: probeLeft + parseFloat(probeStyle.width),
       reach: parseFloat(probeStyle.paddingRight),
     };
@@ -357,8 +364,7 @@ export function createSvgSignal(mount: HTMLElement): SvgSignal {
     publishSignalCurve(pageCurveLookup(pixelPoints, boxRect.left + window.scrollX, boxTopInPage));
 
     // Before the reduced-motion early return on purpose: dimming is contrast, not motion.
-    const gutterIndex = SECTION_SPANS.findIndex((span) => span.id === GUTTER_FROM_SECTION);
-    applyStrength(pixelPoints, measureGutter(sectionTops[gutterIndex] ?? null), height);
+    applyStrength(pixelPoints, measureGutter(sectionTops, height), height);
 
     // For the Phase 10 tube (tip.ts): the same points, in page px.
     const boxLeftInPage = boxRect.left + window.scrollX;

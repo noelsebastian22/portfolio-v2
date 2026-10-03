@@ -224,10 +224,12 @@ Spacing is a 4px base with a modular ramp: 4, 8, 12, 16, 24, 32, 48, 64, 96, 128
 Section vertical rhythm is `clamp(96px, 12vw, 200px)` — considerably more generous than the
 current site, because a dark ground needs more air before it stops feeling heavy.
 
-**The left gutter is reserved for the signal.** From section 03 onward the line occupies a
-fixed column on the left of every section, and content never encroaches on it. At phone
-width the line moves behind the content at low opacity rather than beside it, since there
-is no room for a reserved column.
+**The left gutter is reserved for the signal's spine.** In section 03 the line runs down a
+fixed column on the left, and content never encroaches on it. Below 03 the line runs through
+the centre and weaves behind content, so sections 04–06 use the full content box like 01–02,
+and the line is dimmed wherever it is outside that one column. At phone width the line moves
+behind the content at low opacity rather than beside it, since there is no room for a
+reserved column.
 
 ### 7.4 Motion
 

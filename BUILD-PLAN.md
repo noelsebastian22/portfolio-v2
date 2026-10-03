@@ -96,12 +96,12 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` Phase 12 branch **63,287 (77.3%)**, +131 vs live — Phase 12's base-path edits: the straight hold (`path.ts`, `anchors.ts`), `scrollToY`, `refreshScroll` and the island's 3D guards · live 63,156 (Phase 11) | 2026-10-03 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` Phase 12 branch **63,314 (77.3%)**, +158 vs live — Phase 12's base-path edits: the straight hold (`path.ts`, `anchors.ts`), `scrollToY`, `refreshScroll`, the island's 3D guards, and the gutter's bottom (`gutter.ts`, +27) · live 63,156 (Phase 11) | 2026-10-03 |
 | Enhanced WebGL chunk gzip | ≤ 256,000 | Phase 12 branch **141,079 (55.1%)**, +5,311 vs live for the 3D ring · live 135,768 (Phase 11, +3,492 for the portrait); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 299 | 2026-10-03 |
+| Tests | — | 311 | 2026-10-03 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -614,6 +614,15 @@ decision was made; this section records *what it is*.
   unchanged. The floor is `MIN_RING_SCALE` 0.7: below it the card text gets too small, so the rail
   stays. The line's thickness never scales. 3D's minimum height drops from about 790px to 590px
   (563px card). Enhanced chunk +358 B gzip (141,079 → 141,437). Phase 12 design R3.
+- **2026-10-03 (Noel)** — **Sections 04–06 use the full content box; only 03 Selected Work keeps
+  the signal's gutter.** The gutter exists for the line's spine, which runs down the left margin
+  in 03 only. Below it the line runs through the centre and weaves behind content, so the gutter
+  only pushed 04 Ring, 05 Stack and 06 Contact right of 01–02's left edge for nothing. The dim
+  rule's gutter region now ends at 03's bottom (the `ring` seam), or a point of the 2D line in
+  the old gutter's `x` below 03 would count as clear and draw at full strength under text. The
+  cost is conservative: on a screen wide enough that the centring margin alone clears the curve
+  (2560), a run in 04 that sits in that empty margin, and was lit, is now dim. The tube is full
+  strength everywhere (Phase 10 R3) and is unaffected. Base path +27 B gzip. Spec §7.3 updated.
 
 ## Known Gaps
 
@@ -764,10 +773,12 @@ before then.
   the 2026-09-20 note recommending `--virtual-time-budget=5000` for screenshots: it is fine for
   static paint, wrong for anything animated. Motion must be verified over real-time CDP. Every
   Phase 4 check except the anchor trace was rAF-independent, so they stand.
-- **The content-box assumption is load-bearing.** `gutter.ts`'s lit/dim bands assume every section
-  from 03 down lays out as a centred `--container` with `--s-5` padding plus
-  `padding-left: var(--signal-gutter)`. A section built differently gets a line lit under its
-  text. Phases 7–8 build to it, or extend the probe.
+- **The content-box assumption is load-bearing.** Only 03 Selected Work reserves the gutter: it
+  lays out as a centred `--container` with `--s-5` padding plus `padding-left:
+  var(--signal-gutter)`, and `gutter.ts`'s lit/dim bands assume exactly that box. The probe's
+  region runs from 03's top to the next section's top (`GutterRegion.bottom`, measured in
+  `svg-signal.ts`), so the line is dim everywhere in 04–06, which use the plain content box like
+  01–02. A section that wants the gutter back must reserve it in CSS *and* extend the region.
 - **`global.css`'s reduced-motion rule turns inline style writes into 1ms transitions**, which
   stalled in headless Chrome. The branch and each scrubbed diagram part opt out. Any later island
   that writes positions per frame needs the same opt-out; worth one shared class in the Phase 9 pass.

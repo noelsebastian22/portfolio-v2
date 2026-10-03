@@ -60,19 +60,37 @@ describe('gutterBands', () => {
   ];
 
   it('finds the run that clears the content, interpolating the crossings along the chords', () => {
-    expect(gutterBands(line, { top: 0, contentLeft: 300, reach: 0 })).toEqual([[150, 450]]);
+    expect(gutterBands(line, { top: 0, bottom: 500, contentLeft: 300, reach: 0 })).toEqual([[150, 450]]);
   });
 
   it('counts the stroke and the clearance against the content edge', () => {
     // Clear only where x + 100 <= 400, i.e. x <= 300: the same crossings as above.
-    expect(gutterBands(line, { top: 0, contentLeft: 400, reach: 100 })).toEqual([[150, 450]]);
+    expect(gutterBands(line, { top: 0, bottom: 500, contentLeft: 400, reach: 100 })).toEqual([[150, 450]]);
     // Nothing clears when the reach spans the whole distance to the content.
-    expect(gutterBands(line, { top: 0, contentLeft: 150, reach: 100 })).toEqual([]);
+    expect(gutterBands(line, { top: 0, bottom: 500, contentLeft: 150, reach: 100 })).toEqual([]);
   });
 
-  it('ignores anything above the first section that reserves a gutter', () => {
-    expect(gutterBands(line, { top: 250, contentLeft: 300, reach: 0 })).toEqual([[250, 450]]);
-    expect(gutterBands(line, { top: 600, contentLeft: 300, reach: 0 })).toEqual([]);
+  it('ignores anything above the section that reserves the gutter', () => {
+    expect(gutterBands(line, { top: 250, bottom: 500, contentLeft: 300, reach: 0 })).toEqual([[250, 450]]);
+    expect(gutterBands(line, { top: 600, bottom: 700, contentLeft: 300, reach: 0 })).toEqual([]);
+  });
+
+  it('ignores anything below the section that reserves the gutter', () => {
+    // The parked run starts at y 200, below the bottom, and the sweep in clears x = 300
+    // only at y 150 — past the bottom too. Inside the gutter's x, but not its y.
+    expect(gutterBands(line, { top: 0, bottom: 140, contentLeft: 300, reach: 0 })).toEqual([]);
+    expect(gutterBands([{ x: 100, y: 600 }, { x: 100, y: 700 }], { top: 0, bottom: 500, contentLeft: 300, reach: 0 })).toEqual([]);
+  });
+
+  it('clips a band that crosses the bottom at the bottom', () => {
+    expect(gutterBands(line, { top: 0, bottom: 300, contentLeft: 300, reach: 0 })).toEqual([[150, 300]]);
+  });
+
+  it('ends a band at the first edge a chord crosses, and starts one at the last', () => {
+    // The chord (100, 400) → (500, 500) crosses the bottom at 420, before x = 300 at 450.
+    expect(gutterBands(line, { top: 0, bottom: 420, contentLeft: 300, reach: 0 })).toEqual([[150, 420]]);
+    // The chord (500, 100) → (100, 200) clears x = 300 at 150, then crosses the top at 160.
+    expect(gutterBands(line, { top: 160, bottom: 500, contentLeft: 300, reach: 0 })).toEqual([[160, 450]]);
   });
 
   it('finds several separate bands', () => {
@@ -81,7 +99,7 @@ describe('gutterBands', () => {
       { x: 500, y: 100 },
       { x: 100, y: 200 },
     ];
-    expect(gutterBands(zigzag, { top: 0, contentLeft: 300, reach: 0 })).toEqual([
+    expect(gutterBands(zigzag, { top: 0, bottom: 500, contentLeft: 300, reach: 0 })).toEqual([
       [0, 50],
       [150, 200],
     ]);
@@ -108,7 +126,8 @@ describe.each([
   { viewport: 1440, tops: [65, 1115.39, 2167.89, 3205.08, 7107.83, 7816.02], height: 8568, lit: true },
   { viewport: 2560, tops: [65, 1201.17, 2366.77, 3357.77, 7241.77, 7954.77], height: 8708, lit: true },
 ])('the real curve at $viewport', ({ viewport, tops, height, lit }) => {
-  const region = { top: tops[2], contentLeft: contentLeft(viewport), reach: REACH };
+  // The gutter is 03's alone: from the work seam to the ring seam.
+  const region = { top: tops[2], bottom: tops[3], contentLeft: contentLeft(viewport), reach: REACH };
   const seams = resolveSeamPixels(tops, height);
   const points = toPixelPoints(sampleSignalRange(0, 1, 481), viewport, seams);
   const bands = gutterBands(points, region);
@@ -124,6 +143,10 @@ describe.each([
     it('keeps sections 01–02 and the opening of the sweep dim', () => {
       const workTop = tops[SECTION_SPANS.findIndex((s) => s.id === 'work')];
       for (const [top] of bands) expect(top).toBeGreaterThan(workTop + 100);
+    });
+
+    it('keeps sections 04–06 dim — no band runs past the ring seam', () => {
+      for (const [, bottom] of bands) expect(bottom).toBeLessThanOrEqual(tops[3]);
     });
   } else {
     it('dims the whole line — phone width falls out of the same test', () => {

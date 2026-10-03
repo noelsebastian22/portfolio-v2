@@ -35,10 +35,10 @@
  * end in 3D, so the line runs straight down the centre for the whole pin. Removing the class
  * restores the rail exactly (resize below the fit, or the tube's own fallback).
  *
- * Layout is the content box every section from 03 down shares, because the renderer's
- * gutter probe assumes it (see SelectedWork.astro). The rail alone bleeds past the box's
- * right edge to the viewport's, so the next card visibly runs off the page. Never left:
- * the gutter is the line's.
+ * Layout is the plain content box, as 01–02 use: no signal gutter, because below 03 the line
+ * runs through the centre rather than down a spine in the margin (Decisions, 2026-10-03).
+ * The rail alone bleeds past the box's right edge to the viewport's, so the next card
+ * visibly runs off the page. Never left: the cards start where the heading does.
  */
 import { ringProjects } from '../data/content';
 import captures from '../data/ring-captures.json';
@@ -207,12 +207,12 @@ const srcset = (urls: Record<string, string>) =>
     padding-block: var(--section-y);
   }
 
-  /* The content box the signal's gutter probe assumes — see SelectedWork.astro. */
+  /* The plain content box, as 01–02 use: no signal gutter. Only 03's spine runs down the
+     margin, so only SelectedWork.astro reserves it (and the dim rule's gutter ends there). */
   .ring__inner {
     max-width: var(--container);
     margin-inline: auto;
     padding-inline: var(--s-5);
-    padding-left: calc(var(--s-5) + var(--signal-gutter));
   }
 
   /* ── Section head — the house voice, as SelectedWork sets it ────────────────────── */

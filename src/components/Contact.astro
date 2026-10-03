@@ -100,12 +100,12 @@ import ContactForm from './ContactForm.astro';
     padding-bottom: var(--s-8);
   }
 
-  /* The content box the signal's gutter probe assumes — see SelectedWork.astro. */
+  /* The plain content box, as 01–02 use: no signal gutter. Only 03's spine runs down the
+     margin, so only SelectedWork.astro reserves it (and the dim rule's gutter ends there). */
   .contact__inner {
     max-width: var(--container);
     margin-inline: auto;
     padding-inline: var(--s-5);
-    padding-left: calc(var(--s-5) + var(--signal-gutter));
   }
 
   /* ── Section head — the house voice, as SelectedWork sets it ────────────────────── */
