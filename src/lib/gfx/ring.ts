@@ -107,6 +107,39 @@ export function nearestCard(pinOffset: number, viewportHeight: number): number {
   return Math.round(rawSteps(pinOffset, viewportHeight));
 }
 
+/**
+ * A move off a resting card smaller than this share of a step is a nudge, and settles back to
+ * the nearest card. Anything larger was the reader going somewhere: a single wheel notch (100px
+ * against a 480px step at 800 tall) is ~21%, well past it; trackpad jitter is well under.
+ */
+export const SETTLE_NUDGE_SHARE = 0.08;
+
+/** A scroll within this many px of a card is on it (the page scrolls in whole pixels). */
+export const SETTLE_ON_CARD_PX = 1;
+
+/**
+ * Where the settle goes once the scroll stops at `pinOffset`, having last rested at
+ * `restOffset`: the card index, or `null` to leave the scroll where it is. It follows the
+ * direction of travel (spec Revision R2), so a reader who scrolls one notch at a time still
+ * moves on a card per notch, and one who scrolls out through the lead or the tail is let go.
+ */
+export function settleTarget(pinOffset: number, restOffset: number, viewportHeight: number): number | null {
+  const stepPx = PIN_STEP_VH * viewportHeight;
+  const moved = pinOffset - restOffset;
+  const raw = rawSteps(pinOffset, viewportHeight);
+  // The page scrolls in whole (device) pixels, so a scroll "at" a card can sit a fraction of a
+  // pixel short of it: within this many steps is on the card, never past it.
+  const onCard = SETTLE_ON_CARD_PX / stepPx;
+  const clampCard = (card: number) => Math.min(lastCard, Math.max(0, card));
+  if (Math.abs(moved) < SETTLE_NUDGE_SHARE * stepPx) return nearestCard(pinOffset, viewportHeight);
+  if (moved > 0) {
+    const isLeavingThroughTail = pinOffset > stepOffset(lastCard, viewportHeight) + SETTLE_ON_CARD_PX;
+    return isLeavingThroughTail ? null : clampCard(Math.ceil(raw - onCard));
+  }
+  const isLeavingThroughLead = pinOffset < stepOffset(0, viewportHeight) - SETTLE_ON_CARD_PX;
+  return isLeavingThroughLead ? null : clampCard(Math.floor(raw + onCard));
+}
+
 /** The sticky stage's page top: `position: sticky; top: 0` in a rail `pin` taller than it. */
 export function stickyTop(scrollY: number, railTop: number, pin: number): number {
   return Math.min(railTop + pin, Math.max(railTop, scrollY));

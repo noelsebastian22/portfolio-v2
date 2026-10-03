@@ -65,6 +65,34 @@ Second, the side cards faced straight outward, so at ±72° they were within 18�
   and still clear the front card on screen (≥ 30px at 1280). The front card is still a pure
   translation, and each card still hangs from its drop end by its top-centre.
 
+## Revision R2 — 2026-10-03, settle in the direction of travel
+
+**Found:** in the Task 6 browser check, settling to the *nearest* card trapped a reader who
+scrolls one wheel notch at a time. At 1280×800 a notch is 100px and a step is 480px. Lenis eases
+the notch, the scroll stops, and the settle pulls the reader back. Six single notches from
+card 1, 1.2s apart, all came back to card 1. That breaks D1: a reader who only scrolls is
+guaranteed all five.
+
+**Decided — D10, amended.** The settle follows the direction of travel, measured from where the
+ring last came to rest. The rest is updated by a settle, by a focus turn, at the end of a drag,
+and wherever the scroll stops outside the pin. Leaving through the lead or the tail does not
+move the rest: Lenis ends a wheel ease in 1px moves more than 140ms apart, so a rest moved to
+the first of them would make the last one a nudge, and the reader would be pulled back.
+
+- **A nudge settles to the nearest card.** A nudge is a move off the rest of less than
+  `SETTLE_NUDGE_SHARE` (8%) of a step.
+- **Moving down** settles on the next card at or ahead of the stop. A stop in the tail, past the
+  last card, is not settled, so the reader can leave the pin.
+- **Moving up** settles on the next card at or behind the stop. A stop in the lead, before the
+  first card, is not settled, so the reader can leave the pin.
+- **A drag** settles to the nearest card from where it was let go.
+- **Within `SETTLE_ON_CARD_PX` (1px) of a card is on it.** The page scrolls in whole pixels, so
+  it rests at 5687 for a card at 5687.34. Without the tolerance, a reader moving up who stopped
+  on card 1 was settled to card 0.
+- **Where it lives:** the decision is `settleTarget(pinOffset, restOffset, vh)` in `ring.ts`,
+  covered by unit tests. The ~400ms Lenis ease and the 140ms "scroll has stopped" debounce are
+  unchanged.
+
 ## 3. Structure
 
 | File | Job | Pure | Tested |

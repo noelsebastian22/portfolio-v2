@@ -11,6 +11,7 @@ import {
   PIN_TAIL_VH,
   RING_CARD_COUNT,
   RING_TILT_DEG,
+  SETTLE_NUDGE_SHARE,
   STAGE_MARGIN_PX,
   STEP_DEG,
   applyMatrix,
@@ -31,6 +32,7 @@ import {
   pulseAt,
   rawSteps,
   ringRadius,
+  settleTarget,
   stageLayout,
   stepOffset,
   stickyTop,
@@ -120,6 +122,59 @@ describe('the pin', () => {
     expect(nearestCard(stepOffset(2, VH) + 0.49 * PIN_STEP_VH * VH, VH)).toBe(2);
     expect(nearestCard(stepOffset(2, VH) + 0.51 * PIN_STEP_VH * VH, VH)).toBe(3);
     expect(nearestCard(pinLength(VH) + 500, VH)).toBe(RING_CARD_COUNT - 1);
+  });
+
+  describe('settleTarget follows the direction of travel', () => {
+    const vh = 800;
+    const notch = 100;
+    const at = (card: number) => stepOffset(card, vh);
+
+    it('settles a nudge back to the nearest card', () => {
+      const nudge = SETTLE_NUDGE_SHARE * PIN_STEP_VH * vh - 1;
+      expect(settleTarget(at(1) + nudge, at(1), vh)).toBe(1);
+      expect(settleTarget(at(1) - nudge, at(1), vh)).toBe(1);
+    });
+
+    it('moves on a card for one wheel notch down, and back one for a notch up', () => {
+      expect(settleTarget(at(1) + notch, at(1), vh)).toBe(2);
+      expect(settleTarget(at(2) - notch, at(2), vh)).toBe(1);
+    });
+
+    it('lands one card on from a stop past halfway, either way', () => {
+      expect(settleTarget(at(1) + 0.65 * PIN_STEP_VH * vh, at(1), vh)).toBe(2);
+      expect(settleTarget(at(3) - 0.65 * PIN_STEP_VH * vh, at(3), vh)).toBe(2);
+    });
+
+    it('counts a scroll a fraction of a pixel short of a card as on it', () => {
+      // At 1280×800 the page came to rest at 5687 for a card at 5687.34: never one card past it.
+      expect(settleTarget(at(1) - 0.34, at(2), vh)).toBe(1);
+      expect(settleTarget(at(1) + 0.34, at(0), vh)).toBe(1);
+      expect(settleTarget(at(4) + 0.34, at(3), vh)).toBe(4);
+      expect(settleTarget(at(0) - 0.34, at(1), vh)).toBe(0);
+    });
+
+    it('lets a reader leave through the tail and the lead', () => {
+      expect(settleTarget(at(4) + notch, at(4), vh)).toBeNull();
+      expect(settleTarget(at(0) - notch, at(0), vh)).toBeNull();
+    });
+
+    it('settles a reader coming in from either side on the first card they meet', () => {
+      expect(settleTarget(at(0) - notch, -vh, vh)).toBe(0);
+      expect(settleTarget(at(4) + notch, pinLength(vh) + vh, vh)).toBe(4);
+    });
+
+    it('never names a card outside the ring', () => {
+      for (let offset = 1; offset < pinLength(vh); offset += 7) {
+        for (const rest of [-vh, 0, at(0), at(2), at(4), pinLength(vh) + vh]) {
+          const card = settleTarget(offset, rest, vh);
+          if (card !== null) {
+            expect(card).toBeGreaterThanOrEqual(0);
+            expect(card).toBeLessThanOrEqual(RING_CARD_COUNT - 1);
+            expect(Number.isInteger(card)).toBe(true);
+          }
+        }
+      }
+    });
   });
 
   it('places the stage by sticky arithmetic, as a page top', () => {

@@ -22,11 +22,11 @@ import {
   cardMatrix,
   cardPose,
   cssMatrix3d,
-  nearestCard,
   PIN_STEP_VH,
   pinLength,
   rawSteps,
   ringRadius,
+  settleTarget,
   stageLayout,
   stepOffset,
   stickyTop,
@@ -98,6 +98,8 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   let isDropped = false;
   /** Measured once the class is on: the rail's page top, the front point's page x. */
   const measured = { railTop: 0, frontPageX: 0, frontY: 0, floorY: 0, pin: 0, viewportHeight: 0 };
+  /** The page scroll the ring last came to rest at — the settle reads the reader's direction from it. */
+  let restY = 0;
 
   function measure(): void {
     const viewportHeight = window.innerHeight;
@@ -132,6 +134,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     section.classList.add('ring--3d');
     measure();
     if (isAboveViewport && !isDropped) scrollToY(window.scrollY + section.offsetHeight - heightBefore, { immediate: true });
+    restY = window.scrollY;
     refreshScroll();
   }
 
@@ -162,6 +165,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     const index = card ? cards.indexOf(card) : -1;
     if (index < 0) return;
     const target = measured.railTop + stepOffset(index, measured.viewportHeight);
+    restY = target;
     if (Math.abs(window.scrollY - target) < 1) return;
     scrollToY(target, { duration: FOCUS_TURN_S });
   };
@@ -188,7 +192,11 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   const onPointerUp = () => {
     const wasDragging = drag?.isDragging ?? false;
     drag = null;
-    if (wasDragging) settle();
+    if (wasDragging) {
+      // A drag is its own aim: it settles on the card nearest where it was let go.
+      restY = window.scrollY;
+      settle();
+    }
     swallowNextClick = wasDragging;
   };
   // The cards are links and links drag natively: a native drag cancels the pointer stream
@@ -209,13 +217,27 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   stage.addEventListener('dragstart', onDragStart);
   stage.addEventListener('click', onClickCapture, true);
 
-  // Settle (D10): when scrolling stops inside the pin, ease to the nearest card.
+  // Settle (D10, Revision R2): when scrolling stops inside the pin, ease to a card in the
+  // direction the reader was going.
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
   function settle(): void {
-    const offset = window.scrollY - measured.railTop;
-    const isInsidePin = offset > 0 && offset < measured.pin;
-    if (!isOn || isDropped || drag || !isInsidePin) return;
-    const target = measured.railTop + stepOffset(nearestCard(offset, measured.viewportHeight), measured.viewportHeight);
+    if (!isOn || isDropped || drag) return;
+    const { railTop, pin, viewportHeight } = measured;
+    const offset = window.scrollY - railTop;
+    const isInsidePin = offset > 0 && offset < pin;
+    if (!isInsidePin) {
+      // Stopped outside the pin: that is the rest, or a reader who comes back in would read
+      // as travelling from the card they left.
+      restY = window.scrollY;
+      return;
+    }
+    // Leaving through the lead or the tail keeps the card left as the rest: Lenis's ease ends in
+    // 1px moves more than 140ms apart, and measured from a rest moved to the first of them, the last
+    // reads as a nudge and pulls the reader back.
+    const card = settleTarget(offset, restY - railTop, viewportHeight);
+    if (card === null) return;
+    const target = railTop + stepOffset(card, viewportHeight);
+    restY = target;
     if (Math.abs(window.scrollY - target) > 1) scrollToY(target, { duration: SETTLE_S });
   }
   // Lenis drives native scroll, so this fires for wheel, keys, drag and Lenis's own easing; the
