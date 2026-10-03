@@ -302,19 +302,21 @@ not be buried in a skills list.
 
 **Visual:** the **particle portrait**; the signal begins below the hero.
 
-The 3960×3960 portrait is sampled into approximately 40,000 GPU particles which are the
-same particle system as the line's emissions. On load the line arrives, then resolves into
-the face. On scroll the face dissolves back into the line, which continues down the page.
-The cursor pushes through the particle field.
-
-*Holding note (Phase 10 revision R1):* the line now begins at the hero's bottom edge, so
-there is no line in the hero to arrive or resolve; Phase 11 revisits this choreography.
+The 3960×3960 photograph is baked into a cream duotone still (§10), and on a capable desktop
+the still's own pixels are sampled into approximately 40,000 GPU particles. At rest they hold
+the face over the still, which stays beneath them at reduced opacity to carry the likeness;
+they drift faintly, and the cursor pushes through them. On scroll the face — particles and
+still together — dissolves from the bottom up into a stream that pours down to the point at
+the hero's bottom edge where the line begins, turning from cream to signal red as it joins it;
+the face is gone exactly as the line starts to draw. Scrolling back rebuilds it. The face is
+the line's source, not its
+destination (Phase 11 design, 2026-10-03).
 
 Conceptually exact — he is made of the signal — and technically a real demonstration:
 GPU particles decoded from an image.
 
-**Fallback:** a duotoned still portrait, baked at build time with `sharp`, on mobile,
-reduced-motion, or when the WebGL gate (§12) fails.
+**Fallback:** the cream duotone still, baked at build time with `sharp`, on mobile,
+reduced-motion, or when the WebGL gate (§12) fails. It is also the particles' only source.
 
 ### 02 — Nine Years: `scan()`
 
@@ -493,6 +495,11 @@ ships as AVIF + WebP at 480w (1x) and 960w (2x), and its size is recorded in
 `src/data/ring-captures.json` for `width`/`height` and a constant-speed hover scroll. Nine
 mismatched screenshots become one system. `/websites` keeps its plain-colour hero crops
 (§14).
+
+The hero still follows the same rule (Phase 11, D2): `--ground` to `--type`, cream, not red.
+Red mapped onto a face read as horror, and the still is also the particle portrait's only
+source — the particles are sampled from its pixels at runtime and earn their red only as they
+join the line.
 
 **No video.** It is the heaviest thing that can go on a page and the entire pitch is
 performance; a recruiter can click through to five live sites instead. The hover-scroll

@@ -1,11 +1,12 @@
 /**
  * Bake the duotone still portrait from gallery-masters/noel-sebastian.jpeg.
  *
- * Phase 11 turns this photograph into ~40,000 GPU particles, but the particle
- * portrait is the enhancement, not the baseline: mobile, reduced-motion and any
- * visitor whose WebGL gate fails (spec §12, §14) get this still instead. That is
- * most visitors. It has to look like a decision, not like the thing you see when
- * something failed to load.
+ * Phase 11's ~40,000 GPU particles are sampled at runtime from this still's own
+ * pixels (`src/lib/gfx/portrait-source.ts`), so it is both the baseline and the
+ * particles' only source. The particle portrait is the enhancement, not the baseline:
+ * mobile, reduced-motion and any visitor whose WebGL gate fails (spec §12, §14) get
+ * this still instead. That is most visitors. It has to look like a decision, not
+ * like the thing you see when something failed to load.
  *
  *   npm run images
  *
@@ -35,12 +36,12 @@
  *    of the ground, which is the same idea Phase 11 animates. It assumes it is
  *    mounted ON --ground (or --ground-lift, a 9-value difference nobody sees).
  *
- * 4. DUOTONE. A two-stop gradient map, --ground to --signal, read out of
- *    src/styles/tokens.css at build time rather than typed in here. Retune the
- *    palette in tokens.css, re-run `npm run images`, and the portrait follows.
- *    Note that --signal is a mid-luminance red (~0.27), so the brightest pixel
- *    in the result is a bright red and never a white — that is the point of a
- *    duotone, not a lost highlight.
+ * 4. DUOTONE. A two-stop gradient map, --ground to --type (cream), read out of
+ *    src/styles/tokens.css at build time rather than typed in here. Cream, not
+ *    --signal: red mapped onto a face read as horror — every midtone red, no
+ *    highlight above red — and red means *live* on this site (spec §10), the
+ *    rule the ring captures already follow. Retune the palette in tokens.css,
+ *    re-run `npm run images`, and the portrait follows.
  *
  * Two scales for a portrait panel of roughly 600 CSS px: 640 (1x) and 1280 (2x),
  * each as AVIF, WebP and a JPEG fallback. The generated files are committed, so
@@ -79,9 +80,11 @@ const TONE = { black: 0.12, white: 0.95, gamma: 0.95, contrast: 0.45 };
 
 /**
  * The key light. `floor` is what the darkest corner of the falloff keeps, so
- * the shoulders stay readable instead of snapping off at the ellipse.
+ * the shoulders stay readable instead of snapping off at the ellipse. Tightened
+ * 2026-10-03 (Phase 11, D3): at the old { rx 0.52, ry 0.62, outer 1.15,
+ * floor 0.22 } the door arch behind the head read as bright as the face.
  */
-const KEY = { cx: 0.53, cy: 0.38, rx: 0.52, ry: 0.62, inner: 0.3, outer: 1.15, floor: 0.22 };
+const KEY = { cx: 0.53, cy: 0.37, rx: 0.44, ry: 0.56, inner: 0.26, outer: 0.98, floor: 0.1 };
 
 /**
  * Frame dissolve. `top` stops at 0.05 because the skull starts at 0.086 — fading
@@ -92,8 +95,9 @@ const EDGE = { side: 0.12, top: 0.05, topFloor: 0.5, bottomStart: 0.68, bottomFl
 const ENCODERS = [
   ['avif', (img) => img.avif({ quality: 58, effort: 6 })],
   ['webp', (img) => img.webp({ quality: 80 })],
-  // 4:4:4 because the whole image is red: chroma subsampling puts its error
-  // exactly where every edge in this picture lives.
+  // 4:4:4 so the duotone's warm cast holds right up to every edge; subsampled
+  // chroma smears it into a grey fringe. JPEG is the fallback format, so these
+  // bytes only ship where neither AVIF nor WebP decodes.
   ['jpg', (img) => img.jpeg({ quality: 84, mozjpeg: true, chromaSubsampling: '4:4:4' })],
 ];
 
@@ -127,7 +131,7 @@ function lightingAt(fx, fy) {
  * Greyscale, tone, light, then map — in that order and at the final resolution,
  * so each scale is toned identically instead of resampling already-mapped colour.
  */
-async function bake(width, ground, signal) {
+async function bake(width, ground, top) {
   const extract = {
     left: Math.round(CROP.x * SOURCE_SIZE),
     top: Math.round(CROP.y * SOURCE_SIZE),
@@ -148,7 +152,7 @@ async function bake(width, ground, signal) {
       const i = y * width + x;
       const lit = applyTone(data[i * info.channels] / 255) * lightingAt(x / (width - 1), y / (width - 1));
       for (let c = 0; c < 3; c++) {
-        rgb[i * 3 + c] = Math.round(ground[c] + clamp01(lit) * (signal[c] - ground[c]));
+        rgb[i * 3 + c] = Math.round(ground[c] + clamp01(lit) * (top[c] - ground[c]));
       }
     }
   }
@@ -167,18 +171,18 @@ async function run() {
 
   const css = await readTokens();
   const ground = readTone(css, 'ground');
-  const signal = readTone(css, 'signal');
+  const cream = readTone(css, 'type');
 
   await mkdir(OUT_DIR, { recursive: true });
 
   const srcBytes = (await stat(SRC)).size;
   console.log(
     `${path.relative(ROOT, SRC)}  ${meta.width}x${meta.height}  ` +
-      `${(srcBytes / 1048576).toFixed(1)} MB  →  duotone rgb(${ground}) → rgb(${signal})\n`
+      `${(srcBytes / 1048576).toFixed(1)} MB  →  duotone rgb(${ground}) → rgb(${cream})\n`
   );
 
   for (const width of SCALES) {
-    const duotone = await bake(width, ground, signal);
+    const duotone = await bake(width, ground, cream);
     const written = [];
 
     for (const [ext, encode] of ENCODERS) {

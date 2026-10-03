@@ -79,29 +79,29 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 8 | Sections 05–06 — Stack, Contact | **complete** | Tasks 8.1–8.2. About + Marquee retired; Contact's form works with JS off |
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
 | 10 | WebGL — gate + signal tube | **complete — live 2026-10-03** | PR #1 (`0dfc45e`); tube over the 2D line, revision R1–R4. Section archived |
-| 11 | WebGL — particle portrait | not started | |
+| 11 | WebGL — particle portrait | **built — branch, awaiting final review** | `feat/phase-11-portrait`; cream still, 40k particles over it, revision R1. Noel approved the look 2026-10-03 |
 | 12 | WebGL — 3D ring | not started | |
 | 13 | Audio engine | not started | |
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
 
-### Current figures — 2026-10-01
+### Current figures — 2026-10-03
 
 Replace values here when a session re-measures; do not add a new "Measured after" section.
 
 | Global Constraints budget | Target | Latest | Measured |
 |---|---|---|---|
-| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 10 branch, after Task 9): 98 / 99 / 99 · production ×1: 97 (2026-09-29) | 2026-10-01 |
-| LCP | ≤ 2.0s | preview median **2,175ms** on the Phase 10 branch after Task 9 (2,220 / 2,174 / 2,175); 2026-09-30 interleaved: `master` 2,264, branch 2,263 — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-01 |
+| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 11 branch): 98 / 98 / 99, `master` interleaved 98 / 98 / 98 · production ×1: 97 (2026-09-29) | 2026-10-03 |
+| LCP | ≤ 2.0s | preview, interleaved ×3 (2026-10-03): Phase 11 branch median **2,264ms** (2,267 / 2,264 / 2,189), `master` 2,274 (2,274 / 2,289 / 2,272) — no regression; the cream still is the LCP element and nothing changes before `load` — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-03 |
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **63,151 (77.1%)** (Phase 10) | 2026-10-03 |
-| Enhanced WebGL chunk gzip | ≤ 256,000 | live **132,276 (51.7%)**; `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` **63,157 (77.1%)** (Phase 11 branch; +6 is Rollup exporting `playheadPageY` to the scene chunk) · live 63,151 | 2026-10-03 |
+| Enhanced WebGL chunk gzip | ≤ 256,000 | **135,768 (53.0%)** (Phase 11 branch, +3,492 for the portrait) · live 132,276; `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 222 | 2026-10-03 |
+| Tests | — | 246 | 2026-10-03 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -125,6 +125,7 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Curve cleanup · 2026-09-30 (live) | 61,772 | 75.4% | 173 |
 | Phase 10 · 2026-10-01 (branch) | 63,150 | 77.1% | 215 |
 | Phase 10 · 2026-10-03 (live, after the final-review fixes) | 63,151 | 77.1% | 222 |
+| Phase 11 · 2026-10-03 (branch) | 63,157 | 77.1% | 246 |
 
 ### How to measure
 
@@ -207,7 +208,12 @@ Expand the phase you are about to start into task-level steps before implementin
 **Deliverable:** ~40k GPU particles sampled from the portrait, assembling out of the line
 and dissolving back on scroll, with cursor displacement.
 
-**Files:** `src/lib/gfx/particles.ts`, `scripts/portrait.mjs` (extended to emit sample data)
+**Files:** `src/lib/gfx/{portrait-sample,portrait-dissolve,portrait-tier,portrait-source,particles}.ts`,
+`scene.ts`, `Hero.astro`, `scripts/portrait.mjs` (cream re-bake). No baked sample data: the
+particles are sampled at runtime from the still (design D8).
+
+**Spec:** `docs/superpowers/specs/2026-10-03-phase-11-particle-portrait-design.md` ·
+**Plan:** `docs/superpowers/plans/2026-10-03-phase-11-particle-portrait.md`
 
 **Verification:** holds 60fps on a mid-range laptop. Falls back to the Phase 5 duotone still
 whenever the gate fails. Particle count scales down on weaker hardware rather than dropping
@@ -570,6 +576,12 @@ decision was made; this section records *what it is*.
   other fallbacks: the canvas is inserted only after `new WebGLRenderer` succeeds.
 - **2026-10-01 (Noel)** — **R3 re-confirmed:** the 2D line keeps its dim rule; the tube is full
   strength. Phones get 2D, where the whole line runs behind copy.
+- **2026-10-03 (Noel)** — **The portrait is cream, and the particles are sampled from it at
+  runtime.** The still is re-baked `--ground → --type` with a tighter key light: the red
+  duotone read as horror (every midtone red, no highlight above red, the arch as bright as the
+  face), and red means *live*. The particles read the still's own pixels after load instead of
+  shipping baked sample data, which would cost ~100–150 KB gzip against a 250 KB chunk with
+  132 KB used, and could drift from the still. Phase 11 design D2, D3, D8.
 
 ## Known Gaps
 
@@ -667,7 +679,20 @@ before then.
 - **The emission dots and the Stack's nodes were sized beside a 4px line.** The stroke is 8px
   since Task 9; check them at Noel's next look.
 
+### Parked by the Phase 11 review — 2026-10-03 (not blocking merge)
+
+- **The portrait's geometry listener is unguarded.** `scene.ts` `mountPortrait` re-measures inside
+  `onSignalGeometry`, which runs in `svg-signal.ts`'s publish loop; the tube's listeners go through
+  `whileLive`, which turns a throw into a hand-back. Nothing in `measure` can throw today, but a
+  future edit that could would stop the 2D reveal. The fix is a local try/catch that calls
+  `dropPortrait()` — not `whileLive`, which would take the tube down with it.
+
 ### Standing notes — limits and gotchas, not bugs
+
+- **At 900–960px the particle portrait dissolves as it scrolls into view.** The hero stacks below
+  961px, so the face starts below the fold and the dissolve (driven from scroll 0) is under way
+  by the time it is fully on screen. Accepted at the Phase 11 checkpoint (2026-10-03); the
+  alternative was to gate the particles at ≥ 961px.
 
 - **The tube draws after Lenis only by load order.** `render-schedule.ts` hooks `gsap.ticker`,
   which runs listeners in the order added; `initScroll()` registers Lenis's at page load and
