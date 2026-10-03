@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { cameraRig } from '../src/lib/gfx/camera';
 import {
+  CARD_FACING_SHARE,
   DWELL_SHARE,
+  FIT_MARGIN_PX,
   HOOP_DROP_PX,
   PIN_LEAD_VH,
   PIN_STEP_VH,
   PIN_TAIL_VH,
   RING_CARD_COUNT,
   RING_TILT_DEG,
+  STAGE_MARGIN_PX,
   STEP_DEG,
   applyMatrix,
   arrival,
@@ -19,7 +22,7 @@ import {
   dropEnd,
   frontToWorld,
   hoopPoint,
-  hoopRise,
+  hoopRiseAt,
   mirrorMatrix,
   multiply,
   nearestCard,
@@ -40,6 +43,12 @@ import { ringProjects } from '../src/data/content';
 const CARD = 400;
 const R = ringRadius(CARD);
 const VH = 900;
+/** The checkpoint viewport. */
+const CHECK_W = 1280;
+const CHECK_H = 800;
+const CHECK_D = cameraRig(CHECK_W, CHECK_H, 0, 0).distance;
+const checkLayout = (cardHeight = 560) =>
+  stageLayout({ viewportHeight: CHECK_H, cardHeight, radius: R, distance: CHECK_D, tiltDeg: RING_TILT_DEG });
 
 describe('the ring holds the shipped sites', () => {
   it('has one card per ring project', () => {
@@ -51,9 +60,20 @@ describe('the ring holds the shipped sites', () => {
 describe('ringRadius', () => {
   // Side cards at ±72° must clear the front card on screen, with room for a focus ring.
   it('keeps the side cards clear of the front card', () => {
-    const side = hoopPoint(STEP_DEG, R, 0);
-    const sideNearEdge = side[0] - (CARD / 2) * Math.cos((STEP_DEG * Math.PI) / 180);
+    const sideNearEdge = applyMatrix(cardMatrix(STEP_DEG, R, 0, 0), [-CARD / 2, 0, 0])[0];
     expect(sideNearEdge - CARD / 2).toBeGreaterThan(24);
+  });
+
+  it('keeps the side cards clear of the front card on screen, at the checkpoint', () => {
+    const { frontY } = checkLayout();
+    const frontX = CHECK_W / 2;
+    const eye = { x: CHECK_W / 2, y: CHECK_H / 2 };
+    for (const side of [1, -1]) {
+      const [x, y, z] = applyMatrix(cardMatrix(side * STEP_DEG, R, RING_TILT_DEG, 0), [(-side * CARD) / 2, 0, 0]);
+      const nearEdge = project([frontX + x, frontY + y, z], eye, CHECK_D).x;
+      const frontEdge = frontX + (side * CARD) / 2;
+      expect(side * (nearEdge - frontEdge)).toBeGreaterThanOrEqual(8);
+    }
   });
 });
 
@@ -146,9 +166,12 @@ describe('cardAngle and cardPose', () => {
 });
 
 describe('the look-down', () => {
-  it('lifts the back of the hoop above the front point', () => {
-    expect(hoopPoint(180, R, RING_TILT_DEG)[1]).toBeLessThan(0);
+  it('lifts the back of the hoop above the front point — on screen, at the checkpoint', () => {
     expect(hoopPoint(0, R, RING_TILT_DEG)).toEqual([0, 0, 0]);
+    const { frontY } = checkLayout();
+    const [, backY, backZ] = hoopPoint(180, R, RING_TILT_DEG);
+    const back = project([0, frontY + backY, backZ], { x: 0, y: CHECK_H / 2 }, CHECK_D);
+    expect(frontY - back.y).toBeGreaterThanOrEqual(40);
   });
 
   it('pivots on the front point, so the front card never moves with tilt', () => {
@@ -178,12 +201,15 @@ describe('the look-down', () => {
     expect([x, y, z]).toEqual([10, 1100, -50]);
   });
 
-  it('hoopRise is how far the back projects above the front point', () => {
+  it('hoopRiseAt is how far the back projects above the front point, through the eye', () => {
     const d = 1000;
-    const back = hoopPoint(180, R, RING_TILT_DEG);
-    const onScreen = project(back, { x: 0, y: 0 }, d);
-    expect(hoopRise(R, RING_TILT_DEG, d)).toBeCloseTo(-onScreen.y, 9);
-    expect(hoopRise(R, RING_TILT_DEG, d)).toBeGreaterThan(0);
+    const [, backY, backZ] = hoopPoint(180, R, RING_TILT_DEG);
+    for (const frontY of [0, 150, 400, 620]) {
+      const onScreen = project([0, frontY + backY, backZ], { x: 0, y: 400 }, d);
+      expect(hoopRiseAt(frontY, 800, R, RING_TILT_DEG, d)).toBeCloseTo(frontY - onScreen.y, 9);
+    }
+    // The higher the hoop sits above the eye, the more we look up at it and the less its back rises.
+    expect(hoopRiseAt(150, 800, R, RING_TILT_DEG, d)).toBeLessThan(hoopRiseAt(400, 800, R, RING_TILT_DEG, d));
   });
 });
 
@@ -203,13 +229,15 @@ describe('cardMatrix', () => {
     }
   });
 
-  it('faces the card outward', () => {
+  it('turns the card part of the way to its angle', () => {
     const m = cardMatrix(72, R, RING_TILT_DEG, 0);
     const origin = applyMatrix(m, [0, 0, 0]);
     const normalTip = applyMatrix(m, [0, 0, 1]);
     const normal = normalTip.map((v, i) => v - origin[i]);
-    expect(normal[0]).toBeCloseTo(Math.sin((72 * Math.PI) / 180), 9);
-    expect(normal[2]).toBeCloseTo(Math.cos((72 * Math.PI) / 180), 9);
+    const turned = (72 * CARD_FACING_SHARE * Math.PI) / 180;
+    expect(normal[0]).toBeCloseTo(Math.sin(turned), 9);
+    expect(normal[1]).toBeCloseTo(0, 9);
+    expect(normal[2]).toBeCloseTo(Math.cos(turned), 9);
   });
 });
 
@@ -264,16 +292,23 @@ describe('stageLayout', () => {
     const d = 900 / 2 / Math.tan((15 * Math.PI) / 180);
     const layout = stageLayout({ viewportHeight: 900, cardHeight: 560, radius: R, distance: d, tiltDeg: RING_TILT_DEG });
     expect(layout.fits).toBe(true);
-    expect(layout.frontY - hoopRise(R, RING_TILT_DEG, d)).toBeGreaterThanOrEqual(32 - 1e-9);
+    expect(layout.frontY - hoopRiseAt(layout.frontY, 900, R, RING_TILT_DEG, d)).toBeGreaterThanOrEqual(STAGE_MARGIN_PX - 1e-9);
     expect(layout.floorY).toBe(HOOP_DROP_PX + 560 + 24);
+  });
+
+  it('fits a 560px card at the checkpoint, 1280×800 — the floor may run off, the cards may not', () => {
+    const layout = checkLayout();
+    expect(layout.fits).toBe(true);
+    expect(layout.frontY - hoopRiseAt(layout.frontY, CHECK_H, R, RING_TILT_DEG, CHECK_D)).toBeCloseTo(STAGE_MARGIN_PX, 9);
+    expect(layout.frontY + HOOP_DROP_PX + 560 + FIT_MARGIN_PX).toBeLessThanOrEqual(CHECK_H);
   });
 
   it('centres the block when there is room', () => {
     const d = 1080 / 2 / Math.tan((15 * Math.PI) / 180);
-    const rise = hoopRise(R, RING_TILT_DEG, d);
     const layout = stageLayout({ viewportHeight: 1080, cardHeight: 560, radius: R, distance: d, tiltDeg: RING_TILT_DEG });
-    const top = layout.frontY - rise;
+    const top = layout.frontY - hoopRiseAt(layout.frontY, 1080, R, RING_TILT_DEG, d);
     const bottom = layout.frontY + HOOP_DROP_PX + 560;
+    expect(top).toBeGreaterThan(STAGE_MARGIN_PX);
     expect(top).toBeCloseTo(1080 - bottom, 9);
   });
 

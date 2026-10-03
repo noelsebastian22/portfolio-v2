@@ -37,6 +37,34 @@ is today.
 | D13 | **Enhancement extras are scroll- or pointer-driven only:** the arrival pulse, a floor reflection of the hoop, emission glow sprites, and a pointer tilt of a few degrees. No post-processing pass. | The look Noel approved, within "nothing animates on a timer"; sprites and a mirrored mesh cost a few draw calls, not a bloom pass. |
 | D14 | **The swap waits until the ring is off screen.** If `#ring` intersects the viewport when the 3D layer is ready, adding `.ring--3d` waits until it does not. | Turning on 3D changes the document's height. Off screen it shifts nothing visible (no CLS); on screen it would jump the reader. |
 
+## Revision R1 — 2026-10-03, at the checkpoint
+
+**Found:** at 1280×800 the hoop read as a flat bar, not an ellipse. The camera and the stage's
+perspective origin sit at the viewport's centre, and the hoop's front point sat ~132px from the
+stage top — ~268px *above* eye level — so we looked *up* at the hoop, and perspective lowered its
+back by about as much as the 10° tilt raised it. `stageLayout` hid this: it projected the back
+about the front point, not about the eye, so it under-estimated how far the back rises or falls.
+Second, the side cards faced straight outward, so at ±72° they were within 18° of edge-on —
+~29px wide slivers at 1280. With the first change made, the frames showed a third problem: at
+22° and a 32px margin the hoop's back ran under the sticky nav (67px) at 800 tall.
+
+**Decided (the controller at the checkpoint, for Noel's review):**
+
+- **D8, revised — a 17° look-down**, placed through the true eye. `hoopRiseAt` projects the
+  hoop's back about the perspective origin (the viewport's centre); the rise is affine in the
+  front point's height, so `stageLayout` solves for it in closed form. The checkpoint brief set
+  22°, but 22° needs ~150px of rise at 800 tall, and the block (rise + drop + a 560px card) then
+  cannot sit below the nav. 17° is the steepest whole degree that does — the hoop still reads as an ellipse seen from above at
+  both 1280×800 and 1920×1080, its whole back arc and back drops in view.
+- **D12, amended — the stage clears the nav, and the floor does not count against the fit.**
+  `STAGE_MARGIN_PX` 32 → 75 (the 67px nav + 8). `fits` is
+  `frontY + drop + card + FIT_MARGIN_PX (8) ≤ viewport height`; the floor is decoration and may
+  run off the bottom. A 560px card now needs a 790px-tall window (540px: 771px).
+- **D4, amended — cards turn half-way.** `CARD_FACING_SHARE = 0.5`: a card turns half its angle
+  round the ring (`rotateY(φ · 0.5)`), so the side cards read as cards — a carousel, not a drum —
+  and still clear the front card on screen (≥ 30px at 1280). The front card is still a pure
+  translation, and each card still hangs from its drop end by its top-centre.
+
 ## 3. Structure
 
 | File | Job | Pure | Tested |

@@ -24,8 +24,8 @@ export type Mat4 = readonly number[];
 
 export const RING_CARD_COUNT = 5;
 export const STEP_DEG = 360 / RING_CARD_COUNT;
-/** The look-down, degrees (D8). Starting value; tuned at the checkpoint. */
-export const RING_TILT_DEG = 10;
+/** The look-down, degrees (D8). Tuned at the checkpoint (revision R1). */
+export const RING_TILT_DEG = 17;
 /** How far the pointer can add to the look-down, either way, degrees. */
 export const POINTER_TILT_DEG = 3;
 /** Radius per card width: clears the side cards from the front one with room for a focus ring. */
@@ -40,10 +40,17 @@ export const PIN_STEP_VH = 0.6;
 export const PIN_TAIL_VH = 0.25;
 /** How far the tip travels past the split while the hoop, drops and cards arrive, in viewport heights. */
 export const ARRIVAL_DRAW_VH = 0.35;
-/** Clear space above the hoop's back, px. */
-export const STAGE_MARGIN_PX = 32;
+/** Clear space above the hoop's back, px: the stage sits under the sticky nav (67px), so this clears it by 8. */
+export const STAGE_MARGIN_PX = 75;
 /** From the cards' bottom to the floor, px. */
 export const FLOOR_GAP_PX = 24;
+/** Clear space below the cards' bottom for the stage to fit, px. The floor is decoration and may run off. */
+export const FIT_MARGIN_PX = 8;
+/**
+ * A card turns this share of its angle round the ring, so the side cards still read as cards —
+ * a carousel, not a drum (revision R1).
+ */
+export const CARD_FACING_SHARE = 0.5;
 
 /** Opacity is 1 within this many degrees of the front, and 0 past `FADE_GONE_DEG` (D3). */
 const FADE_FULL_DEG = 30;
@@ -167,7 +174,7 @@ export function applyMatrix(m: Mat4, [x, y, z]: Vec3): Vec3 {
 
 const translate = (x: number, y: number, z: number): Mat4 => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
 
-/** CSS `rotateY(phi)`: carries the card's normal (0, 0, 1) to (sin φ, 0, cos φ) — outward. */
+/** CSS `rotateY(phi)`: carries the card's normal (0, 0, 1) to (sin φ, 0, cos φ). */
 function rotateY(phiDeg: number): Mat4 {
   const c = Math.cos(radians(phiDeg));
   const s = Math.sin(radians(phiDeg));
@@ -193,11 +200,12 @@ export function frontToWorld(frontPageX: number, frontPageY: number): Mat4 {
 
 /**
  * A card's CSS transform, applied about its top-centre (`transform-origin: 50% 0`, placed on
- * the front point): hang from the drop end, `rise` px lower while it arrives, facing outward.
+ * the front point): hang from the drop end, `rise` px lower while it arrives, turned
+ * `CARD_FACING_SHARE` of the way to facing outward.
  */
 export function cardMatrix(phiDeg: number, radius: number, tiltDeg: number, rise: number): Mat4 {
   const [x, y, z] = dropEnd(phiDeg, radius, tiltDeg);
-  return multiply(translate(x, y + rise, z), rotateY(phiDeg));
+  return multiply(translate(x, y + rise, z), rotateY(phiDeg * CARD_FACING_SHARE));
 }
 
 /** Rounded to 1e-6 with no `-0`, so a front card's transform prints as exactly a translation. */
@@ -218,15 +226,22 @@ export function project([x, y, z]: Vec3, origin: { x: number; y: number }, dista
   return { x: origin.x + (x - origin.x) * scale, y: origin.y + (y - origin.y) * scale };
 }
 
-/** How far above the front point the hoop's back projects, px — what the stage clears above. */
-export function hoopRise(radius: number, tiltDeg: number, distance: number): number {
-  return -project(hoopPoint(180, radius, tiltDeg), { x: 0, y: 0 }, distance).y;
+/**
+ * How far above the front point the hoop's back projects on screen, px, with the front point
+ * `frontY` down a viewport-tall stage — through the true eye, at the viewport's centre (the
+ * camera's and the stage's perspective origin). What the stage clears above.
+ */
+export function hoopRiseAt(frontY: number, viewportHeight: number, radius: number, tiltDeg: number, distance: number): number {
+  const [, backY, backZ] = hoopPoint(180, radius, tiltDeg);
+  const eye = { x: 0, y: viewportHeight / 2 };
+  return frontY - project([0, frontY + backY, backZ], eye, distance).y;
 }
 
 /**
  * Where the front point sits in a one-viewport stage: the hoop, drops and cards centred as one
  * block, never closer than `STAGE_MARGIN_PX` to the top. `floorY` is in front space. `fits` is
- * false when the cards would run off the bottom — the rail stays (D12).
+ * false when the cards would run off the bottom — the rail stays (D12). The floor is
+ * decoration and does not count against the fit (revision R1).
  */
 export function stageLayout({
   viewportHeight,
@@ -241,12 +256,17 @@ export function stageLayout({
   distance: number;
   tiltDeg: number;
 }): { frontY: number; floorY: number; fits: boolean } {
-  const rise = hoopRise(radius, tiltDeg, distance);
-  const block = rise + HOOP_DROP_PX + cardHeight;
-  const top = Math.max(STAGE_MARGIN_PX, (viewportHeight - block) / 2);
-  const frontY = top + rise;
+  const riseAt = (frontY: number) => hoopRiseAt(frontY, viewportHeight, radius, tiltDeg, distance);
+  // rise = a·frontY + b and top = frontY − rise. Centred, 2·top = vh − rise − below, so frontY =
+  // (vh − below + b) / (2 − a); at the margin, frontY = (margin + b) / (1 − a). The lower on screen wins.
+  const b = riseAt(0);
+  const a = riseAt(1) - b;
+  const below = HOOP_DROP_PX + cardHeight;
+  const centredY = (viewportHeight - below + b) / (2 - a);
+  const marginY = (STAGE_MARGIN_PX + b) / (1 - a);
+  const frontY = Math.max(centredY, marginY);
   const floorY = HOOP_DROP_PX + cardHeight + FLOOR_GAP_PX;
-  return { frontY, floorY, fits: frontY + floorY <= viewportHeight };
+  return { frontY, floorY, fits: frontY + below + FIT_MARGIN_PX <= viewportHeight };
 }
 
 // ── Choreography ───────────────────────────────────────────────────────────────────
