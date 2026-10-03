@@ -679,6 +679,14 @@ before then.
 - **The emission dots and the Stack's nodes were sized beside a 4px line.** The stroke is 8px
   since Task 9; check them at Noel's next look.
 
+### Parked by the Phase 11 review — 2026-10-03 (not blocking merge)
+
+- **The portrait's geometry listener is unguarded.** `scene.ts` `mountPortrait` re-measures inside
+  `onSignalGeometry`, which runs in `svg-signal.ts`'s publish loop; the tube's listeners go through
+  `whileLive`, which turns a throw into a hand-back. Nothing in `measure` can throw today, but a
+  future edit that could would stop the 2D reveal. The fix is a local try/catch that calls
+  `dropPortrait()` — not `whileLive`, which would take the tube down with it.
+
 ### Standing notes — limits and gotchas, not bugs
 
 - **At 900–960px the particle portrait dissolves as it scrolls into view.** The hero stacks below
