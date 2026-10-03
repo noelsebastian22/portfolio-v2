@@ -1272,3 +1272,23 @@ particles are sampled at runtime from the still (design D8).
 **Verification:** holds 60fps on a mid-range laptop. Falls back to the Phase 5 duotone still
 whenever the gate fails. Particle count scales down on weaker hardware rather than dropping
 frames.
+
+## Archive pass 2026-10-03 — Phase 12
+
+Phase Status note as it stood before the pass:
+
+| 12 | WebGL — 3D ring | not started | |
+
+The phase was built to its design and plan, not to the phase-level sketch below:
+`docs/superpowers/specs/2026-10-03-phase-12-3d-ring-design.md` (revisions R1–R2) ·
+`docs/superpowers/plans/2026-10-03-phase-12-3d-ring.md`.
+
+## PHASE 12 — WebGL: 3D Ring
+
+**Deliverable:** the ring carousel — cards on a circle via `rotateY(θ) translateZ(radius)`,
+drag to spin, with the signal splitting into one branch per card.
+
+**Files:** `src/lib/gfx/ring.ts`, `src/islands/ring.ts` (extended)
+
+**Verification:** arrow keys rotate the ring and move focus together. Every card remains a
+real link. The Phase 7 rail still renders whenever the gate fails.

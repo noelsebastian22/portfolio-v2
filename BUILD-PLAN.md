@@ -80,7 +80,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
 | 10 | WebGL — gate + signal tube | **complete — live 2026-10-03** | PR #1 (`0dfc45e`); tube over the 2D line, revision R1–R4. Section archived |
 | 11 | WebGL — particle portrait | **complete — live 2026-10-03** | PR #2 (`cf91bd9`); cream still, particles over it (R1). Section archived |
-| 12 | WebGL — 3D ring | not started | |
+| 12 | WebGL — 3D ring | **built — awaiting merge** | `feat/phase-12-ring`; hoop + DOM cards, scroll-pinned (R1–R2). Section archived |
 | 13 | Audio engine | not started | |
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
@@ -96,12 +96,12 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **63,156 (77.1%)** (Phase 11; +5 vs Phase 10 is Rollup exporting `playheadPageY` to the scene chunk) | 2026-10-03 |
-| Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,768 (53.0%)** (Phase 11, +3,492 for the portrait); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` Phase 12 branch **63,287 (77.3%)**, +131 vs live — Phase 12's base-path edits: the straight hold (`path.ts`, `anchors.ts`), `scrollToY`, `refreshScroll` and the island's 3D guards · live 63,156 (Phase 11) | 2026-10-03 |
+| Enhanced WebGL chunk gzip | ≤ 256,000 | Phase 12 branch **141,079 (55.1%)**, +5,311 vs live for the 3D ring · live 135,768 (Phase 11, +3,492 for the portrait); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 246 | 2026-10-03 |
+| Tests | — | 299 | 2026-10-03 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -127,6 +127,7 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Phase 10 · 2026-10-03 (live, after the final-review fixes) | 63,151 | 77.1% | 222 |
 | Phase 11 · 2026-10-03 (branch) | 63,157 | 77.1% | 246 |
 | Phase 11 · 2026-10-03 (live) | 63,156 | 77.1% | 246 |
+| Phase 12 · 2026-10-03 (branch) | 63,287 | 77.3% | 299 |
 
 ### How to measure
 
@@ -156,7 +157,9 @@ src/
       scene.ts           Three.js renderer lifecycle              (phase 10)
       render-schedule.ts draws in the scroll tick, only when dirty (phase 10)
       particles.ts       portrait point cloud                      (phase 11)
-      ring.ts            3D ring carousel                          (phase 12)
+      ring.ts            3D ring geometry — pure, tested           (phase 12)
+      ring-stage.ts      the ring's DOM side: swap, cards, input   (phase 12)
+      ring-mesh.ts       hoop, drops, glow, floor reflection       (phase 12)
   islands/               one vanilla TS entry per interactive section
   components/            .astro section components
   data/
@@ -200,19 +203,9 @@ For the interfaces those phases produced, the code is the source of truth (`src/
 
 ---
 
-# PHASES 12–15 — Phase-Level Detail
+# PHASES 13–15 — Phase-Level Detail
 
 Expand the phase you are about to start into task-level steps before implementing it.
-
-## PHASE 12 — WebGL: 3D Ring
-
-**Deliverable:** the ring carousel — cards on a circle via `rotateY(θ) translateZ(radius)`,
-drag to spin, with the signal splitting into one branch per card.
-
-**Files:** `src/lib/gfx/ring.ts`, `src/islands/ring.ts` (extended)
-
-**Verification:** arrow keys rotate the ring and move focus together. Every card remains a
-real link. The Phase 7 rail still renders whenever the gate fails.
 
 ## PHASE 13 — Audio Engine
 
@@ -574,6 +567,45 @@ decision was made; this section records *what it is*.
   to the line (`stillErosion`, `portrait-dissolve.ts`). Chosen over more, smaller particles (≈3×
   the GPU work, still grainy) and blue-noise placement (a sampler rewrite). Phase 11 design R1,
   D10 revised, D12.
+- **2026-10-03** — **The 3D ring pins with `position: sticky`, not a GSAP pin.** In 3D the rail
+  grows by the pin length and its stage sticks for that distance. A GSAP pin wraps the section in a
+  spacer and fixes it to the viewport; sticky keeps the content in place, scrolls natively under
+  Lenis and needs no ScrollTrigger. Phase 12 design D6.
+- **2026-10-03** — **The line holds straight down the centre through the ring, in 2D too.** Control
+  points 34–36 sit at `x: 0` with zero `x` tangents, and point 36 is pinned to
+  `[data-signal-hold="end"]` (`RING_HOLD_END_POINT`), so 34→36 is exactly vertical. While pinned,
+  the hoop's front point is fixed in the viewport and stays on the line; without the hold the line
+  would slide off it mid-turn. Zero tangents rather than new waypoints keep the curve's shape, and
+  the rail gains a straight hold behind its cards. Phase 12 design D7.
+- **2026-10-03** — **Reduced motion gets the rail, not a static 3D ring.** The enhanced layer
+  never mounts under reduced motion, and a static ring would need a second, non-WebGL 3D path.
+  Supersedes the "static ring" offered in conversation. Phase 12 design D11.
+- **2026-10-03** — **Turning 3D on waits until the ring is off screen.** `.ring--3d` changes the
+  document's height: off screen it shifts nothing visible (no CLS), on screen it would jump the
+  reader. A reader already past the ring is held in place by moving the scroll by exactly what the
+  section gained — or, when the ring drops, lost — because Chrome's scroll anchoring did not hold
+  them. Phase 12 design D14.
+- **2026-10-03 (controller, for Noel's review)** — **The ring's checkpoint values: a 17° look-down,
+  a 75px stage margin, cards turned half-way, and a fit that excludes the floor.** At 1280×800 the
+  hoop read as a flat bar: it sat above eye level, and perspective cancelled the 10° tilt. 22°
+  then put the hoop's back under the 67px nav at 800 tall; 17° is the steepest whole degree that
+  clears it with `STAGE_MARGIN_PX` 75 (nav + 8). `CARD_FACING_SHARE` 0.5 turns each card half its
+  angle round the ring, so side cards at ±72° read as cards, not ~29px slivers. The floor
+  reflection may run off the bottom. Cost: 3D needs a window about 790px tall for the 560px card
+  (771px for 540px), so many 13–14" laptops get the rail (Known Gaps). Phase 12 design R1.
+- **2026-10-03 (controller)** — **The ring's settle follows the direction of travel, not the
+  nearest card.** At 1280×800 a wheel notch (100px) is under half a step (480px), so settling to
+  the nearest card pulled a notch-by-notch reader back to the card they had left: six single
+  notches from card 1 all came back to it. That broke D1 (a reader who only scrolls sees all five).
+  A move under 8% of a step settles to the nearest card; a larger one settles on the next card in
+  the direction moved; leaving through the lead or the tail is never settled. `settleTarget` in
+  `ring.ts`, unit-tested. Phase 12 design R2.
+- **2026-10-03 (controller)** — **The ring's pointer tilt is capped by the room above the hoop,
+  not reserved in the layout.** `pointerTiltRoom()` lets the pointer tilt the ring up only as far
+  as the hoop's back still clears the nav plus `STAGE_MARGIN_PX`. On a window where the layout
+  already sits on the margin, the pointer can only tilt the ring down. Reserving the full
+  17° + 3° in `stageLayout` raised the 3D minimum height from 790 to 835px and dropped 1280×800 to
+  the rail. Phase 12 design §4.
 
 ## Known Gaps
 
@@ -678,6 +710,21 @@ before then.
   `whileLive`, which turns a throw into a hand-back. Nothing in `measure` can throw today, but a
   future edit that could would stop the 2D reveal. The fix is a local try/catch that calls
   `dropPortrait()` — not `whileLive`, which would take the tube down with it.
+
+### Parked by Phase 12 — 2026-10-03 (not blocking merge)
+
+- **3D needs a window about 790px tall** (the 560px card), so many 13–14" laptops get the rail.
+  Why: the hoop's back, a drop and the tallest card must stack below the nav in one viewport at
+  the 17° look-down (R1). Levers if it matters: a smaller card in 3D, or a shallower tilt.
+- **Mid-turn, the line runs past the hoop's front point, down the gap between cards to its tip.**
+  It is the spec's "the line continues", but it reads as a spine. Noel to judge.
+- **The flare jumps 0→1 as the drop pulse lands.** It reads as a flash while scrolling; never at
+  rest, since it is gone by the dwell's centre and every front card rests the same.
+- **Wheel-scrolling away from a keyboard-focused card leaves its focus ring on a turned-aside
+  card.** Inherent to scroll-as-transport: the scroll turns the ring and does not move focus.
+- **`ring-stage.ts` `update()` reads the rail's rect every drawn frame,** after the previous
+  frame's writes, so one forced layout per drawn frame. Cache the stage's left in `measure()` if
+  profiling shows a cost.
 
 ### Standing notes — limits and gotchas, not bugs
 

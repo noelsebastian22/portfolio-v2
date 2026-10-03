@@ -393,20 +393,33 @@ Menzone.
 `content.ts` carries them as `ringProjects`. TopDel used to appear twice, once as
 `freelanceCaseStudy` as well; that is gone, and the ring is the only home for freelance work.
 
-**Visual:** a 3D ring carousel. Cards placed with `rotateY(θ) translateZ(radius)` around a
-circle. The line splits into one branch per card, each terminating on its card.
+**Visual:** on a capable desktop, a 3D ring seen from a little above. The rail's split becomes
+a **hoop**: a circle of tube at the signal's weight, which the curve meets at its front point.
+Each card hangs from the hoop on a drop ending in its `--shipped` emission, so the anatomy is
+the rail's with depth. The cards are the server-rendered rail cards, restyled in CSS 3D. The
+hoop, drops and glow are drawn in the WebGL scene, and both read one geometry module
+(`gfx/ring.ts`). The section **pins** with `position: sticky`, not a GSAP pin, and the line
+holds straight down the centre for the whole pin. Scrolling turns the ring one card at a time,
+and a pulse runs from the line along the hoop and down the arriving card's drop. **Back cards
+fade**: full strength within ±30° of the front, gone by ±110°, and a faded card takes no clicks.
+Design and revisions: `2026-10-03-phase-12-3d-ring-design.md` (D1–D3, D6, R1).
 
-**Interaction:** drag or scroll to spin. On hover, the card's long duotone capture (§10)
+**Interaction:** scroll turns the ring, and when the scroll stops inside the pin it settles on
+the next card in the direction the reader was going. Dragging the stage turns it too, by
+moving the scroll. On hover, the card's long duotone capture (§10)
 scrolls inside its frame — which reads as a screen recording at the cost of an image the
 card already loads. It moves the image with `transform` at a constant speed, set per card from
 the capture's height, and runs on focus as well as hover; under reduced motion the capture
 stays at its top. Browser chrome is markup above the frame, showing the site's real hostname.
 
-Every card is a real anchor to the live site. The ring is operable by keyboard with arrow
-keys, and focus moves the ring.
+Every card is a real anchor to the live site. The ring is operable by keyboard: arrow keys
+and Tab move focus between cards, and focus moves the ring — a focused card is brought to the
+front, so the focus ring is never on a faded card.
 
-**Fallback:** a horizontal scroll-snap rail on mobile and when the WebGL gate fails. Same
-cards, same content, same links. In the rail **the split is a track**: a horizontal stroke above
+**Fallback:** a horizontal scroll-snap rail on phones, short windows, under reduced motion,
+and when the WebGL gate fails. A short window is one the ring does not fit: the hoop's back,
+a drop and the tallest card must stack below the nav in one viewport, about 790px tall for
+the 560px card. Same cards, same content, same links. In the rail **the split is a track**: a horizontal stroke above
 the cards at the signal's weight and colour, which the curve meets exactly where it reaches the
 centre (control point 34 is pinned to the track's centre line). Each card hangs off the track on
 a short drop ending in a `--shipped` emission, and says `shipped · live` in words. The drops sit
@@ -584,7 +597,8 @@ Target **WCAG 2.2 AA**.
   disabled. Motion is enhancement, never delivery.
 - `prefers-reduced-motion: reduce` turns all scroll choreography into instant state
   changes, skips the preloader, and swaps the particle portrait for the baked still.
-- The ring is keyboard-operable with arrow keys; every card is a real `<a>`.
+- The ring is keyboard-operable: arrow keys and Tab move focus, and focus brings a card to the
+  front of the 3D ring. Every card is a real `<a>`.
 - Focus indicators are high-contrast against warm black and never suppressed.
 - Audio is off by default; the toggle is a real `<button>` with `aria-pressed`.
 - Counting statistics expose their final value to assistive technology immediately rather
