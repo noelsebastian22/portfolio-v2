@@ -607,6 +607,14 @@ decision was made; this section records *what it is*.
   17° + 3° in `stageLayout` raised the 3D minimum height from 790 to 835px and dropped 1280×800 to
   the rail. Phase 12 design §4.
 
+- **2026-10-03 (Noel)** — **The ring scales to fit a short window, down to 0.7, rather than
+  giving up.** At 1440×760, the laptop case, the full-size ring did not fit and the reader got
+  the rail. `stageLayout` now returns the largest uniform scale that fits, about the front point,
+  for the hoop, drops, cards and floor. That is 1 where the full ring fits, so tall windows are
+  unchanged. The floor is `MIN_RING_SCALE` 0.7: below it the card text gets too small, so the rail
+  stays. The line's thickness never scales. 3D's minimum height drops from about 790px to 590px
+  (563px card). Enhanced chunk +358 B gzip (141,079 → 141,437). Phase 12 design R3.
+
 ## Known Gaps
 
 Open items and standing notes only. When a gap closes, move the whole bullet verbatim to
@@ -713,9 +721,10 @@ before then.
 
 ### Parked by Phase 12 — 2026-10-03 (not blocking merge)
 
-- **3D needs a window about 790px tall** (the 560px card), so many 13–14" laptops get the rail.
-  Why: the hoop's back, a drop and the tallest card must stack below the nav in one viewport at
-  the 17° look-down (R1). Levers if it matters: a smaller card in 3D, or a shallower tilt.
+- **3D needs a window at least 590px tall** (the 563px card at the 0.7 floor). Between that and
+  about 790px the ring renders scaled down to fit (R3): 0.95 at 1440×760, 0.86 at 1440×700.
+  Below 590px the rail stays. Why: the hoop's back, a drop and the tallest card must stack below
+  the nav in one viewport at the 17° look-down (R1).
 - **Mid-turn, the line runs past the hoop's front point, down the gap between cards to its tip.**
   It is the spec's "the line continues", but it reads as a spine. Noel to judge.
 - **The flare jumps 0→1 as the drop pulse lands.** It reads as a flash while scrolling; never at

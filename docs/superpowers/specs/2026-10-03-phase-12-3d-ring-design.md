@@ -93,6 +93,32 @@ the first of them would make the last one a nudge, and the reader would be pulle
   covered by unit tests. The ~400ms Lenis ease and the 140ms "scroll has stopped" debounce are
   unchanged.
 
+## Revision R3 — 2026-10-03, the ring scales to fit
+
+**Found:** Noel could not see the ring on his laptop. At 1440×900 `.ring--3d` switched on; at
+1440×760 it never did, even with `?signal=tube`. The full-size ring needs a window about 790px
+tall for the 563px card (R1), and a MacBook's Chrome viewport is usually 700–800px tall, so most
+recruiters on a laptop would get the rail.
+
+**Decided (Noel) — scale the whole ring down to fit, down to a floor, rather than give up.**
+
+- **One uniform scale `s`** for the ring's geometry in front space: the hoop's radius, the drop's
+  length, the cards and the floor. It is taken about the front point, which stays on the page
+  plane where the line meets it, so the front card's top-centre stays exactly on its drop end.
+- **`s = 1` wherever the ring fits at full size**, so tall windows are unchanged and the front
+  card is still a pure translation. Otherwise `stageLayout` returns the largest `s` that fits, by
+  the R1 fit test at scaled lengths.
+- **The floor is `MIN_RING_SCALE = 0.7`.** Below about 70% a card's body text stops reading as
+  text, and the rail at full size is the better page. A window where 0.7 does not fit keeps the
+  rail. For the 563px card that is anything under 590px tall. Between 590px and about 790px the
+  ring renders scaled: 0.95 at 1440×760, 0.86 at 1440×700, 0.90 at 1280×720 (a 560px card).
+- **The line's thickness does not scale.** The hoop is rebuilt at the scaled radius, and only
+  when a resize changes it. The drops stretch in length only. The hoop and drops keep
+  `--signal-stroke`, so the ring stays the same line as the curve that runs into it.
+- **Amends D9:** the front card is 1:1 with CSS px only at scale 1. Below that it is a uniform
+  scale about its top-centre, still on the page plane.
+- **Amends D12:** the ring fits wherever it fits at a scale of 0.7 or more, not only at full size.
+
 ## 3. Structure
 
 | File | Job | Pure | Tested |

@@ -61,7 +61,10 @@ export interface RingFrame {
   /** Front point, page px — where the hoop meets the line this frame. */
   frontPageX: number;
   frontPageY: number;
+  /** The hoop's radius at this window's scale, px. */
   radius: number;
+  /** The ring's scale for this window: 1 where it fits at full size, down to MIN_RING_SCALE (R3). */
+  scale: number;
   tiltDeg: number;
   floorY: number;
   /** Steps turned (eased) and linear, for the cards and the pulse. */
@@ -100,16 +103,16 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   // The rail's cards share one height (flex stretch), so any card's is the tallest.
   const cardWidth = cards[0].getBoundingClientRect().width;
   const cardHeight = cards[0].getBoundingClientRect().height;
-  const radius = ringRadius(cardWidth);
+  const fullRadius = ringRadius(cardWidth);
 
   const layoutFor = (viewportHeight: number) =>
-    stageLayout({ viewportHeight, cardHeight, radius, distance: cameraDistance(), tiltDeg: RING_TILT_DEG });
+    stageLayout({ viewportHeight, cardHeight, radius: fullRadius, distance: cameraDistance(), tiltDeg: RING_TILT_DEG });
   if (!layoutFor(window.innerHeight).fits) return null;
 
   let isOn = false;
   let isDropped = false;
   /** Measured once the class is on: the rail's page top, the front point's page x. */
-  const measured = { railTop: 0, frontPageX: 0, frontY: 0, floorY: 0, pin: 0, viewportHeight: 0, tiltRoom: 0 };
+  const measured = { railTop: 0, frontPageX: 0, frontY: 0, floorY: 0, pin: 0, viewportHeight: 0, tiltRoom: 0, scale: 1, radius: fullRadius };
   /** The page scroll the ring last came to rest at — the settle reads the reader's direction from it. */
   let restY = 0;
 
@@ -131,9 +134,11 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     const curveX = signalXAtPageY(splitY);
     const frontPageX = curveX ?? railBox.left + window.scrollX + railBox.width / 2;
     section.style.setProperty('--ring-front-x', `${(frontPageX - (railBox.left + window.scrollX)).toFixed(2)}px`);
+    const { scale } = layout;
+    const radius = fullRadius * scale;
     // How far up the pointer may tilt the ring before the hoop's back runs under the nav.
     const tiltRoom = pointerTiltRoom({ frontY: layout.frontY, viewportHeight, radius, distance: cameraDistance() });
-    Object.assign(measured, { railTop, frontPageX, frontY: layout.frontY, floorY: layout.floorY, pin, viewportHeight, tiltRoom });
+    Object.assign(measured, { railTop, frontPageX, frontY: layout.frontY, floorY: layout.floorY, pin, viewportHeight, tiltRoom, scale, radius });
     markDirty();
   }
 
@@ -185,7 +190,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   };
   section.addEventListener('focusin', onFocusIn);
 
-  // Drag: mouse and pen only (touch scrolls natively). A drag of one card width turns one step.
+  // Drag: mouse and pen only (touch scrolls natively). A drag of one (scaled) card width turns one step.
   let drag: { startX: number; startScroll: number; isDragging: boolean } | null = null;
   let swallowNextClick = false;
   const onPointerDown = (event: PointerEvent) => {
@@ -201,7 +206,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     drag.isDragging = true;
     // Dragging left brings the next card in from the right.
     const pxPerStep = PIN_STEP_VH * measured.viewportHeight;
-    scrollToY(drag.startScroll - (dx / cardWidth) * pxPerStep, { immediate: true });
+    scrollToY(drag.startScroll - (dx / (cardWidth * measured.scale)) * pxPerStep, { immediate: true });
   };
   const onPointerUp = () => {
     const wasDragging = drag?.isDragging ?? false;
@@ -337,7 +342,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
 
   function update(): RingFrame | null {
     if (!isOn || isDropped) return null;
-    const { railTop, frontPageX, frontY, floorY, pin, viewportHeight, tiltRoom } = measured;
+    const { railTop, frontPageX, frontY, floorY, pin, viewportHeight, tiltRoom, scale, radius } = measured;
     const scrollY = window.scrollY;
     const stageTop = stickyTop(scrollY, railTop, pin);
     const frontPageY = stageTop + frontY;
@@ -375,21 +380,21 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
       const angleDeg = cardAngle(i, steps);
       const pose = cardPose(angleDeg);
       const opacity = pose.opacity * arrived.cards;
-      const rise = (1 - arrived.cards) * ARRIVAL_RISE_PX;
-      card.style.transform = cssMatrix3d(cardMatrix(angleDeg, radius, tiltDeg, rise));
+      const rise = (1 - arrived.cards) * ARRIVAL_RISE_PX * scale;
+      card.style.transform = cssMatrix3d(cardMatrix(angleDeg, radius, tiltDeg, rise, scale));
       card.style.opacity = opacity.toFixed(4);
       card.classList.toggle('card--inert', pose.isInert || arrived.cards < 0.3);
       card.classList.toggle('card--front', pose.isFront);
       // The front card's emission rests lit, handing over smoothly as the ring turns; the flare
       // adds to it for a moment as the pulse lands (design §4). Its own size elsewhere.
       const flare = i === pulse.card ? pulse.flare : 0;
-      const scale = 1 + FRONT_GROWTH * frontness(angleDeg) + FLARE_GROWTH * flare;
+      const growth = 1 + FRONT_GROWTH * frontness(angleDeg) + FLARE_GROWTH * flare;
       const emit = emits[i];
-      if (emit) emit.style.transform = scale === 1 ? '' : `scale(${scale.toFixed(3)})`;
+      if (emit) emit.style.transform = growth === 1 ? '' : `scale(${growth.toFixed(3)})`;
       return { angleDeg, opacity };
     });
 
-    return { frontPageX, frontPageY, radius, tiltDeg, floorY, steps, raw, arrival: arrived, cards: poses };
+    return { frontPageX, frontPageY, radius, scale, tiltDeg, floorY, steps, raw, arrival: arrived, cards: poses };
   }
 
   return { update, unmount };

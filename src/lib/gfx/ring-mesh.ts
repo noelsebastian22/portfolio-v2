@@ -2,7 +2,9 @@
  * The 3D ring's WebGL side (Phase 12): the hoop the line meets, the drops the cards hang from,
  * the glow round each emission, the floor and the hoop's reflection on it. Built once in front
  * space (ring.ts) and placed each frame by matrices from the same module, so it can never
- * disagree with the CSS cards about where the ring is.
+ * disagree with the CSS cards about where the ring is. A short window scales the ring (revision
+ * R3): the hoop is rebuilt at the new radius and the drops stretch in length only, so the line
+ * keeps its thickness.
  *
  * Shading follows tube-signal.ts — round without lights, an additive shell for the glow, no
  * post-processing — plus two things only the ring has: depth fog toward `--ground` round the
@@ -59,6 +61,8 @@ const EMIT_GLOW_FRONT = 0.25;
 const EMIT_GLOW_FLARE = 0.25;
 /** The hoop's reflection on the floor, as a share of the hoop's own alpha. */
 const REFLECTION_ALPHA = 0.14;
+/** A hoop more than this many px off the frame's radius is rebuilt (a resize changed the scale). */
+const REBUILD_RADIUS_PX = 0.5;
 /** The floor glow: this many radii across, and its alpha at the ring's centre. */
 const FLOOR_SPAN = 2.6;
 const FLOOR_ALPHA = 0.08;
@@ -130,12 +134,14 @@ const FRAGMENT = /* glsl */ `
 // where a SpriteMaterial's Color is linear and re-encoded on the way out. The centre is placed
 // by the model-view and the corners offset in view space, so it stays round whatever the tilt
 // and frontToWorld's y-flip; the falloff is computed here, so there is no texture.
+// uScale is the ring's: the corners skip the model matrix, so a mesh scale would not reach them.
 const EMIT_VERTEX = /* glsl */ `
+  uniform float uScale;
   varying vec2 vOffset;
   void main() {
     vOffset = position.xy / ${(EMIT_GLOW_PX / 2).toFixed(1)};
     vec4 centre = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-    gl_Position = projectionMatrix * (centre + vec4(position.xy, 0.0, 0.0));
+    gl_Position = projectionMatrix * (centre + vec4(position.xy * uScale, 0.0, 0.0));
   }
 `;
 
@@ -214,20 +220,22 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
     });
 
   // ── The hoop: untilted front space, tilted and placed by its group's matrix ─────────
-  const hoopCentres: Vec3[] = [];
-  const hoopArc: number[] = [];
-  for (let i = 0; i <= HOOP_SEGMENTS; i++) {
-    const deg = -180 + (360 * i) / HOOP_SEGMENTS;
-    hoopCentres.push([...hoopPoint(deg, radius, 0)] as Vec3);
-    hoopArc.push(deg);
-  }
   const profile = { radius: look.radius, radialSegments: RADIAL_SEGMENTS };
+  const hoopArc: number[] = [];
+  for (let i = 0; i <= HOOP_SEGMENTS; i++) hoopArc.push(-180 + (360 * i) / HOOP_SEGMENTS);
   const hoopArcs = perVertex(hoopArc, RADIAL_SEGMENTS);
-  const hoopCore = new Mesh(toBufferGeometry(buildTubeFromCentres(hoopCentres, hoopArc, profile), hoopArcs), material(false, true));
-  const hoopGlow = new Mesh(
-    toBufferGeometry(buildTubeFromCentres(hoopCentres, hoopArc, profile, GLOW_SCALE, GLOW_PAD), hoopArcs),
-    material(true, true),
-  );
+  /** The hoop's core and glow geometries at `hoopRadius`; the tube's profile never scales. */
+  const buildHoop = (hoopRadius: number) => {
+    const centres = hoopArc.map((deg) => [...hoopPoint(deg, hoopRadius, 0)] as Vec3);
+    return {
+      core: toBufferGeometry(buildTubeFromCentres(centres, hoopArc, profile), hoopArcs),
+      glow: toBufferGeometry(buildTubeFromCentres(centres, hoopArc, profile, GLOW_SCALE, GLOW_PAD), hoopArcs),
+    };
+  };
+  let builtRadius = radius;
+  const builtHoop = buildHoop(radius);
+  const hoopCore = new Mesh(builtHoop.core, material(false, true));
+  const hoopGlow = new Mesh(builtHoop.glow, material(true, true));
   hoopGlow.renderOrder = 1;
   const hoop = new Group();
   hoop.matrixAutoUpdate = false;
@@ -300,7 +308,7 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
     const glow = new Mesh(
       emitGeometry,
       new ShaderMaterial({
-        uniforms: { uColor: { value: new Vector3(...look.shipped) }, uOpacity: { value: 0 } },
+        uniforms: { uColor: { value: new Vector3(...look.shipped) }, uOpacity: { value: 0 }, uScale: { value: 1 } },
         vertexShader: EMIT_VERTEX,
         fragmentShader: EMIT_FRAGMENT,
         // frontToWorld's y-flip makes Three wind front faces the other way, and the billboard
@@ -320,7 +328,20 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
   const hoopMatrix = new Matrix4();
   const reflectionMatrix = new Matrix4();
 
+  /** A resize changed the ring's scale: the hoop and its reflection get geometry at the new radius. */
+  function rebuildHoop(hoopRadius: number): void {
+    const rebuilt = buildHoop(hoopRadius);
+    hoopCore.geometry.dispose();
+    hoopGlow.geometry.dispose();
+    hoopCore.geometry = rebuilt.core;
+    hoopGlow.geometry = rebuilt.glow;
+    reflectionCore.geometry = rebuilt.core;
+    reflectionGlow.geometry = rebuilt.glow;
+    builtRadius = hoopRadius;
+  }
+
   function setFrame(frame: RingFrame): void {
+    if (Math.abs(frame.radius - builtRadius) > REBUILD_RADIUS_PX) rebuildHoop(frame.radius);
     toWorld.fromArray(frontToWorld(frame.frontPageX, frame.frontPageY) as number[]);
     group.matrix.copy(toWorld);
     group.matrixWorldNeedsUpdate = true;
@@ -331,6 +352,8 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
     reflection.matrix.copy(reflectionMatrix);
     floorTilt.matrix.copy(hoopMatrix);
     floor.position.set(0, frame.floorY, -frame.radius);
+    // Built FLOOR_SPAN radii across at the mount's radius; flat, so a uniform scale only spreads it.
+    floor.scale.setScalar(frame.radius / radius);
     floorMaterial.uniforms.uAlpha.value = FLOOR_ALPHA * frame.arrival.hoop;
     floor.visible = frame.arrival.hoop > 0;
 
@@ -348,6 +371,8 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
       const drop = drops[i];
       const [x, y, z] = hoopPoint(card.angleDeg, frame.radius, frame.tiltDeg);
       drop.holder.position.set(x, y, z);
+      // Longer or shorter with the ring, never thicker or thinner.
+      drop.holder.scale.set(1, frame.scale, 1);
       // A drop is as faded as its card, and fogged as its angle: the back ones barely there.
       const away = Math.abs(card.angleDeg);
       const fog = Math.min(1, Math.max(0, (away - FOG_FROM_DEG) / (FOG_FULL_DEG - FOG_FROM_DEG))) * FOG_STRENGTH;
@@ -362,12 +387,14 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
       drop.holder.visible = frame.arrival.drops > 0;
 
       const glow = emitGlows[i];
-      glow.position.set(...dropEnd(card.angleDeg, frame.radius, frame.tiltDeg));
+      glow.position.set(...dropEnd(card.angleDeg, frame.radius, frame.tiltDeg, frame.scale));
       // The card's opacity already carries its arrival, so the glow lands with the card.
       const flare = i === pulse.card ? pulse.flare : 0;
       const strength = EMIT_GLOW_BASE + EMIT_GLOW_FRONT * frontness(card.angleDeg) + EMIT_GLOW_FLARE * flare;
       const opacity = card.opacity * strength;
-      (glow.material as ShaderMaterial).uniforms.uOpacity.value = opacity;
+      const glowUniforms = (glow.material as ShaderMaterial).uniforms;
+      glowUniforms.uOpacity.value = opacity;
+      glowUniforms.uScale.value = frame.scale;
       glow.visible = opacity > 0;
     });
   }

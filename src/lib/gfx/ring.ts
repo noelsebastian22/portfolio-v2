@@ -10,8 +10,12 @@
  * `frontToWorld` turns it into the scene's world (camera.ts: y up).
  *
  * The ring's centre is at z = −R, so the front point and the front card sit on the page plane,
- * 1:1 with CSS px (D9). The look-down (D8) tilts the hoop about the front point; the cards hang
- * plumb from it, so the front card is a pure translation and its text stays crisp.
+ * 1:1 with CSS px at full size (D9). The look-down (D8) tilts the hoop about the front point; the
+ * cards hang plumb from it, so the front card is a pure translation and its text stays crisp.
+ *
+ * **Scale.** A window too short for the full-size ring gets the whole ring scaled about the front
+ * point — hoop, drops, cards and floor — down to `MIN_RING_SCALE` (revision R3). Callers pass
+ * the radius already scaled; the drop and the card take `scale` themselves.
  *
  * Pure: no DOM, no Three.js.
  */
@@ -46,6 +50,12 @@ export const STAGE_MARGIN_PX = 75;
 export const FLOOR_GAP_PX = 24;
 /** Clear space below the cards' bottom for the stage to fit, px. The floor is decoration and may run off. */
 export const FIT_MARGIN_PX = 8;
+/**
+ * The smallest the ring scales to fit a short window. At 70% a card's 15px description is 10.5px,
+ * about as small as body text still reads; below it the rail, at full size, is the better page
+ * (revision R3).
+ */
+export const MIN_RING_SCALE = 0.7;
 /**
  * A card turns this share of its angle round the ring, so the side cards still read as cards —
  * a carousel, not a drum (revision R1).
@@ -184,9 +194,9 @@ export function hoopPoint(phiDeg: number, radius: number, tiltDeg: number): Vec3
 }
 
 /** The bottom of a card's drop — its top-centre. Drops hang plumb, whatever the tilt. */
-export function dropEnd(phiDeg: number, radius: number, tiltDeg: number): Vec3 {
+export function dropEnd(phiDeg: number, radius: number, tiltDeg: number, scale = 1): Vec3 {
   const [x, y, z] = hoopPoint(phiDeg, radius, tiltDeg);
-  return [x, y + HOOP_DROP_PX, z];
+  return [x, y + HOOP_DROP_PX * scale, z];
 }
 
 // ── Matrices ───────────────────────────────────────────────────────────────────────
@@ -215,6 +225,8 @@ export function applyMatrix(m: Mat4, [x, y, z]: Vec3): Vec3 {
 
 const translate = (x: number, y: number, z: number): Mat4 => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
 
+const scaleMatrix = (s: number): Mat4 => [s, 0, 0, 0, 0, s, 0, 0, 0, 0, s, 0, 0, 0, 0, 1];
+
 /** CSS `rotateY(phi)`: carries the card's normal (0, 0, 1) to (sin φ, 0, cos φ). */
 function rotateY(phiDeg: number): Mat4 {
   const c = Math.cos(radians(phiDeg));
@@ -242,11 +254,12 @@ export function frontToWorld(frontPageX: number, frontPageY: number): Mat4 {
 /**
  * A card's CSS transform, applied about its top-centre (`transform-origin: 50% 0`, placed on
  * the front point): hang from the drop end, `rise` px lower while it arrives, turned
- * `CARD_FACING_SHARE` of the way to facing outward.
+ * `CARD_FACING_SHARE` of the way to facing outward, at the ring's `scale` (`radius` is already
+ * scaled). At scale 1 the front card is a pure translation.
  */
-export function cardMatrix(phiDeg: number, radius: number, tiltDeg: number, rise: number): Mat4 {
-  const [x, y, z] = dropEnd(phiDeg, radius, tiltDeg);
-  return multiply(translate(x, y + rise, z), rotateY(phiDeg * CARD_FACING_SHARE));
+export function cardMatrix(phiDeg: number, radius: number, tiltDeg: number, rise: number, scale = 1): Mat4 {
+  const [x, y, z] = dropEnd(phiDeg, radius, tiltDeg, scale);
+  return multiply(multiply(translate(x, y + rise, z), rotateY(phiDeg * CARD_FACING_SHARE)), scaleMatrix(scale));
 }
 
 /** Rounded to 1e-6 with no `-0`, so a front card's transform prints as exactly a translation. */
@@ -309,11 +322,16 @@ export function pointerTiltRoom({
   return low;
 }
 
+/** Bisection steps for the fit's scale: 24 halvings of 0.3 is well under a thousandth of a pixel. */
+const FIT_SEARCH_STEPS = 24;
+
 /**
  * Where the front point sits in a one-viewport stage: the hoop, drops and cards centred as one
- * block, never closer than `STAGE_MARGIN_PX` to the top. `floorY` is in front space. `fits` is
- * false when the cards would run off the bottom — the rail stays (D12). The floor is
- * decoration and does not count against the fit (revision R1).
+ * block, never closer than `STAGE_MARGIN_PX` to the top. `radius` and `cardHeight` are full
+ * size; `scale` is 1 where that fits, else the largest scale down to `MIN_RING_SCALE` that does
+ * (revision R3). `floorY` is in front space, at that scale. `fits` is false when even the floor
+ * scale's cards would run off the bottom — the rail stays (D12). The floor is decoration and does
+ * not count against the fit (revision R1).
  */
 export function stageLayout({
   viewportHeight,
@@ -327,18 +345,33 @@ export function stageLayout({
   radius: number;
   distance: number;
   tiltDeg: number;
-}): { frontY: number; floorY: number; fits: boolean } {
-  const riseAt = (frontY: number) => hoopRiseAt(frontY, viewportHeight, radius, tiltDeg, distance);
-  // rise = a·frontY + b and top = frontY − rise. Centred, 2·top = vh − rise − below, so frontY =
-  // (vh − below + b) / (2 − a); at the margin, frontY = (margin + b) / (1 − a). The lower on screen wins.
-  const b = riseAt(0);
-  const a = riseAt(1) - b;
-  const below = HOOP_DROP_PX + cardHeight;
-  const centredY = (viewportHeight - below + b) / (2 - a);
-  const marginY = (STAGE_MARGIN_PX + b) / (1 - a);
-  const frontY = Math.max(centredY, marginY);
-  const floorY = HOOP_DROP_PX + cardHeight + FLOOR_GAP_PX;
-  return { frontY, floorY, fits: frontY + below + FIT_MARGIN_PX <= viewportHeight };
+}): { frontY: number; floorY: number; fits: boolean; scale: number } {
+  const layoutAt = (scale: number) => {
+    const riseAt = (frontY: number) => hoopRiseAt(frontY, viewportHeight, radius * scale, tiltDeg, distance);
+    // rise = a·frontY + b and top = frontY − rise. Centred, 2·top = vh − rise − below, so frontY =
+    // (vh − below + b) / (2 − a); at the margin, frontY = (margin + b) / (1 − a). The lower on screen wins.
+    const b = riseAt(0);
+    const a = riseAt(1) - b;
+    const below = (HOOP_DROP_PX + cardHeight) * scale;
+    const centredY = (viewportHeight - below + b) / (2 - a);
+    const marginY = (STAGE_MARGIN_PX + b) / (1 - a);
+    const frontY = Math.max(centredY, marginY);
+    const floorY = (HOOP_DROP_PX + cardHeight + FLOOR_GAP_PX) * scale;
+    return { frontY, floorY, fits: frontY + below + FIT_MARGIN_PX <= viewportHeight, scale };
+  };
+  const full = layoutAt(1);
+  if (full.fits) return full;
+  const smallest = layoutAt(MIN_RING_SCALE);
+  if (!smallest.fits) return smallest;
+  // The block shrinks with the scale, so whether it fits flips once between the floor and 1.
+  let low = MIN_RING_SCALE;
+  let high = 1;
+  for (let i = 0; i < FIT_SEARCH_STEPS; i++) {
+    const mid = (low + high) / 2;
+    if (layoutAt(mid).fits) low = mid;
+    else high = mid;
+  }
+  return layoutAt(low);
 }
 
 // ── Choreography ───────────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import {
   DWELL_SHARE,
   FIT_MARGIN_PX,
   HOOP_DROP_PX,
+  MIN_RING_SCALE,
   PIN_LEAD_VH,
   PIN_STEP_VH,
   PIN_TAIL_VH,
@@ -287,6 +288,22 @@ describe('cardMatrix', () => {
     }
   });
 
+  it('scales the card about its top-centre, which stays on the scaled drop end', () => {
+    const scale = 0.8;
+    for (const phi of [-144, -72, 0, 36, 72, 144]) {
+      const m = cardMatrix(phi, R * scale, RING_TILT_DEG, 0, scale);
+      const end = dropEnd(phi, R * scale, RING_TILT_DEG, scale);
+      applyMatrix(m, [0, 0, 0]).forEach((v, i) => expect(v).toBeCloseTo(end[i], 9));
+      const origin = applyMatrix(m, [0, 0, 0]);
+      const widthTip = applyMatrix(m, [1, 0, 0]);
+      expect(Math.hypot(...widthTip.map((v, i) => v - origin[i]))).toBeCloseTo(scale, 9);
+    }
+    expect(dropEnd(0, R * scale, RING_TILT_DEG, scale)).toEqual([0, HOOP_DROP_PX * scale, 0]);
+    expect(cssMatrix3d(cardMatrix(0, R * scale, RING_TILT_DEG, 0, scale))).toBe(
+      'matrix3d(0.8,0,0,0,0,0.8,0,0,0,0,0.8,0,0,57.6,0,1)',
+    );
+  });
+
   it('turns the card part of the way to its angle', () => {
     const m = cardMatrix(72, R, RING_TILT_DEG, 0);
     const origin = applyMatrix(m, [0, 0, 0]);
@@ -310,10 +327,12 @@ describe('parity — CSS perspective and the camera put a card where its drop en
   }
 
   it.each([
-    [900, 760, 5000],
-    [1280, 800, 5200],
-    [1920, 1080, 6100.5],
-  ])('agrees to 0.5px at %ix%i', (width, height, scrollY) => {
+    [900, 760, 5000, 1],
+    [1280, 800, 5200, 1],
+    [1920, 1080, 6100.5, 1],
+    [1440, 760, 5000, 0.8],
+    [1280, 720, 5200.5, 0.8],
+  ])('agrees to 0.5px at %ix%i, scale %f', (width, height, scrollY, scale) => {
     // The stage is stuck at the viewport top; the front point is at stage (fx, fy).
     const fx = width / 2 + 37;
     const fy = 180;
@@ -324,10 +343,10 @@ describe('parity — CSS perspective and the camera put a card where its drop en
       for (const tilt of [RING_TILT_DEG, RING_TILT_DEG + 3]) {
         // CSS: the card's top-centre, transformed, then projected through the stage's
         // perspective with its origin at the viewport centre.
-        const local = applyMatrix(cardMatrix(phi, R, tilt, 0), [0, 0, 0]);
+        const local = applyMatrix(cardMatrix(phi, R * scale, tilt, 0, scale), [0, 0, 0]);
         const css = project([fx + local[0], fy + local[1], local[2]], { x: width / 2, y: height / 2 }, rig.distance);
         // WebGL: the drop end, through the scene's camera.
-        const end = applyMatrix(toWorld, dropEnd(phi, R, tilt));
+        const end = applyMatrix(toWorld, dropEnd(phi, R * scale, tilt, scale));
         const gl = cameraProject(width, height, scrollY, new Vector3(...end));
         expect(Math.abs(css.x - gl.x)).toBeLessThan(0.5);
         expect(Math.abs(css.y - gl.y)).toBeLessThan(0.5);
@@ -370,9 +389,50 @@ describe('stageLayout', () => {
     expect(top).toBeCloseTo(1080 - bottom, 9);
   });
 
-  it('does not fit a 560px card in a 700px viewport', () => {
+  it('does not fit a 560px card in a 700px viewport at full size', () => {
     const d = 700 / 2 / Math.tan((15 * Math.PI) / 180);
-    expect(stageLayout({ viewportHeight: 700, cardHeight: 560, radius: R, distance: d, tiltDeg: RING_TILT_DEG }).fits).toBe(false);
+    const layout = stageLayout({ viewportHeight: 700, cardHeight: 560, radius: R, distance: d, tiltDeg: RING_TILT_DEG });
+    expect(layout.scale).toBeLessThan(1);
+  });
+});
+
+describe('stageLayout scales the ring to fit a short window', () => {
+  const CARD_H = 563;
+  const layoutAt = (width: number, height: number) => {
+    const distance = cameraRig(width, height, 0, 0).distance;
+    return { distance, ...stageLayout({ viewportHeight: height, cardHeight: CARD_H, radius: R, distance, tiltDeg: RING_TILT_DEG }) };
+  };
+
+  it('keeps full size where the ring fits, 1440×900', () => {
+    const layout = layoutAt(1440, 900);
+    expect(layout.fits).toBe(true);
+    expect(layout.scale).toBe(1);
+    expect(layout.floorY).toBe(HOOP_DROP_PX + CARD_H + 24);
+  });
+
+  it('scales down to fit a laptop window, 1440×760', () => {
+    const { frontY, floorY, fits, scale, distance } = layoutAt(1440, 760);
+    expect(fits).toBe(true);
+    expect(scale).toBeGreaterThanOrEqual(MIN_RING_SCALE);
+    expect(scale).toBeLessThan(1);
+    expect(frontY + (HOOP_DROP_PX + CARD_H) * scale + FIT_MARGIN_PX).toBeLessThanOrEqual(760 + 0.5);
+    // The largest scale that fits: the cards sit on the bottom margin.
+    expect(frontY + (HOOP_DROP_PX + CARD_H) * scale + FIT_MARGIN_PX).toBeGreaterThan(760 - 0.5);
+    expect(frontY - hoopRiseAt(frontY, 760, R * scale, RING_TILT_DEG, distance)).toBeGreaterThanOrEqual(STAGE_MARGIN_PX - 1e-6);
+    expect(floorY).toBeCloseTo((HOOP_DROP_PX + CARD_H + 24) * scale, 9);
+  });
+
+  it('scales further for a shorter window, 1440×700', () => {
+    const at700 = layoutAt(1440, 700);
+    expect(at700.fits).toBe(true);
+    expect(at700.scale).toBeGreaterThanOrEqual(MIN_RING_SCALE);
+    expect(at700.scale).toBeLessThan(layoutAt(1440, 760).scale);
+  });
+
+  it('gives up below the floor scale — the rail stays', () => {
+    const layout = layoutAt(1440, 520);
+    expect(layout.fits).toBe(false);
+    expect(layout.scale).toBe(MIN_RING_SCALE);
   });
 });
 
