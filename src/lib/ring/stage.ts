@@ -1,20 +1,25 @@
 /**
- * The 3D ring's DOM side (Phase 12): decides whether the ring can mount, switches section 04
- * into it, and each drawn frame turns the cards from the scroll. The cards are the
- * server-rendered rail cards, never moved in the DOM — only restyled (`.ring--3d`) and given a
- * `matrix3d` from ring.ts — so every link, the hover-scroll and the focus ring stay native.
+ * The 3D ring (Phase 12, revision R4): decides whether the ring fits, switches section 04 into
+ * it, and each drawn frame turns the cards from the scroll. The cards are the server-rendered
+ * rail cards, never moved in the DOM — only restyled (`.ring--3d`) and given a `matrix3d` from
+ * geometry.ts — so every link, the hover-scroll and the focus ring stay native.
  *
- * Everything here is a function of the scroll, the tip and the pointer (design §4). The
- * meshes (ring-mesh.ts) are drawn from the `RingFrame` this returns, so the two renderers read
- * one set of numbers per frame.
+ * Its own chunk, loaded by section 04's script after its gate (gate.ts) — not by the WebGL
+ * scene: the ring is CSS 3D and needs no WebGL. Everything here is a function of the scroll,
+ * the tip and the pointer (design §4), drawn on change only, in the scroll driver's tick
+ * (render-schedule.ts) — never a free loop.
  */
 
+import { gsap } from 'gsap';
+import { MIN_VIEWPORT_WIDTH } from '../gfx/gate';
+import { createRenderSchedule } from '../gfx/render-schedule';
 import { scrollToY } from '../motion/scroll';
-import { refreshScroll } from '../motion/timeline';
-import { onSignalCurve, signalTipY, signalXAtPageY } from '../signal/tip';
+import { onPageProgress, refreshScroll } from '../motion/timeline';
+import { onSignalCurve, onSignalTip, signalTipY, signalXAtPageY } from '../signal/tip';
 import { tipFraction } from '../signal/draw';
 import {
   ARRIVAL_DRAW_VH,
+  PERSPECTIVE_PX,
   RING_CARD_COUNT,
   RING_TILT_DEG,
   arrival,
@@ -26,7 +31,6 @@ import {
   PIN_STEP_VH,
   POINTER_TILT_DEG,
   pinLength,
-  pulseAt,
   pointerTiltRoom,
   rawSteps,
   ringRadius,
@@ -35,9 +39,9 @@ import {
   stepOffset,
   stickyTop,
   turnSteps,
-} from './ring';
+} from './geometry';
 
-/** How far below its place a card starts before its drop lands, px. */
+/** How far below its place a card starts before it arrives, px. */
 const ARRIVAL_RISE_PX = 24;
 
 /** A turn the reader asked for by focusing a card, not choreography, s. */
@@ -53,46 +57,22 @@ const SETTLE_S = 0.4;
 /** The pointer tilt's ease per drawn frame (the portrait's push), and when it has arrived, degrees. */
 const POINTER_TILT_EASE = 0.18;
 const POINTER_TILT_SETTLED_DEG = 0.01;
-/** How much bigger the emission is on the front card, and how much more at the height of its flare. */
+/** How much bigger the emission is on the front card. */
 const FRONT_GROWTH = 0.25;
-const FLARE_GROWTH = 0.35;
-
-export interface RingFrame {
-  /** Front point, page px — where the hoop meets the line this frame. */
-  frontPageX: number;
-  frontPageY: number;
-  /** The hoop's radius at this window's scale, px. */
-  radius: number;
-  /** The ring's scale for this window: 1 where it fits at full size, down to MIN_RING_SCALE (R3). */
-  scale: number;
-  tiltDeg: number;
-  floorY: number;
-  /** Steps turned (eased) and linear, for the cards and the pulse. */
-  steps: number;
-  raw: number;
-  arrival: { hoop: number; drops: number; cards: number };
-  /** Per card, in DOM order. */
-  cards: { angleDeg: number; opacity: number }[];
-}
 
 export interface RingStage {
-  /** Reads scroll and tip; writes the cards; returns the frame for the meshes, or null when not mounted. */
-  update(): RingFrame | null;
+  /** Reads scroll and tip; writes the cards. A no-op when not switched on. */
+  update(): void;
   /** Restores the rail. Safe to call twice. */
   unmount(): void;
 }
 
-interface Options {
-  section: HTMLElement;
-  /** The camera's distance for the current viewport — CSS perspective must equal it. */
-  cameraDistance: () => number;
-  /** Something changed that needs a draw. */
-  markDirty: () => void;
-  /** Called once if the stage gives up (resize below the fit, an exception). */
-  onDrop: () => void;
-}
-
-export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: Options): RingStage | null {
+/**
+ * Mounts the ring over section 04's rail, or returns null when it does not fit this window
+ * (D12, R3) — the rail stays. Any exception afterwards, in a draw or a re-measure, unmounts it:
+ * the rail comes back and the reader keeps their place (design §5).
+ */
+export function mountRingStage({ section }: { section: HTMLElement }): RingStage | null {
   const rail = section.querySelector<HTMLElement>('.ring__rail');
   const cards = Array.from(section.querySelectorAll<HTMLElement>('.card'));
   const emits = cards.map((card) => card.querySelector<HTMLElement>('[data-emit]'));
@@ -106,27 +86,56 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   const fullRadius = ringRadius(cardWidth);
 
   const layoutFor = (viewportHeight: number) =>
-    stageLayout({ viewportHeight, cardHeight, radius: fullRadius, distance: cameraDistance(), tiltDeg: RING_TILT_DEG });
+    stageLayout({ viewportHeight, cardWidth, cardHeight, distance: PERSPECTIVE_PX, tiltDeg: RING_TILT_DEG });
   if (!layoutFor(window.innerHeight).fits) return null;
 
   let isOn = false;
   let isDropped = false;
-  /** Measured once the class is on: the rail's page top, the front point's page x. */
-  const measured = { railTop: 0, frontPageX: 0, frontY: 0, floorY: 0, pin: 0, viewportHeight: 0, tiltRoom: 0, scale: 1, radius: fullRadius };
+  /** Measured once the class is on: the rail's page top, the front point's place in the stage. */
+  const measured = { railTop: 0, frontY: 0, pin: 0, viewportHeight: 0, tiltRoom: 0, scale: 1, radius: fullRadius };
+
+  // Draws on the scroll driver's tick, only when something marked it dirty. gsap.ticker.add
+  // appends, and this chunk loads long after BaseLayout's initScroll() registered Lenis's
+  // listener, so the draw reads the scroll and tip Lenis published this tick.
+  const schedule = createRenderSchedule({
+    subscribe: (onTick) => {
+      gsap.ticker.add(onTick);
+      return () => gsap.ticker.remove(onTick);
+    },
+    now: () => gsap.ticker.time * 1000,
+    draw: () => drawFrame(),
+  });
+  const markDirty = () => schedule.markDirty();
+  const drawFrame = guarded(() => update());
+
+  /** Any exception gives the ring up and restores the rail; the page carries on. */
+  function guarded<Args extends unknown[]>(fn: (...args: Args) => void): (...args: Args) => void {
+    return (...args) => {
+      try {
+        fn(...args);
+      } catch {
+        unmount();
+      }
+    };
+  }
+
   /** The page scroll the ring last came to rest at — the settle reads the reader's direction from it. */
   let restY = 0;
 
   function measure(): void {
     const viewportHeight = window.innerHeight;
     const layout = layoutFor(viewportHeight);
-    if (!layout.fits) {
-      drop();
+    // A window resized below the gate's width or the fit gives the ring up, one way (design §5).
+    // The tube's fallback used to drop it for a narrow window; the ring is its own now.
+    const isTooNarrow = document.documentElement.clientWidth < MIN_VIEWPORT_WIDTH;
+    if (isTooNarrow || !layout.fits) {
+      unmount();
       return;
     }
     const pin = pinLength(viewportHeight);
     section.style.setProperty('--ring-pin', `${pin.toFixed(2)}px`);
     section.style.setProperty('--ring-front-y', `${layout.frontY.toFixed(2)}px`);
-    section.style.setProperty('--ring-perspective', `${cameraDistance().toFixed(3)}px`);
+    section.style.setProperty('--ring-perspective', `${PERSPECTIVE_PX}px`);
     const railBox = rail!.getBoundingClientRect();
     const railTop = railBox.top + window.scrollY;
     const splitY = railTop + layout.frontY;
@@ -136,9 +145,9 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     section.style.setProperty('--ring-front-x', `${(frontPageX - (railBox.left + window.scrollX)).toFixed(2)}px`);
     const { scale } = layout;
     const radius = fullRadius * scale;
-    // How far up the pointer may tilt the ring before the hoop's back runs under the nav.
-    const tiltRoom = pointerTiltRoom({ frontY: layout.frontY, viewportHeight, radius, distance: cameraDistance() });
-    Object.assign(measured, { railTop, frontPageX, frontY: layout.frontY, floorY: layout.floorY, pin, viewportHeight, tiltRoom, scale, radius });
+    // How far up the pointer may tilt the ring before the side cards' tops run under the nav.
+    const tiltRoom = pointerTiltRoom({ frontY: layout.frontY, viewportHeight, cardWidth, scale, distance: PERSPECTIVE_PX });
+    Object.assign(measured, { railTop, frontY: layout.frontY, pin, viewportHeight, tiltRoom, scale, radius });
     markDirty();
   }
 
@@ -158,24 +167,31 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   }
 
   // D14: turning 3D on changes the page's height, so only while the ring is off screen.
-  const visibility = new IntersectionObserver(([entry]) => {
-    if (!entry.isIntersecting) {
-      visibility.disconnect();
-      switchOn();
-    }
-  });
+  const visibility = new IntersectionObserver(
+    guarded(([entry]: IntersectionObserverEntry[]) => {
+      if (!entry.isIntersecting) {
+        visibility.disconnect();
+        switchOn();
+      }
+    }),
+  );
   visibility.observe(section);
 
-  const onResize = () => {
+  const onResize = guarded(() => {
     if (isOn) measure();
-  };
+  });
   window.addEventListener('resize', onResize);
   // Turning 3D on grows the page, the SVG renderer re-measures the curve, and the split's x is
   // only right once it has: follow every re-measure. Unchanged values write unchanged
   // properties, so this cannot feed back into another re-measure.
-  const stopCurve = onSignalCurve(() => {
-    if (isOn) measure();
-  });
+  const stopCurve = onSignalCurve(
+    guarded(() => {
+      if (isOn) measure();
+    }),
+  );
+  // The turn follows the scroll, the arrival follows the tip: either moving needs a draw.
+  const stopProgress = onPageProgress(markDirty);
+  const stopTip = onSignalTip(markDirty);
 
   /** Focus moves the ring (spec §9.04): any card focused, by any key, comes to the front. */
   const onFocusIn = (event: FocusEvent) => {
@@ -291,18 +307,15 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   };
   window.addEventListener('scroll', onScroll, { passive: true });
 
-  function drop(): void {
-    if (isDropped) return;
-    unmount();
-    onDrop();
-  }
-
   function unmount(): void {
     if (isDropped) return;
     isDropped = true;
+    schedule.stop();
     visibility.disconnect();
     window.removeEventListener('resize', onResize);
     stopCurve();
+    stopProgress();
+    stopTip();
     section.removeEventListener('focusin', onFocusIn);
     stage!.removeEventListener('pointerdown', onPointerDown);
     window.removeEventListener('pointermove', onPointerMove);
@@ -340,12 +353,11 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     else if (wasPastPin) scrollToY(scrollYBefore - (heightBefore - section.offsetHeight), { immediate: true });
   }
 
-  function update(): RingFrame | null {
-    if (!isOn || isDropped) return null;
-    const { railTop, frontPageX, frontY, floorY, pin, viewportHeight, tiltRoom, scale, radius } = measured;
+  function update(): void {
+    if (!isOn || isDropped) return;
+    const { railTop, frontY, pin, viewportHeight, tiltRoom, scale, radius } = measured;
     const scrollY = window.scrollY;
     const stageTop = stickyTop(scrollY, railTop, pin);
-    const frontPageY = stageTop + frontY;
 
     // Reads first, then writes: the stage's box is where the pointer tilt looks for the pointer.
     const stageLeft = rail!.getBoundingClientRect().left;
@@ -357,7 +369,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
       pointer.clientY >= stageBox.top &&
       pointer.clientY <= stageBox.bottom;
 
-    // The perspective origin is the viewport's centre, wherever the stage is (parity with the camera).
+    // The perspective origin is the viewport's centre, wherever the stage is: the eye stageLayout fits through.
     section.style.setProperty('--ring-origin-x', `${(document.documentElement.clientWidth / 2 - stageLeft).toFixed(2)}px`);
     section.style.setProperty('--ring-origin-y', `${(viewportHeight / 2 - (stageTop - scrollY)).toFixed(2)}px`);
 
@@ -365,7 +377,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     const steps = turnSteps(raw);
     const splitY = railTop + frontY;
     const arrived = arrival(tipFraction(signalTipY(), splitY, ARRIVAL_DRAW_VH * viewportHeight));
-    // Pointer high opens the ellipse (as far as the stage has room above the hoop), low closes
+    // Pointer high opens the ellipse (as far as the stage has room above the ring), low closes
     // it. Eased toward the target, and drawing again until it gets there; then it snaps, so it
     // is exactly 0 once the pointer has gone.
     const pointerTarget = isPointerOverStage ? -(pointer.clientY / viewportHeight - 0.5) * 2 * POINTER_TILT_DEG : 0;
@@ -374,9 +386,8 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     if (Math.abs(targetTilt - pointerTilt) > POINTER_TILT_SETTLED_DEG) markDirty();
     else pointerTilt = targetTilt;
     const tiltDeg = RING_TILT_DEG + pointerTilt;
-    const pulse = pulseAt(raw);
 
-    const poses = cards.map((card, i) => {
+    cards.forEach((card, i) => {
       const angleDeg = cardAngle(i, steps);
       const pose = cardPose(angleDeg);
       const opacity = pose.opacity * arrived.cards;
@@ -385,16 +396,12 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
       card.style.opacity = opacity.toFixed(4);
       card.classList.toggle('card--inert', pose.isInert || arrived.cards < 0.3);
       card.classList.toggle('card--front', pose.isFront);
-      // The front card's emission rests lit, handing over smoothly as the ring turns; the flare
-      // adds to it for a moment as the pulse lands (design §4). Its own size elsewhere.
-      const flare = i === pulse.card ? pulse.flare : 0;
-      const growth = 1 + FRONT_GROWTH * frontness(angleDeg) + FLARE_GROWTH * flare;
+      // The front card's emission rests lit, handing over smoothly as the ring turns. Its own
+      // size elsewhere.
+      const growth = 1 + FRONT_GROWTH * frontness(angleDeg);
       const emit = emits[i];
       if (emit) emit.style.transform = growth === 1 ? '' : `scale(${growth.toFixed(3)})`;
-      return { angleDeg, opacity };
     });
-
-    return { frontPageX, frontPageY, radius, scale, tiltDeg, floorY, steps, raw, arrival: arrived, cards: poses };
   }
 
   return { update, unmount };

@@ -1,29 +1,29 @@
 /**
  * The 3D ring's geometry (Phase 12) — the only place it is defined, as `path.ts` is for the
- * curve. Two renderers draw the ring: the cards are DOM, turned by CSS `matrix3d`
- * (ring-stage.ts), and the hoop, drops and glow are Three.js (ring-mesh.ts). Both read every
- * position from here, so adding a renderer never means redefining the ring (design D5).
+ * curve. The ring is the DOM cards, turned by CSS `matrix3d` (stage.ts); every position comes
+ * from here, so adding a renderer never means redefining the ring (design D5).
  *
- * **Front space.** Every point here is relative to the hoop's front point — where the line
- * meets the hoop, and where the front card hangs from. x right, y *down*, z toward the viewer,
- * in CSS px: the card's own coordinates, so a matrix from here is a CSS transform as it stands.
- * `frontToWorld` turns it into the scene's world (camera.ts: y up).
+ * **Front space.** Every point here is relative to the front point — the front card's
+ * top-centre, where the line lands on its dot (revision R4). x right, y *down*, z toward the
+ * viewer, in CSS px: the card's own coordinates, so a matrix from here is a CSS transform as it
+ * stands.
  *
- * The ring's centre is at z = −R, so the front point and the front card sit on the page plane,
- * 1:1 with CSS px at full size (D9). The look-down (D8) tilts the hoop about the front point; the
- * cards hang plumb from it, so the front card is a pure translation and its text stays crisp.
+ * The cards hang by their top-centres from an invisible circle centred at z = −R, so the front
+ * card sits on the page plane, 1:1 with CSS px at full size (D9). The look-down (D8) tilts the
+ * circle about the front point; the cards hang plumb from it, so at full size the front card's
+ * transform is the identity and its text stays crisp.
  *
  * **Scale.** A window too short for the full-size ring gets the whole ring scaled about the front
- * point — hoop, drops, cards and floor — down to `MIN_RING_SCALE` (revision R3). Callers pass
- * the radius already scaled; the drop and the card take `scale` themselves.
+ * point down to `MIN_RING_SCALE` (revision R3). Callers pass the radius already scaled; the card
+ * takes `scale` itself.
  *
- * Pure: no DOM, no Three.js.
+ * Pure: no DOM.
  */
 
-import { easeLine, unit } from '../signal/draw';
+import { unit } from '../signal/draw';
 
 export type Vec3 = readonly [x: number, y: number, z: number];
-/** 16 numbers, column-major — CSS `matrix3d` order and `THREE.Matrix4.fromArray` order. */
+/** 16 numbers, column-major — CSS `matrix3d` order. */
 export type Mat4 = readonly number[];
 
 export const RING_CARD_COUNT = 5;
@@ -34,22 +34,24 @@ export const RING_TILT_DEG = 17;
 export const POINTER_TILT_DEG = 3;
 /** Radius per card width: clears the side cards from the front one with room for a focus ring. */
 export const RADIUS_PER_CARD_WIDTH = 1.1;
-/** How far each card hangs below the hoop, px. */
-export const HOOP_DROP_PX = 72;
 /** The share of each step the arriving card holds at the front (D10). */
 export const DWELL_SHARE = 0.35;
 /** The pin, in viewport heights: a lead-in on the first card, a step per turn, a tail. */
 export const PIN_LEAD_VH = 0.25;
 export const PIN_STEP_VH = 0.6;
 export const PIN_TAIL_VH = 0.25;
-/** How far the tip travels past the split while the hoop, drops and cards arrive, in viewport heights. */
+/** How far the tip travels past the split while the cards arrive, in viewport heights. */
 export const ARRIVAL_DRAW_VH = 0.35;
-/** Clear space above the hoop's back, px: the stage sits under the sticky nav (67px), so this clears it by 8. */
+/** Clear space above the ring's highest card top, px: the stage sits under the sticky nav (67px), so this clears it by 8. */
 export const STAGE_MARGIN_PX = 75;
-/** From the cards' bottom to the floor, px. */
-export const FLOOR_GAP_PX = 24;
-/** Clear space below the cards' bottom for the stage to fit, px. The floor is decoration and may run off. */
+/** Clear space below the cards' bottom for the stage to fit, px. */
 export const FIT_MARGIN_PX = 8;
+/**
+ * The stage's CSS `perspective`, px. Chosen for the look, no longer the WebGL camera's distance
+ * (revision R4): the front card sits on the page plane, so it is exact under any perspective.
+ * About the old camera's at 900 tall (1679); Task 12 tunes it.
+ */
+export const PERSPECTIVE_PX = 1600;
 /**
  * The smallest the ring scales to fit a short window. At 70% a card's 15px description is 10.5px,
  * about as small as body text still reads; below it the rail, at full size, is the better page
@@ -67,8 +69,6 @@ const FADE_FULL_DEG = 30;
 const FADE_GONE_DEG = 110;
 /** Below this a faded card takes no pointer events, so it never eats the front card's click. */
 const INERT_BELOW_OPACITY = 0.3;
-/** Where in a step the hoop pulse reaches the arriving card. */
-const PULSE_MEETS = 0.5;
 
 const radians = (deg: number) => (deg * Math.PI) / 180;
 const smooth = (t: number) => {
@@ -94,7 +94,7 @@ export function stepOffset(card: number, viewportHeight: number): number {
   return viewportHeight * (PIN_LEAD_VH + card * PIN_STEP_VH);
 }
 
-/** Pin offset → steps turned, linear, clamped to 0..cards−1. The pulse reads this; the turn eases it. */
+/** Pin offset → steps turned, linear, clamped to 0..cards−1. The turn eases it. */
 export function rawSteps(pinOffset: number, viewportHeight: number): number {
   const raw = (pinOffset - viewportHeight * PIN_LEAD_VH) / (viewportHeight * PIN_STEP_VH);
   return Math.min(lastCard, Math.max(0, Number.isFinite(raw) ? raw : 0));
@@ -187,16 +187,15 @@ export function tiltPoint([x, y, z]: Vec3, tiltDeg: number): Vec3 {
   return [tidyZero(x), tidyZero(y * c + z * s), tidyZero(-y * s + z * c)];
 }
 
-/** The hoop at angle `phi`: a circle of radius R round (0, 0, −R), tilted. */
-export function hoopPoint(phiDeg: number, radius: number, tiltDeg: number): Vec3 {
+/** The invisible circle at angle `phi`: radius R round (0, 0, −R), tilted. */
+export function ringPoint(phiDeg: number, radius: number, tiltDeg: number): Vec3 {
   const phi = radians(phiDeg);
   return tiltPoint([radius * Math.sin(phi), 0, radius * Math.cos(phi) - radius], tiltDeg);
 }
 
-/** The bottom of a card's drop — its top-centre. Drops hang plumb, whatever the tilt. */
-export function dropEnd(phiDeg: number, radius: number, tiltDeg: number, scale = 1): Vec3 {
-  const [x, y, z] = hoopPoint(phiDeg, radius, tiltDeg);
-  return [x, y + HOOP_DROP_PX * scale, z];
+/** Where card at `phi` hangs by its top-centre: on the circle itself — there is no drop (revision R4). */
+export function cardTop(phiDeg: number, radius: number, tiltDeg: number): Vec3 {
+  return ringPoint(phiDeg, radius, tiltDeg);
 }
 
 // ── Matrices ───────────────────────────────────────────────────────────────────────
@@ -241,28 +240,18 @@ export function tiltMatrix(tiltDeg: number): Mat4 {
   return [1, 0, 0, 0, 0, c, -s, 0, 0, s, c, 0, 0, 0, 0, 1];
 }
 
-/** Reflects front space in the horizontal plane y = floorY. */
-export function mirrorMatrix(floorY: number): Mat4 {
-  return [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 2 * floorY, 0, 1];
-}
-
-/** Front space → the scene's world (camera.ts): page x, −page y. */
-export function frontToWorld(frontPageX: number, frontPageY: number): Mat4 {
-  return [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, frontPageX, -frontPageY, 0, 1];
-}
-
 /**
  * A card's CSS transform, applied about its top-centre (`transform-origin: 50% 0`, placed on
- * the front point): hang from the drop end, `rise` px lower while it arrives, turned
+ * the front point): its top-centre on `cardTop`, `rise` px lower while it arrives, turned
  * `CARD_FACING_SHARE` of the way to facing outward, at the ring's `scale` (`radius` is already
- * scaled). At scale 1 the front card is a pure translation.
+ * scaled). At scale 1 the front card's is the identity.
  */
 export function cardMatrix(phiDeg: number, radius: number, tiltDeg: number, rise: number, scale = 1): Mat4 {
-  const [x, y, z] = dropEnd(phiDeg, radius, tiltDeg, scale);
+  const [x, y, z] = cardTop(phiDeg, radius, tiltDeg);
   return multiply(multiply(translate(x, y + rise, z), rotateY(phiDeg * CARD_FACING_SHARE)), scaleMatrix(scale));
 }
 
-/** Rounded to 1e-6 with no `-0`, so a front card's transform prints as exactly a translation. */
+/** Rounded to 1e-6 with no `-0`, so a front card's transform prints as exactly the identity. */
 export function cssMatrix3d(m: Mat4): string {
   const tidy = (v: number) => String(tidyZero(Math.round(v * 1e6) / 1e6));
   return `matrix3d(${m.map(tidy).join(',')})`;
@@ -272,44 +261,78 @@ export function cssMatrix3d(m: Mat4): string {
 
 /**
  * A point (viewport px, z toward the viewer) as CSS `perspective` places it on screen with the
- * perspective origin at `origin` — and as the camera rig does with the origin at the viewport
- * centre and `distance` its own. `p` and `origin` share coordinates.
+ * perspective origin at `origin` and `distance` the perspective. `p` and `origin` share
+ * coordinates.
  */
 export function project([x, y, z]: Vec3, origin: { x: number; y: number }, distance: number): { x: number; y: number } {
   const scale = distance / (distance - z);
   return { x: origin.x + (x - origin.x) * scale, y: origin.y + (y - origin.y) * scale };
 }
 
+interface RiseInputs {
+  viewportHeight: number;
+  /** The card's full-size width, px; the ring's radius follows from it. */
+  cardWidth: number;
+  scale: number;
+  tiltDeg: number;
+  distance: number;
+}
+
 /**
- * How far above the front point the hoop's back projects on screen, px, with the front point
- * `frontY` down a viewport-tall stage — through the true eye, at the viewport's centre (the
- * camera's and the stage's perspective origin). What the stage clears above.
+ * How far each point that can be the ring's highest on screen projects above the front point,
+ * as a line in the front point's height: `rise = a · frontY + b`. The candidates are the front
+ * card's top (always 0: it is the front point) and the side cards' top corners at ±72°. A card's
+ * top edge is level, but its near corner is nearer the viewer than its top-centre, so through a
+ * perspective origin below it the corner projects higher. Projected through the true eye, at the
+ * viewport's centre (the stage's perspective origin while stuck, revision R1).
  */
-export function hoopRiseAt(frontY: number, viewportHeight: number, radius: number, tiltDeg: number, distance: number): number {
-  const [, backY, backZ] = hoopPoint(180, radius, tiltDeg);
+function riseLines({ viewportHeight, cardWidth, scale, tiltDeg, distance }: RiseInputs): { a: number; b: number }[] {
+  const radius = ringRadius(cardWidth) * scale;
   const eye = { x: 0, y: viewportHeight / 2 };
-  return frontY - project([0, frontY + backY, backZ], eye, distance).y;
+  const lines = [{ a: 0, b: 0 }];
+  for (const side of [1, -1]) {
+    const m = cardMatrix(side * STEP_DEG, radius, tiltDeg, 0, scale);
+    for (const cornerX of [cardWidth / 2, -cardWidth / 2]) {
+      const [x, y, z] = applyMatrix(m, [cornerX, 0, 0]);
+      const riseAt = (frontY: number) => frontY - project([x, frontY + y, z], eye, distance).y;
+      const b = riseAt(0);
+      lines.push({ a: riseAt(1) - b, b });
+    }
+  }
+  return lines;
+}
+
+/**
+ * How far the ring's highest card top projects above the front point on screen, px, with the
+ * front point `frontY` down a viewport-tall stage: what the stage clears above. Never below 0 —
+ * the front card's own top is the front point.
+ */
+export function ringRiseAt({ frontY, ...inputs }: RiseInputs & { frontY: number }): number {
+  return Math.max(...riseLines(inputs).map(({ a, b }) => a * frontY + b));
 }
 
 /**
  * How far the pointer may add to the look-down, degrees, 0..`POINTER_TILT_DEG`: as far as the
- * hoop's back still clears `STAGE_MARGIN_PX` from the stage top. The rise grows with the tilt,
- * so a bisection finds it. A window with room to spare gets the full tilt; one where the layout
- * already sits on the margin (a 560px card at 800 tall) gets none upward.
+ * side cards' tops still clear `STAGE_MARGIN_PX` from the stage top. The rise grows with the
+ * tilt, so a bisection finds it. A window with room to spare gets the full tilt; one where the
+ * layout already sits on the margin gets less, or none upward.
  */
 export function pointerTiltRoom({
   frontY,
   viewportHeight,
-  radius,
+  cardWidth,
+  scale,
   distance,
 }: {
   frontY: number;
   viewportHeight: number;
-  radius: number;
+  cardWidth: number;
+  scale: number;
   distance: number;
 }): number {
   const clears = (extra: number) =>
-    frontY - hoopRiseAt(frontY, viewportHeight, radius, RING_TILT_DEG + extra, distance) >= STAGE_MARGIN_PX - 1e-6;
+    frontY - ringRiseAt({ frontY, viewportHeight, cardWidth, scale, tiltDeg: RING_TILT_DEG + extra, distance }) >=
+    STAGE_MARGIN_PX - 1e-6;
   if (clears(POINTER_TILT_DEG)) return POINTER_TILT_DEG;
   if (!clears(0)) return 0;
   let low = 0;
@@ -326,38 +349,37 @@ export function pointerTiltRoom({
 const FIT_SEARCH_STEPS = 24;
 
 /**
- * Where the front point sits in a one-viewport stage: the hoop, drops and cards centred as one
- * block, never closer than `STAGE_MARGIN_PX` to the top. `radius` and `cardHeight` are full
- * size; `scale` is 1 where that fits, else the largest scale down to `MIN_RING_SCALE` that does
- * (revision R3). `floorY` is in front space, at that scale. `fits` is false when even the floor
- * scale's cards would run off the bottom — the rail stays (D12). The floor is decoration and does
- * not count against the fit (revision R1).
+ * Where the front point sits in a one-viewport stage: the ring's highest card top and the cards'
+ * bottom centred as one block, never closer than `STAGE_MARGIN_PX` to the top. `cardWidth` and
+ * `cardHeight` are full size; `scale` is 1 where that fits, else the largest scale down to
+ * `MIN_RING_SCALE` that does (revision R3). `fits` is false when even the floor scale's cards
+ * would run off the bottom — the rail stays (D12).
  */
 export function stageLayout({
   viewportHeight,
+  cardWidth,
   cardHeight,
-  radius,
   distance,
   tiltDeg,
 }: {
   viewportHeight: number;
+  cardWidth: number;
   cardHeight: number;
-  radius: number;
   distance: number;
   tiltDeg: number;
-}): { frontY: number; floorY: number; fits: boolean; scale: number } {
+}): { frontY: number; fits: boolean; scale: number } {
   const layoutAt = (scale: number) => {
-    const riseAt = (frontY: number) => hoopRiseAt(frontY, viewportHeight, radius * scale, tiltDeg, distance);
-    // rise = a·frontY + b and top = frontY − rise. Centred, 2·top = vh − rise − below, so frontY =
-    // (vh − below + b) / (2 − a); at the margin, frontY = (margin + b) / (1 − a). The lower on screen wins.
-    const b = riseAt(0);
-    const a = riseAt(1) - b;
-    const below = (HOOP_DROP_PX + cardHeight) * scale;
-    const centredY = (viewportHeight - below + b) / (2 - a);
-    const marginY = (STAGE_MARGIN_PX + b) / (1 - a);
+    // Each candidate's rise is a line in frontY (riseLines), and the block's top is frontY less
+    // the highest of them. Centred, 2·top = vh − rise − below, so frontY = (vh − below + b) /
+    // (2 − a); at the margin, frontY = (margin + b) / (1 − a). The top moves down with frontY on
+    // every line, so the block's top reaches each target only once the last line does: the
+    // largest of the lines' answers. Of centred and margin, the lower on screen wins.
+    const lines = riseLines({ viewportHeight, cardWidth, scale, tiltDeg, distance });
+    const below = cardHeight * scale;
+    const centredY = Math.max(...lines.map(({ a, b }) => (viewportHeight - below + b) / (2 - a)));
+    const marginY = Math.max(...lines.map(({ a, b }) => (STAGE_MARGIN_PX + b) / (1 - a)));
     const frontY = Math.max(centredY, marginY);
-    const floorY = (HOOP_DROP_PX + cardHeight + FLOOR_GAP_PX) * scale;
-    return { frontY, floorY, fits: frontY + below + FIT_MARGIN_PX <= viewportHeight, scale };
+    return { frontY, fits: frontY + below + FIT_MARGIN_PX <= viewportHeight, scale };
   };
   const full = layoutAt(1);
   if (full.fits) return full;
@@ -377,46 +399,9 @@ export function stageLayout({
 // ── Choreography ───────────────────────────────────────────────────────────────────
 
 /**
- * The arrival, from tip travel `a` (0..1) past the split: the hoop draws round from the front
- * point, then the drops fall, then the cards rise into place as their drops land.
+ * The arrival, from tip travel `a` (0..1) past the split: the cards rise into place over its
+ * last 40%. (Task 12 replaces this with the fan-out.)
  */
-export function arrival(a: number): { hoop: number; drops: number; cards: number } {
-  return {
-    hoop: easeLine(unit(a / 0.5)),
-    drops: easeLine(unit((a - 0.45) / 0.35)),
-    cards: smooth((a - 0.6) / 0.4),
-  };
-}
-
-/**
- * The pulse for linear steps `raw`. During each turn a pulse leaves the front point along the
- * hoop toward the arriving card, meets it halfway through the step and rides it in. As the card
- * reaches the front (its dwell begins) the pulse runs down the drop, over the first quarter of
- * the dwell; the emission flares as it lands and fades by the dwell's centre, where the settle
- * rests. The flare is a moment, so every card rests the same — quiet. Before the first turn
- * begins (card 0 was lit by the arrival) all quiet.
- */
-export function pulseAt(raw: number): { card: number; hoopDeg: number; hoopStrength: number; dropAt: number; flare: number } {
-  const half = DWELL_SHARE / 2;
-  const quarter = DWELL_SHARE / 4;
-  // The card the turn is bringing in: raw in (c − 1, c] belongs to card c.
-  const arriving = Math.min(lastCard, Math.max(1, Math.ceil(raw)));
-  // 0 as the pulse leaves the front point — the end of the previous card's dwell.
-  const sinceLeft = raw - (arriving - 1) - half;
-  const hasLeft = sinceLeft > 0;
-  // Out along the hoop until it meets the card halfway through the step, then riding it in.
-  const out = easeLine(unit(sinceLeft / (PULSE_MEETS - half)));
-  const hoopDeg = hasLeft ? Math.max(0, cardAngle(arriving, turnSteps(raw)) * out) : 0;
-  // Down the drop from the dwell's start to its first quarter, where the flare peaks.
-  const dropAt = unit((raw - (arriving - half)) / quarter);
-  // Measured back from the dwell's centre, so it is exactly 0 where the settle rests.
-  const hasLanded = raw >= arriving - quarter;
-  const flare = hasLanded ? unit((arriving - raw) / quarter) : 0;
-  return {
-    card: arriving,
-    hoopDeg,
-    hoopStrength: hasLeft ? 1 - dropAt : 0,
-    dropAt,
-    flare,
-  };
+export function arrival(a: number): { cards: number } {
+  return { cards: smooth((a - 0.6) / 0.4) };
 }

@@ -3,9 +3,9 @@
  * Section 04 — the shipped sites, as the 2D rail. Spec §9.04.
  *
  * This is the ring's fallback, built first: the presentation on phones, short windows, under
- * reduced motion and wherever the WebGL gate fails (Phase 12 builds the 3D ring over the same
- * cards). Same cards, same content, same links in both, so everything here is server-rendered
- * and the island only adds behaviour.
+ * reduced motion and with `?signal=2d` (Phase 12 builds the 3D ring over the same cards). Same
+ * cards, same content, same links in both, so everything here is server-rendered and the island
+ * only adds behaviour.
  *
  * **The split is a track.** §6 has the line split into five at the ring, one branch per
  * card. In 2D that is a horizontal track above the rail, the signal's own weight and
@@ -22,18 +22,20 @@
  * The track and drops are drawn in full in the HTML. With JS off, or under reduced motion,
  * the split is complete; the island moves it back to undrawn and draws it off the tip.
  *
- * **The 3D mode** (Phase 12) is these same cards, restyled. `gfx/ring-stage.ts` adds
- * `.ring--3d` once the WebGL tube is live and the ring fits the window, and only while the
- * section is off screen, because the class changes the page's height. The rail grows by the pin
- * length and the scroller becomes a sticky, one-viewport stage in which each card gets a
- * `matrix3d` from `gfx/ring.ts`. WebGL draws the hoop and drops, so the 2D drops are hidden;
- * the emissions stay on their cards. The meeting point is `[data-signal-split]` in both modes.
- * In the rail it is the visible track. In 3D the track is hidden and moved to the stage's front
- * point, kept in the rail rather than the sticky stage, so it measures where the curve should
- * pass and not where the stage is stuck. `[data-signal-hold="end"]` ends the line's straight
- * hold below the split: the cards' bottom edge in the rail, and the same stage height at the pin's
- * end in 3D, so the line runs straight down the centre for the whole pin. Removing the class
- * restores the rail exactly (resize below the fit, or the tube's own fallback).
+ * **The 3D mode** (Phase 12, revision R4) is these same cards, restyled, in CSS 3D — no WebGL.
+ * The script below loads `lib/ring/stage.ts` after load and idle when its gate passes
+ * (`lib/ring/gate.ts`: wide enough, no reduced motion, not `?signal=2d`); the stage adds
+ * `.ring--3d` when the ring fits the window, and only while the section is off screen, because
+ * the class changes the page's height. The rail grows by the pin length and the scroller becomes
+ * a sticky, one-viewport stage in which each card gets a `matrix3d` from `lib/ring/geometry.ts`.
+ * There is no hoop and no drop: the 2D track and drops are hidden, and the line lands on the
+ * front card's emission, which stays on its card. The meeting point is `[data-signal-split]` in
+ * both modes. In the rail it is the visible track. In 3D the track is hidden and moved to the
+ * front card's top-centre, kept in the rail rather than the sticky stage, so it measures where
+ * the curve should pass and not where the stage is stuck. `[data-signal-hold="end"]` ends the
+ * line's straight hold below the split: the cards' bottom edge in the rail, and the same stage
+ * height at the pin's end in 3D, so the line runs straight down the centre for the whole pin.
+ * Removing the class restores the rail exactly (resize below the fit, or any failure).
  *
  * Layout is the plain content box, as 01–02 use: no signal gutter, because below 03 the line
  * runs through the centre rather than down a spine in the margin (Decisions, 2026-10-03).
@@ -519,7 +521,7 @@ const srcset = (urls: Record<string, string>) =>
     white-space: nowrap;
   }
 
-  /* ── The 3D ring (Phase 12) — on only while ring-stage.ts has mounted it ─────────── */
+  /* ── The 3D ring (Phase 12) — on only while lib/ring/stage.ts has mounted it ─────── */
 
   /* The rail grows by the pin; the stage sticks for that distance (design D6). */
   .ring--3d .ring__rail {
@@ -539,7 +541,7 @@ const srcset = (urls: Record<string, string>) =>
     visibility: hidden;
   }
 
-  /* The 3D swap changes these two boxes, and ring-stage.ts reads the section's height in the
+  /* The 3D swap changes these two boxes, and stage.ts reads the section's height in the
      same task as it drops the ring, to hold a reader who is past it in place. Under reduced
      motion global.css's net would make each change a 1ms transition, and the read would get the
      3D box (72px short at 1280). Neither has a transition of its own. */
@@ -564,7 +566,7 @@ const srcset = (urls: Record<string, string>) =>
     scroll-snap-type: none;
   }
 
-  /* One 3D context for all five, so they depth-sort; its perspective is the camera's. */
+  /* One 3D context for all five, so they depth-sort; stage.ts sets its perspective. */
   .ring--3d .ring__cards {
     position: absolute;
     inset: 0;
@@ -575,7 +577,7 @@ const srcset = (urls: Record<string, string>) =>
     transform-style: preserve-3d;
   }
 
-  /* Each card's top-centre sits on the front point; ring-stage.ts writes its matrix3d. */
+  /* Each card's top-centre sits on the front point; stage.ts writes its matrix3d. */
   .ring--3d .card {
     position: absolute;
     top: var(--ring-front-y, 0px);
@@ -590,7 +592,7 @@ const srcset = (urls: Record<string, string>) =>
     pointer-events: none;
   }
 
-  /* Dragging the stage turns the ring (ring-stage.ts); the link still reads as a link. */
+  /* Dragging the stage turns the ring (stage.ts); the link still reads as a link. */
   .ring--3d .ring__scroller {
     cursor: grab;
   }
@@ -599,7 +601,7 @@ const srcset = (urls: Record<string, string>) =>
     cursor: pointer;
   }
 
-  /* The front card is the one the pulse lit: its title in --signal, as on hover (large text). */
+  /* The front card's title in --signal, as on hover (large text). */
   .ring--3d .card--front .card__title {
     color: var(--signal);
   }
@@ -610,7 +612,7 @@ const srcset = (urls: Record<string, string>) =>
     user-select: none;
   }
 
-  /* WebGL draws the hoop and the drops; the emissions stay DOM, on their cards. */
+  /* No drops in 3D: the line lands on the front card's emission, which stays on its card. */
   .ring--3d .card__drop {
     display: none;
   }
@@ -618,6 +620,30 @@ const srcset = (urls: Record<string, string>) =>
 
 <script>
   import { mountRing } from '../islands/ring';
+  import { forcedMode } from '../lib/gfx/gate';
+  import { canTurnRing } from '../lib/ring/gate';
 
   mountRing();
+
+  // Phase 12: the 3D ring, decided only once the page is loaded and idle (as BaseLayout does
+  // for the tube), so it never touches first paint. Its code is behind this import, in no
+  // initial chunk. Whether it fits the window is the stage's own check.
+  function startRing(): void {
+    const section = document.querySelector<HTMLElement>('[data-ring]');
+    const canTurn = canTurnRing({
+      viewportWidth: document.documentElement.clientWidth,
+      reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      mode: forcedMode(location.search),
+    });
+    if (!section || !canTurn) return;
+    import('../lib/ring/stage')
+      .then(({ mountRingStage }) => mountRingStage({ section }))
+      .catch(() => {
+        // A failed chunk load, or a mount that threw before switching on: the rail was never
+        // touched, so there is nothing to undo.
+      });
+  }
+  const whenIdle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn) : fn());
+  if (document.readyState === 'complete') whenIdle(startRing);
+  else window.addEventListener('load', () => whenIdle(startRing), { once: true });
 </script>

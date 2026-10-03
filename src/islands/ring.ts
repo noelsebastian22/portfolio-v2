@@ -79,7 +79,7 @@ export function mountRing(): void {
 
   /** Draws the split to linear progress `p`, 0..1; at 1 the inline styles are cleared. */
   function paint(p: number): void {
-    // In the 3D ring (Phase 12) ring-stage.ts owns the emissions, and the track and drops are hidden.
+    // In the 3D ring (Phase 12) lib/ring/stage.ts owns the emissions, and the track and drops are hidden.
     if (section!.classList.contains('ring--3d')) return;
     if (p === painted) return;
     painted = p;
