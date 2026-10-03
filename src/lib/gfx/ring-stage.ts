@@ -22,16 +22,29 @@ import {
   cardMatrix,
   cardPose,
   cssMatrix3d,
+  nearestCard,
+  PIN_STEP_VH,
   pinLength,
   rawSteps,
   ringRadius,
   stageLayout,
+  stepOffset,
   stickyTop,
   turnSteps,
 } from './ring';
 
 /** How far below its place a card starts before its drop lands, px. */
 const ARRIVAL_RISE_PX = 24;
+
+/** A turn the reader asked for by focusing a card, not choreography, s. */
+const FOCUS_TURN_S = 0.6;
+
+/** A drag past this many px is a drag, and the click that ends it is swallowed. */
+const DRAG_THRESHOLD_PX = 6;
+
+/** Scroll that has been still this long has stopped. */
+const SETTLE_AFTER_MS = 140;
+const SETTLE_S = 0.4;
 
 export interface RingFrame {
   /** Front point, page px — where the hoop meets the line this frame. */
@@ -69,7 +82,8 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   const rail = section.querySelector<HTMLElement>('.ring__rail');
   const cards = Array.from(section.querySelectorAll<HTMLElement>('.card'));
   const track = section.querySelector<HTMLElement>('[data-signal-split]');
-  if (!rail || !track || cards.length !== RING_CARD_COUNT) return null;
+  const stage = section.querySelector<HTMLElement>('.ring__scroller');
+  if (!rail || !track || !stage || cards.length !== RING_CARD_COUNT) return null;
 
   // The rail's cards share one height (flex stretch), so any card's is the tallest.
   const cardWidth = cards[0].getBoundingClientRect().width;
@@ -141,6 +155,77 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     if (isOn) measure();
   });
 
+  /** Focus moves the ring (spec §9.04): any card focused, by any key, comes to the front. */
+  const onFocusIn = (event: FocusEvent) => {
+    if (!isOn) return;
+    const card = (event.target as Element).closest<HTMLElement>('.card');
+    const index = card ? cards.indexOf(card) : -1;
+    if (index < 0) return;
+    const target = measured.railTop + stepOffset(index, measured.viewportHeight);
+    if (Math.abs(window.scrollY - target) < 1) return;
+    scrollToY(target, { duration: FOCUS_TURN_S });
+  };
+  section.addEventListener('focusin', onFocusIn);
+
+  // Drag: mouse and pen only (touch scrolls natively). A drag of one card width turns one step.
+  let drag: { startX: number; startScroll: number; isDragging: boolean } | null = null;
+  let swallowNextClick = false;
+  const onPointerDown = (event: PointerEvent) => {
+    // A drag released outside the stage never gets its click here: never let it eat this one.
+    swallowNextClick = false;
+    if (!isOn || event.pointerType === 'touch' || event.button !== 0) return;
+    drag = { startX: event.clientX, startScroll: window.scrollY, isDragging: false };
+  };
+  const onPointerMove = (event: PointerEvent) => {
+    if (!drag) return;
+    const dx = event.clientX - drag.startX;
+    if (!drag.isDragging && Math.abs(dx) < DRAG_THRESHOLD_PX) return;
+    drag.isDragging = true;
+    // Dragging left brings the next card in from the right.
+    const pxPerStep = PIN_STEP_VH * measured.viewportHeight;
+    scrollToY(drag.startScroll - (dx / cardWidth) * pxPerStep, { immediate: true });
+  };
+  const onPointerUp = () => {
+    const wasDragging = drag?.isDragging ?? false;
+    drag = null;
+    if (wasDragging) settle();
+    swallowNextClick = wasDragging;
+  };
+  // The cards are links and links drag natively: a native drag cancels the pointer stream
+  // (pointercancel) before the turn starts. CSS -webkit-user-drag would cover Chrome and Safari only.
+  const onDragStart = (event: DragEvent) => {
+    if (isOn) event.preventDefault();
+  };
+  const onClickCapture = (event: MouseEvent) => {
+    if (!swallowNextClick) return;
+    swallowNextClick = false;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  stage.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointermove', onPointerMove, { passive: true });
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerUp);
+  stage.addEventListener('dragstart', onDragStart);
+  stage.addEventListener('click', onClickCapture, true);
+
+  // Settle (D10): when scrolling stops inside the pin, ease to the nearest card.
+  let settleTimer: ReturnType<typeof setTimeout> | undefined;
+  function settle(): void {
+    const offset = window.scrollY - measured.railTop;
+    const isInsidePin = offset > 0 && offset < measured.pin;
+    if (!isOn || isDropped || drag || !isInsidePin) return;
+    const target = measured.railTop + stepOffset(nearestCard(offset, measured.viewportHeight), measured.viewportHeight);
+    if (Math.abs(window.scrollY - target) > 1) scrollToY(target, { duration: SETTLE_S });
+  }
+  // Lenis drives native scroll, so this fires for wheel, keys, drag and Lenis's own easing; the
+  // settle's own scroll ends on its target, where the next settle is a no-op.
+  const onScroll = () => {
+    if (settleTimer !== undefined) clearTimeout(settleTimer);
+    settleTimer = setTimeout(settle, SETTLE_AFTER_MS);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+
   function drop(): void {
     if (isDropped) return;
     unmount();
@@ -153,6 +238,16 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     visibility.disconnect();
     window.removeEventListener('resize', onResize);
     stopCurve();
+    section.removeEventListener('focusin', onFocusIn);
+    stage.removeEventListener('pointerdown', onPointerDown);
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerUp);
+    stage.removeEventListener('dragstart', onDragStart);
+    stage.removeEventListener('click', onClickCapture, true);
+    window.removeEventListener('scroll', onScroll);
+    if (settleTimer !== undefined) clearTimeout(settleTimer);
+    drag = null;
     if (!isOn) return;
     // Mid-pin, the page is about to lose the pin's height: land the reader on the rail.
     const wasInsideRing = window.scrollY > measured.railTop - window.innerHeight && window.scrollY < measured.railTop + measured.pin;

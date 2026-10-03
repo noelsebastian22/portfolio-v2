@@ -568,6 +568,21 @@ const srcset = (urls: Record<string, string>) =>
     pointer-events: none;
   }
 
+  /* Dragging the stage turns the ring (ring-stage.ts); the link still reads as a link. */
+  .ring--3d .ring__scroller {
+    cursor: grab;
+  }
+
+  .ring--3d .card__link {
+    cursor: pointer;
+  }
+
+  /* A drag that starts on a card must turn the ring, not drag out its image. */
+  .ring--3d .card img {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
   /* WebGL draws the hoop and the drops; the emissions stay DOM, on their cards. */
   .ring--3d .card__drop {
     display: none;
