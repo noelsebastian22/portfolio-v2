@@ -119,6 +119,40 @@ recruiters on a laptop would get the rail.
   scale about its top-centre, still on the page plane.
 - **Amends D12:** the ring fits wherever it fits at a scale of 0.7 or more, not only at full size.
 
+## Revision R4 — 2026-10-03, a floating ring, no WebGL
+
+**Found (Noel, first look on his own screen):** the hoop, drops, glow, floor and pulse read as
+amateur, and the turn lagged — each card held for 35% of every step, a step was 0.6 of a screen,
+and a separate settle followed. He asked for a loop of floating cards that turns at once and
+snaps: modern, futuristic, elegant, minimalist, professional.
+
+**Decided (Noel, "same as recommended"; details ruled by the controller):**
+
+- **No WebGL in the ring.** `ring-mesh.ts` and its scene wiring go; so do the pulse, flare,
+  floor and reflection. The ring is pure CSS 3D in its own lazily loaded chunk
+  (`src/lib/ring/`), mounted from section 04's script after load and idle — not from the
+  WebGL scene. Its own gate: viewport ≥ 900px wide, no reduced motion, not `?signal=2d`, and the
+  scaled ring fits (R3). A machine that fails the WebGL gate still gets the ring. Supersedes
+  D4's WebGL half, D13, and §3's `ring-mesh.ts` row.
+- **An invisible circle.** Cards on a circle as before (half-facing, R1); side cards recede
+  under a dark overlay, the back two fade out (D3). No hoop, no drops: the front point is the
+  front card's top-centre.
+- **The line lands on the front card's yellow dot.** It comes down the centre (the hold, D7)
+  onto the front card's emission, which is lit (larger, a soft `--shipped` glow) on whichever
+  card is in front. `path.ts` is unchanged.
+- **The turn tracks the scroll.** No dwell (linear in scroll), a step of 0.4 of a viewport,
+  and a quick directional snap (R2) after ~110ms still, over ~0.3s. Supersedes D10's dwell.
+- **Arrival fans out.** As the section scrolls in, the cards spread from one stack into the
+  circle, driven by tip travel past the split (as before), reversed on the way up.
+- **Pointer float.** The ring tilts up to ±3° toward the pointer, and the card under the pointer
+  lifts toward the viewer; both ease only while the pointer moves, then go quiet (no timer).
+  No base look-down beyond a small value tuned by eye (0–8°).
+- **Navigation.** A mono counter (`02 / 05`, `aria-hidden`) and five dot buttons under the ring,
+  server-rendered and shown only in 3D. Each button is labelled "Show <site>", carries
+  `aria-current` when its card is in front, and turns the ring by moving the scroll.
+- **Perspective** is chosen for the look, no longer tied to the camera rig: the front card sits
+  on the page plane, so it is exact under any perspective.
+
 ## 3. Structure
 
 | File | Job | Pure | Tested |
