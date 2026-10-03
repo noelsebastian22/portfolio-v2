@@ -31,6 +31,7 @@ import {
   fanOut,
   frontness,
   liftOffset,
+  nearestCard,
   PIN_STEP_VH,
   POINTER_TILT_DEG,
   pinLength,
@@ -94,7 +95,12 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
   const emits = Array.from(section.querySelectorAll<HTMLElement>('[data-emit]'));
   const track = section.querySelector<HTMLElement>('[data-signal-split]');
   const stage = section.querySelector<HTMLElement>('.ring__scroller');
-  if (!rail || !track || !stage || cards.length !== RING_CARD_COUNT) return null;
+  const nav = section.querySelector<HTMLElement>('[data-ring-nav]');
+  const count = section.querySelector<HTMLElement>('[data-ring-count]');
+  const dots = Array.from(section.querySelectorAll<HTMLButtonElement>('[data-ring-dot]'));
+  if (!rail || !track || !stage || !nav || !count || cards.length !== RING_CARD_COUNT || dots.length !== RING_CARD_COUNT) {
+    return null;
+  }
 
   // The rail's cards share one height (flex stretch), so any card's is the tallest.
   const cardWidth = cards[0].getBoundingClientRect().width;
@@ -137,6 +143,8 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
 
   /** The page scroll the ring last came to rest at — the settle reads the reader's direction from it. */
   let restY = 0;
+  /** The card the counter and dots last showed; −1 until the first draw. */
+  let shownFront = -1;
 
   function measure(): void {
     const viewportHeight = window.innerHeight;
@@ -151,6 +159,7 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     const pin = pinLength(viewportHeight);
     section.style.setProperty('--ring-pin', `${pin.toFixed(2)}px`);
     section.style.setProperty('--ring-front-y', `${layout.frontY.toFixed(2)}px`);
+    section.style.setProperty('--ring-nav-y', `${layout.navY.toFixed(2)}px`);
     section.style.setProperty('--ring-perspective', `${PERSPECTIVE_PX}px`);
     const railBox = rail!.getBoundingClientRect();
     const railTop = railBox.top + window.scrollY;
@@ -161,6 +170,7 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     const frontX = Number((frontPageX - (railBox.left + window.scrollX)).toFixed(2));
     section.style.setProperty('--ring-front-x', `${frontX}px`);
     const { scale } = layout;
+    section.style.setProperty('--ring-scale', scale.toFixed(4));
     const radius = fullRadius * scale;
     // How far up the pointer may tilt the ring before the side cards' tops run under the nav.
     const tiltRoom = pointerTiltRoom({ frontY: layout.frontY, viewportHeight, cardWidth, scale, distance: PERSPECTIVE_PX });
@@ -213,18 +223,33 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
   const stopProgress = onPageProgress(markDirty);
   const stopTip = onSignalTip(markDirty);
 
+  /** Turns card `index` to the front through the scroll — the one source of the angle — and makes it the settle's rest. */
+  function turnTo(index: number): void {
+    const target = measured.railTop + stepOffset(index, measured.viewportHeight);
+    restY = target;
+    if (Math.abs(window.scrollY - target) < 1) return;
+    scrollToY(target, { duration: FOCUS_TURN_S, easing: easeOutCubic });
+  }
+
   /** Focus moves the ring (spec §9.04): any card focused, by any key, comes to the front. */
   const onFocusIn = (event: FocusEvent) => {
     if (!isOn) return;
     const card = (event.target as Element).closest<HTMLElement>('.card');
     const index = card ? cards.indexOf(card) : -1;
     if (index < 0) return;
-    const target = measured.railTop + stepOffset(index, measured.viewportHeight);
-    restY = target;
-    if (Math.abs(window.scrollY - target) < 1) return;
-    scrollToY(target, { duration: FOCUS_TURN_S, easing: easeOutCubic });
+    turnTo(index);
   };
   section.addEventListener('focusin', onFocusIn);
+
+  /** A dot turns its card to the front; focus stays on the dot. Enter and Space click a button natively. */
+  const onDotClick = (event: MouseEvent) => {
+    if (!isOn) return;
+    const dot = (event.target as Element).closest<HTMLButtonElement>('[data-ring-dot]');
+    const index = dot ? dots.indexOf(dot) : -1;
+    if (index < 0) return;
+    turnTo(index);
+  };
+  nav.addEventListener('click', onDotClick);
 
   // Drag: mouse and pen only (touch scrolls natively). A drag of one (scaled) card width turns one step.
   let drag: { startX: number; startScroll: number; isDragging: boolean } | null = null;
@@ -233,6 +258,8 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     // A drag released outside the stage never gets its click here: never let it eat this one.
     swallowNextClick = false;
     if (!isOn || event.pointerType === 'touch' || event.button !== 0) return;
+    // The dots are buttons: a press on one is a click, never the start of a drag.
+    if (nav!.contains(event.target as Node)) return;
     drag = { startX: event.clientX, startScroll: window.scrollY, isDragging: false };
   };
   const onPointerMove = (event: PointerEvent) => {
@@ -341,6 +368,7 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     stopProgress();
     stopTip();
     section.removeEventListener('focusin', onFocusIn);
+    nav!.removeEventListener('click', onDotClick);
     stage!.removeEventListener('pointerdown', onPointerDown);
     window.removeEventListener('pointermove', onPointerMove);
     window.removeEventListener('pointerup', onPointerUp);
@@ -363,9 +391,12 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     const wasPastPin = scrollYBefore >= measured.railTop + measured.pin;
     const heightBefore = section.offsetHeight;
     section.classList.remove('ring--3d');
-    for (const name of ['--ring-pin', '--ring-front-y', '--ring-front-x', '--ring-perspective', '--ring-origin-x', '--ring-origin-y']) {
+    for (const name of ['--ring-pin', '--ring-front-y', '--ring-front-x', '--ring-nav-y', '--ring-scale', '--ring-perspective', '--ring-origin-x', '--ring-origin-y']) {
       section.style.removeProperty(name);
     }
+    nav!.style.removeProperty('--ring-arrive');
+    for (const dot of dots) dot.removeAttribute('aria-current');
+    shownFront = -1;
     for (const card of cards) {
       for (const name of ['transform', 'opacity', '--ring-dim', '--ring-lit']) card.style.removeProperty(name);
       card.classList.remove('card--inert', 'card--front');
@@ -447,6 +478,19 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
       card.classList.toggle('card--inert', isInert);
       card.classList.toggle('card--front', cardPose(angleDeg).isFront);
     });
+
+    // The counter and dots: the card nearest the front, by the rule the settle lands by, so at
+    // rest they agree with the card in front. Written only when it changes.
+    const front = nearestCard(scrollY - railTop, viewportHeight);
+    if (front !== shownFront) {
+      shownFront = front;
+      count!.textContent = String(front + 1).padStart(2, '0');
+      dots.forEach((dot, i) => {
+        if (i === front) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+      });
+    }
+    nav!.style.setProperty('--ring-arrive', fan.opacity.toFixed(3));
   }
 
   return { update, unmount };

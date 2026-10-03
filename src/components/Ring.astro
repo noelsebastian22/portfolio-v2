@@ -70,6 +70,9 @@ const RETURN_PX_PER_S = 1600;
 
 const seconds = (value: number) => `${value.toFixed(2)}s`;
 
+/** The counter's two digits: `01 / 05`. */
+const pad = (value: number) => String(value).padStart(2, '0');
+
 const cards = ringProjects.map((project) => {
   const capture = manifest[project.slug];
   if (!capture) {
@@ -190,6 +193,20 @@ const srcset = (urls: Record<string, string>) =>
             </li>
           ))}
         </ul>
+
+        {/* The 3D ring's counter and dots (revision R4), under the front card. Outside the
+            card list's 3D context, so they never depth-sort with the cards. Shown only in 3D:
+            in the rail every card is already in reach, and the buttons would do nothing. */}
+        <nav class="ring__nav" aria-label="Shipped sites" data-ring-nav>
+          <p class="ring__count" aria-hidden="true"><span data-ring-count>01</span> / {pad(cards.length)}</p>
+          <ul class="ring__dots" role="list">
+            {cards.map((card, i) => (
+              <li>
+                <button type="button" class="ring__dot" data-ring-dot={i} aria-label={`Show ${card.title}`}></button>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
 
       {/* Where the line's hold below the split ends (anchors.ts, RING_HOLD_END_POINT): the
@@ -661,6 +678,91 @@ const srcset = (urls: Record<string, string>) =>
   /* No drops in 3D: the line lands on the front card's emission, which stays on its card. */
   .ring--3d .card__drop {
     display: none;
+  }
+
+  /* ── The counter and dots (revision R4) — 3D only ─────────────────────────────────── */
+
+  .ring__nav {
+    display: none;
+  }
+
+  /* Flat in the stage, under the front card and as wide as it: the counter under its text's
+     left edge, the dots under its right. The middle stays clear, because the line runs on down
+     the centre below the card and its tip can show there. stage.ts sets `--ring-nav-y` from
+     geometry.ts's stageLayout, which reserves NAV_HEIGHT_PX — this row's height — for it, and
+     `--ring-scale`, the ring's. It comes up with the cards as they arrive (`--ring-arrive`),
+     and a focused dot is always shown in full. */
+  .ring--3d .ring__nav {
+    position: absolute;
+    top: var(--ring-nav-y, 100%);
+    left: var(--ring-front-x, 50%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: calc(var(--ring-card) * var(--ring-scale, 1));
+    height: 24px;
+    padding-inline: var(--s-4);
+    transform: translateX(-50%);
+    opacity: var(--ring-arrive, 1);
+    cursor: auto;
+  }
+
+  .ring--3d .ring__nav:focus-within {
+    opacity: 1;
+  }
+
+  .ring__count {
+    margin: 0;
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  /* The card in front reads first; the count out of five recedes. */
+  .ring__count [data-ring-count] {
+    color: var(--type);
+  }
+
+  /* Out by the hit area's margin round the dot, so the last dot's edge, not its target's, lines
+     up with the card's text. */
+  .ring__dots {
+    display: flex;
+    margin: 0 -8px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A 24px target (WCAG 2.2) round an 8px dot. */
+  .ring__dot {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+  }
+
+  .ring__dot::before {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--type) 30%, transparent);
+    content: '';
+    transition: background-color 0.2s ease-out;
+  }
+
+  .ring__dot:hover::before {
+    background: color-mix(in srgb, var(--type) 60%, transparent);
+  }
+
+  .ring__dot[aria-current='true']::before {
+    background: var(--signal);
   }
 </style>
 

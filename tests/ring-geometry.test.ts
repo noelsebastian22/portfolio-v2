@@ -3,6 +3,8 @@ import {
   CARD_FACING_SHARE,
   FIT_MARGIN_PX,
   MIN_RING_SCALE,
+  NAV_GAP_PX,
+  NAV_HEIGHT_PX,
   PERSPECTIVE_PX,
   PIN_LEAD_VH,
   PIN_STEP_VH,
@@ -389,33 +391,51 @@ describe('stageLayout', () => {
     expect(layout.frontY - riseOf(layout.frontY, 900)).toBeGreaterThanOrEqual(STAGE_MARGIN_PX - 1e-9);
   });
 
-  it('fits a 560px card at the checkpoint, 1280×800, cards inside the window', () => {
+  it('fits a 560px card at the checkpoint, 1280×800, cards and nav inside the window', () => {
     const layout = checkLayout();
     expect(layout.fits).toBe(true);
     expect(layout.frontY - riseOf(layout.frontY, CHECK_H)).toBeGreaterThanOrEqual(STAGE_MARGIN_PX - 1e-9);
-    expect(layout.frontY + 560 + FIT_MARGIN_PX).toBeLessThanOrEqual(CHECK_H);
+    expect(layout.navY + NAV_HEIGHT_PX + FIT_MARGIN_PX).toBeLessThanOrEqual(CHECK_H);
   });
 
-  it('centres the block when there is room', () => {
+  it('centres the block, nav included, when there is room', () => {
     const layout = layoutAt(1080);
     const top = layout.frontY - riseOf(layout.frontY, 1080);
-    const bottom = layout.frontY + 560;
+    const bottom = layout.navY + NAV_HEIGHT_PX;
     expect(top).toBeGreaterThan(STAGE_MARGIN_PX);
     expect(top).toBeCloseTo(1080 - bottom, 9);
   });
 
   it('sits on the margin when centring would put the ring under the nav', () => {
     const layout = layoutAt(700);
-    expect(layout.frontY - riseOf(layout.frontY, 700)).toBeCloseTo(STAGE_MARGIN_PX, 9);
+    expect(layout.frontY - riseOf(layout.frontY, 700, layout.scale)).toBeCloseTo(STAGE_MARGIN_PX, 9);
   });
 
   it('centres on the front card when nothing rises above it (no look-down)', () => {
     const layout = stageLayout({ viewportHeight: 1080, cardWidth: CARD, cardHeight: 560, distance: D, tiltDeg: 0 });
-    expect(layout.frontY).toBeCloseTo((1080 - 560) / 2, 9);
+    expect(layout.frontY).toBeCloseTo((1080 - 560 - NAV_GAP_PX - NAV_HEIGHT_PX) / 2, 9);
   });
 
   it('does not fit a 560px card in a 640px viewport at full size', () => {
     expect(layoutAt(640).scale).toBeLessThan(1);
+  });
+});
+
+describe('stageLayout reserves the nav under the front card', () => {
+  it('puts the nav a flat gap under the front card, at every scale', () => {
+    for (const height of [1080, 900, 760, 650, 600]) {
+      const { frontY, scale, navY } = layoutAt(height, 563);
+      expect(navY).toBeCloseTo(frontY + 563 * scale + NAV_GAP_PX, 9);
+    }
+  });
+
+  it('keeps the nav inside the window wherever the ring fits', () => {
+    for (let height = 480; height <= 1200; height++) {
+      const layout = layoutAt(height, 563);
+      if (!layout.fits) continue;
+      const navBottom = layout.navY + NAV_HEIGHT_PX + FIT_MARGIN_PX;
+      expect(navBottom).toBeLessThanOrEqual(height + 1e-6);
+    }
   });
 });
 
@@ -435,9 +455,10 @@ describe('stageLayout scales the ring to fit a short window', () => {
     expect(fits).toBe(true);
     expect(scale).toBeGreaterThanOrEqual(MIN_RING_SCALE);
     expect(scale).toBeLessThan(1);
-    expect(frontY + CARD_H * scale + FIT_MARGIN_PX).toBeLessThanOrEqual(650 + 0.5);
-    // The largest scale that fits: the cards sit on the bottom margin.
-    expect(frontY + CARD_H * scale + FIT_MARGIN_PX).toBeGreaterThan(650 - 0.5);
+    const navBottom = frontY + CARD_H * scale + NAV_GAP_PX + NAV_HEIGHT_PX;
+    expect(navBottom + FIT_MARGIN_PX).toBeLessThanOrEqual(650 + 0.5);
+    // The largest scale that fits: the nav sits on the bottom margin.
+    expect(navBottom + FIT_MARGIN_PX).toBeGreaterThan(650 - 0.5);
     expect(frontY - riseOf(frontY, 650, scale)).toBeGreaterThanOrEqual(STAGE_MARGIN_PX - 1e-6);
   });
 

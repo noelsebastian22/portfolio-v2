@@ -51,8 +51,15 @@ export const PIN_TAIL_VH = 0.15;
 export const ARRIVAL_DRAW_VH = 0.35;
 /** Clear space above the ring's highest card top, px: the stage sits under the sticky nav (67px), so this clears it by 8. */
 export const STAGE_MARGIN_PX = 75;
-/** Clear space below the cards' bottom for the stage to fit, px. */
+/** Clear space below the nav's bottom for the stage to fit, px. */
 export const FIT_MARGIN_PX = 8;
+/**
+ * The counter and dots under the front card (revision R4), flat in the stage — never scaled
+ * with the ring. A row as tall as a dot's hit area (WCAG 2.2's 24px target; Ring.astro's
+ * `.ring__nav` height), this far under the front card's bottom edge.
+ */
+export const NAV_HEIGHT_PX = 24;
+export const NAV_GAP_PX = 24;
 /**
  * The stage's CSS `perspective`, px. Chosen for the look, no longer the WebGL camera's distance
  * (revision R4): the front card sits on the page plane, so it is exact under any perspective.
@@ -402,11 +409,12 @@ export function pointerTiltRoom({
 const FIT_SEARCH_STEPS = 24;
 
 /**
- * Where the front point sits in a one-viewport stage: the ring's highest card top and the cards'
- * bottom centred as one block, never closer than `STAGE_MARGIN_PX` to the top. `cardWidth` and
- * `cardHeight` are full size; `scale` is 1 where that fits, else the largest scale down to
- * `MIN_RING_SCALE` that does (revision R3). `fits` is false when even the floor scale's cards
- * would run off the bottom — the rail stays (D12).
+ * Where the front point sits in a one-viewport stage: the ring's highest card top and the nav's
+ * bottom (`NAV_GAP_PX` under the cards, `NAV_HEIGHT_PX` tall) centred as one block, never closer
+ * than `STAGE_MARGIN_PX` to the top. `navY` is the nav's top. `cardWidth` and `cardHeight` are
+ * full size; `scale` is 1 where that fits, else the largest scale down to `MIN_RING_SCALE` that
+ * does (revision R3). `fits` is false when even at the floor scale the nav would run off the
+ * bottom — the rail stays (D12).
  */
 export function stageLayout({
   viewportHeight,
@@ -420,7 +428,7 @@ export function stageLayout({
   cardHeight: number;
   distance: number;
   tiltDeg: number;
-}): { frontY: number; fits: boolean; scale: number } {
+}): { frontY: number; navY: number; fits: boolean; scale: number } {
   const layoutAt = (scale: number) => {
     // Each candidate's rise is a line in frontY (riseLines), and the block's top is frontY less
     // the highest of them. Centred, 2·top = vh − rise − below, so frontY = (vh − below + b) /
@@ -428,11 +436,14 @@ export function stageLayout({
     // every line, so the block's top reaches each target only once the last line does: the
     // largest of the lines' answers. Of centred and margin, the lower on screen wins.
     const lines = riseLines({ viewportHeight, cardWidth, scale, tiltDeg, distance });
-    const below = cardHeight * scale;
+    // The nav keeps its size whatever the ring's scale: only the cards shrink.
+    const cardsBelow = cardHeight * scale;
+    const below = cardsBelow + NAV_GAP_PX + NAV_HEIGHT_PX;
     const centredY = Math.max(...lines.map(({ a, b }) => (viewportHeight - below + b) / (2 - a)));
     const marginY = Math.max(...lines.map(({ a, b }) => (STAGE_MARGIN_PX + b) / (1 - a)));
     const frontY = Math.max(centredY, marginY);
-    return { frontY, fits: frontY + below + FIT_MARGIN_PX <= viewportHeight, scale };
+    const navY = frontY + cardsBelow + NAV_GAP_PX;
+    return { frontY, navY, fits: frontY + below + FIT_MARGIN_PX <= viewportHeight, scale };
   };
   const full = layoutAt(1);
   if (full.fits) return full;
