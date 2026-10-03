@@ -22,9 +22,13 @@ import {
   cardMatrix,
   cardPose,
   cssMatrix3d,
+  nearestCard,
   PIN_STEP_VH,
+  POINTER_TILT_DEG,
   pinLength,
+  pulseAt,
   rawSteps,
+  SETTLE_ON_CARD_PX,
   ringRadius,
   settleTarget,
   stageLayout,
@@ -45,6 +49,12 @@ const DRAG_THRESHOLD_PX = 6;
 /** Scroll that has been still this long has stopped. */
 const SETTLE_AFTER_MS = 140;
 const SETTLE_S = 0.4;
+
+/** The pointer tilt's ease per drawn frame (the portrait's push), and when it has arrived, degrees. */
+const POINTER_TILT_EASE = 0.18;
+const POINTER_TILT_SETTLED_DEG = 0.01;
+/** How much bigger the emission grows at the height of its flare. */
+const FLARE_GROWTH = 0.6;
 
 export interface RingFrame {
   /** Front point, page px — where the hoop meets the line this frame. */
@@ -81,6 +91,7 @@ interface Options {
 export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: Options): RingStage | null {
   const rail = section.querySelector<HTMLElement>('.ring__rail');
   const cards = Array.from(section.querySelectorAll<HTMLElement>('.card'));
+  const emits = cards.map((card) => card.querySelector<HTMLElement>('[data-emit]'));
   const track = section.querySelector<HTMLElement>('[data-signal-split]');
   const stage = section.querySelector<HTMLElement>('.ring__scroller');
   if (!rail || !track || !stage || cards.length !== RING_CARD_COUNT) return null;
@@ -217,6 +228,30 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
   stage.addEventListener('dragstart', onDragStart);
   stage.addEventListener('click', onClickCapture, true);
 
+  // The pointer tilt (D13): mouse and pen over the stage add up to POINTER_TILT_DEG to the
+  // look-down, eased per drawn frame in update(). Pointer-driven, so a still pointer goes quiet.
+  const pointer = { clientX: 0, clientY: 0, isInWindow: false };
+  let pointerTilt = 0;
+  /** Whether a pointer at viewport y is in the stage's band — from measured numbers, no layout. */
+  const isInStageBand = (clientY: number) => {
+    const stageTop = stickyTop(window.scrollY, measured.railTop, measured.pin) - window.scrollY;
+    return clientY >= stageTop && clientY <= stageTop + measured.viewportHeight;
+  };
+  const onPointerTilt = (event: PointerEvent) => {
+    if (event.pointerType === 'touch') return;
+    pointer.clientX = event.clientX;
+    pointer.clientY = event.clientY;
+    pointer.isInWindow = true;
+    // Only a pointer that can move the ring draws: over the stage, or easing back from it.
+    if (isOn && (pointerTilt !== 0 || isInStageBand(event.clientY))) markDirty();
+  };
+  const onPointerLeave = () => {
+    pointer.isInWindow = false;
+    if (isOn && pointerTilt !== 0) markDirty();
+  };
+  window.addEventListener('pointermove', onPointerTilt, { passive: true });
+  document.documentElement.addEventListener('pointerleave', onPointerLeave);
+
   // Settle (D10, Revision R2): when scrolling stops inside the pin, ease to a card in the
   // direction the reader was going.
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -268,6 +303,8 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     stage.removeEventListener('dragstart', onDragStart);
     stage.removeEventListener('click', onClickCapture, true);
     window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('pointermove', onPointerTilt);
+    document.documentElement.removeEventListener('pointerleave', onPointerLeave);
     if (settleTimer !== undefined) clearTimeout(settleTimer);
     drag = null;
     if (!isOn) return;
@@ -282,6 +319,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
       card.style.removeProperty('opacity');
       card.classList.remove('card--inert', 'card--front');
     }
+    for (const emit of emits) emit?.style.removeProperty('transform');
     refreshScroll();
     if (wasInsideRing) window.scrollTo({ top: section.getBoundingClientRect().top + window.scrollY, behavior: 'instant' });
   }
@@ -293,16 +331,38 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     const stageTop = stickyTop(scrollY, railTop, pin);
     const frontPageY = stageTop + frontY;
 
-    // The perspective origin is the viewport's centre, wherever the stage is (parity with the camera).
+    // Reads first, then writes: the stage's box is where the pointer tilt looks for the pointer.
     const stageLeft = rail!.getBoundingClientRect().left;
+    const stageBox = stage!.getBoundingClientRect();
+    const isPointerOverStage =
+      pointer.isInWindow &&
+      pointer.clientX >= stageBox.left &&
+      pointer.clientX <= stageBox.right &&
+      pointer.clientY >= stageBox.top &&
+      pointer.clientY <= stageBox.bottom;
+
+    // The perspective origin is the viewport's centre, wherever the stage is (parity with the camera).
     section.style.setProperty('--ring-origin-x', `${(document.documentElement.clientWidth / 2 - stageLeft).toFixed(2)}px`);
     section.style.setProperty('--ring-origin-y', `${(viewportHeight / 2 - (stageTop - scrollY)).toFixed(2)}px`);
 
-    const raw = rawSteps(scrollY - railTop, viewportHeight);
+    // The page scrolls in whole pixels, so a reader resting on a card can sit a fraction of a
+    // pixel short of it (settleTarget's reasoning): within SETTLE_ON_CARD_PX is on it. Otherwise
+    // the pulse parks, lit, at the foot of the drop instead of flaring — at 1280×800 on every card.
+    const pinOffset = scrollY - railTop;
+    const nearest = nearestCard(pinOffset, viewportHeight);
+    const isOnCard = Math.abs(pinOffset - stepOffset(nearest, viewportHeight)) <= SETTLE_ON_CARD_PX;
+    const raw = isOnCard ? nearest : rawSteps(pinOffset, viewportHeight);
     const steps = turnSteps(raw);
     const splitY = railTop + frontY;
     const arrived = arrival(tipFraction(signalTipY(), splitY, ARRIVAL_DRAW_VH * viewportHeight));
-    const tiltDeg = RING_TILT_DEG;
+    // Pointer high opens the ellipse, low closes it. Eased toward the target, and drawing again
+    // until it gets there; then it snaps, so it is exactly 0 once the pointer has gone.
+    const targetTilt = isPointerOverStage ? -(pointer.clientY / viewportHeight - 0.5) * 2 * POINTER_TILT_DEG : 0;
+    pointerTilt += (targetTilt - pointerTilt) * POINTER_TILT_EASE;
+    if (Math.abs(targetTilt - pointerTilt) > POINTER_TILT_SETTLED_DEG) markDirty();
+    else pointerTilt = targetTilt;
+    const tiltDeg = RING_TILT_DEG + pointerTilt;
+    const pulse = pulseAt(raw);
 
     const poses = cards.map((card, i) => {
       const angleDeg = cardAngle(i, steps);
@@ -313,6 +373,10 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
       card.style.opacity = opacity.toFixed(4);
       card.classList.toggle('card--inert', pose.isInert || arrived.cards < 0.3);
       card.classList.toggle('card--front', pose.isFront);
+      // The emission flares as the pulse lands on it (design §4), and is its own size otherwise.
+      const isFlaring = i === pulse.card && pulse.flare > 0;
+      const emit = emits[i];
+      if (emit) emit.style.transform = isFlaring ? `scale(${(1 + FLARE_GROWTH * pulse.flare).toFixed(3)})` : '';
       return { angleDeg, opacity };
     });
 

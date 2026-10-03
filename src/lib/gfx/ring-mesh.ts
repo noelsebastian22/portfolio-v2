@@ -17,11 +17,22 @@ import {
   Group,
   Matrix4,
   Mesh,
+  PlaneGeometry,
   ShaderMaterial,
   Vector3,
 } from 'three';
 import { buildTubeFromCentres, type TubeArrays, type Vec3 } from './tube-mesh';
-import { HOOP_DROP_PX, RING_CARD_COUNT, frontToWorld, hoopPoint, tiltMatrix } from './ring';
+import {
+  HOOP_DROP_PX,
+  RING_CARD_COUNT,
+  dropEnd,
+  frontToWorld,
+  hoopPoint,
+  mirrorMatrix,
+  multiply,
+  pulseAt,
+  tiltMatrix,
+} from './ring';
 import type { RingFrame } from './ring-stage';
 
 const HOOP_SEGMENTS = 192;
@@ -35,8 +46,16 @@ const FOG_FROM_DEG = 50;
 const FOG_FULL_DEG = 170;
 const FOG_STRENGTH = 0.78;
 /** The pulse's half-width along the hoop, degrees, and along a drop, as a share of it. */
-const PULSE_WIDTH_DEG = 9;
+const PULSE_WIDTH_DEG = 12;
 const PULSE_WIDTH_DROP = 0.18;
+/** The emission glow: a quad this many px across, at this share of its strength between flares. */
+const EMIT_GLOW_PX = 56;
+const EMIT_GLOW_REST = 0.5;
+/** The hoop's reflection on the floor, as a share of the hoop's own alpha. */
+const REFLECTION_ALPHA = 0.14;
+/** The floor glow: this many radii across, and its alpha at the ring's centre. */
+const FLOOR_SPAN = 2.6;
+const FLOOR_ALPHA = 0.08;
 
 export interface RingLook {
   signal: [number, number, number];
@@ -97,6 +116,49 @@ const FRAGMENT = /* glsl */ `
     }
     vec3 shaded = base * mix(0.45, 1.0, pow(facing, 0.6)) + vec3(pow(facing, 12.0) * 0.25);
     gl_FragColor = vec4(mix(shaded, uGround, fog), uAlpha);
+  }
+`;
+
+// The emission glow. A ShaderMaterial on a camera-facing quad rather than a SpriteMaterial:
+// `--shipped` goes straight to the canvas as sRGB channels, as tube-signal.ts's colours do,
+// where a SpriteMaterial's Color is linear and re-encoded on the way out. The centre is placed
+// by the model-view and the corners offset in view space, so it stays round whatever the tilt
+// and frontToWorld's y-flip; the falloff is computed here, so there is no texture.
+const EMIT_VERTEX = /* glsl */ `
+  varying vec2 vOffset;
+  void main() {
+    vOffset = position.xy / ${(EMIT_GLOW_PX / 2).toFixed(1)};
+    vec4 centre = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+    gl_Position = projectionMatrix * (centre + vec4(position.xy, 0.0, 0.0));
+  }
+`;
+
+const EMIT_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  varying vec2 vOffset;
+  void main() {
+    float fall = 1.0 - smoothstep(0.0, 1.0, length(vOffset));
+    gl_FragColor = vec4(uColor, pow(fall, 1.5) * uOpacity);
+  }
+`;
+
+// The floor glow: a radial falloff from the ring's centre, flat in the floor's plane.
+const FLOOR_VERTEX = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const FLOOR_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uAlpha;
+  varying vec2 vUv;
+  void main() {
+    float fall = 1.0 - smoothstep(0.0, 1.0, length(vUv - 0.5) * 2.0);
+    gl_FragColor = vec4(uColor, fall * fall * uAlpha);
   }
 `;
 
@@ -186,8 +248,71 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
   });
   group.add(hoop);
 
+  // ── The reflection: the hoop again, mirrored in the floor and faint ─────────────────
+  // Additive, so it can only add light. Unfogged: only its back arc ever comes into view (its
+  // front is 2 × floorY below the line, under the fold), and the hoop's fog would erase it.
+  const reflectionOf = (mesh: Mesh) => {
+    const reflected = (mesh.material as ShaderMaterial).clone();
+    reflected.uniforms.uAlpha.value *= REFLECTION_ALPHA;
+    reflected.uniforms.uFogFromArc.value = 0;
+    reflected.transparent = true;
+    reflected.depthWrite = false;
+    reflected.blending = AdditiveBlending;
+    const copy = new Mesh(mesh.geometry, reflected);
+    copy.renderOrder = 1;
+    return copy;
+  };
+  const reflectionCore = reflectionOf(hoopCore);
+  const reflectionGlow = reflectionOf(hoopGlow);
+  const reflection = new Group();
+  reflection.matrixAutoUpdate = false;
+  reflection.add(reflectionCore, reflectionGlow);
+  group.add(reflection);
+
+  // ── The floor glow: flat in the floor's plane, under the ring's centre ──────────────
+  const floorGeometry = new PlaneGeometry(FLOOR_SPAN * radius, FLOOR_SPAN * radius);
+  floorGeometry.rotateX(-Math.PI / 2);
+  const floorMaterial = new ShaderMaterial({
+    uniforms: { uColor: { value: new Vector3(...look.signal) }, uAlpha: { value: 0 } },
+    vertexShader: FLOOR_VERTEX,
+    fragmentShader: FLOOR_FRAGMENT,
+    side: DoubleSide,
+    transparent: true,
+    depthWrite: false,
+    blending: AdditiveBlending,
+  });
+  const floor = new Mesh(floorGeometry, floorMaterial);
+  floor.renderOrder = 1;
+  const floorTilt = new Group();
+  floorTilt.matrixAutoUpdate = false;
+  floorTilt.add(floor);
+  group.add(floorTilt);
+
+  // ── The emission glows: one per card, at its drop's end ─────────────────────────────
+  const emitGeometry = new PlaneGeometry(EMIT_GLOW_PX, EMIT_GLOW_PX);
+  const emitGlows = Array.from({ length: RING_CARD_COUNT }, () => {
+    const glow = new Mesh(
+      emitGeometry,
+      new ShaderMaterial({
+        uniforms: { uColor: { value: new Vector3(...look.shipped) }, uOpacity: { value: 0 } },
+        vertexShader: EMIT_VERTEX,
+        fragmentShader: EMIT_FRAGMENT,
+        // frontToWorld's y-flip makes Three wind front faces the other way, and the billboard
+        // never flips with it: without both sides the quad is culled.
+        side: DoubleSide,
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      }),
+    );
+    glow.renderOrder = 2;
+    group.add(glow);
+    return glow;
+  });
+
   const toWorld = new Matrix4();
   const hoopMatrix = new Matrix4();
+  const reflectionMatrix = new Matrix4();
 
   function setFrame(frame: RingFrame): void {
     toWorld.fromArray(frontToWorld(frame.frontPageX, frame.frontPageY) as number[]);
@@ -196,9 +321,21 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
     hoopMatrix.fromArray(tiltMatrix(frame.tiltDeg) as number[]);
     hoop.matrix.copy(hoopMatrix);
 
-    // Drawn in degrees each way from the front, so the hoop closes at the back at 180.
-    for (const mesh of [hoopCore, hoopGlow]) {
-      (mesh.material as ShaderMaterial).uniforms.uDrawn.value = frame.arrival.hoop * 180 + 1e-3;
+    reflectionMatrix.fromArray(multiply(tiltMatrix(frame.tiltDeg), mirrorMatrix(frame.floorY)) as number[]);
+    reflection.matrix.copy(reflectionMatrix);
+    floorTilt.matrix.copy(hoopMatrix);
+    floor.position.set(0, frame.floorY, -frame.radius);
+    floorMaterial.uniforms.uAlpha.value = FLOOR_ALPHA * frame.arrival.hoop;
+    floor.visible = frame.arrival.hoop > 0;
+
+    // Drawn in degrees each way from the front, so the hoop closes at the back at 180. The
+    // pulse is the scroll's, never a clock's: linear steps in, a place on the hoop out.
+    const pulse = pulseAt(frame.raw);
+    for (const mesh of [hoopCore, hoopGlow, reflectionCore, reflectionGlow]) {
+      const uniforms = (mesh.material as ShaderMaterial).uniforms;
+      uniforms.uDrawn.value = frame.arrival.hoop * 180 + 1e-3;
+      uniforms.uPulseAt.value = pulse.hoopDeg;
+      uniforms.uPulseStrength.value = pulse.hoopStrength;
     }
 
     frame.cards.forEach((card, i) => {
@@ -208,23 +345,36 @@ export function createRingMesh(look: RingLook, radius: number): RingMesh {
       // A drop is as faded as its card, and fogged as its angle: the back ones barely there.
       const away = Math.abs(card.angleDeg);
       const fog = Math.min(1, Math.max(0, (away - FOG_FROM_DEG) / (FOG_FULL_DEG - FOG_FROM_DEG))) * FOG_STRENGTH;
+      const isPulsed = i === pulse.card && pulse.dropAt > 0 && pulse.dropAt < 1;
       for (const mesh of [drop.core, drop.glow]) {
         const uniforms = (mesh.material as ShaderMaterial).uniforms;
         uniforms.uDrawn.value = frame.arrival.drops + 1e-3;
         uniforms.uFog.value = fog;
+        uniforms.uPulseAt.value = pulse.dropAt;
+        uniforms.uPulseStrength.value = isPulsed ? 1 : 0;
       }
       drop.holder.visible = frame.arrival.drops > 0;
+
+      const glow = emitGlows[i];
+      glow.position.set(...dropEnd(card.angleDeg, frame.radius, frame.tiltDeg));
+      // The card's opacity already carries its arrival, so the glow lands with the card.
+      const flare = i === pulse.card ? pulse.flare : 0;
+      const opacity = card.opacity * (EMIT_GLOW_REST + (1 - EMIT_GLOW_REST) * flare);
+      (glow.material as ShaderMaterial).uniforms.uOpacity.value = opacity;
+      glow.visible = opacity > 0;
     });
   }
 
   function dispose(): void {
+    // The reflection shares the hoop's geometries; only its materials are its own.
     hoopCore.geometry.dispose();
     hoopGlow.geometry.dispose();
     dropCoreGeometry.dispose();
     dropGlowGeometry.dispose();
-    for (const mesh of [hoopCore, hoopGlow, ...drops.flatMap((d) => [d.core, d.glow])]) {
-      (mesh.material as ShaderMaterial).dispose();
-    }
+    floorGeometry.dispose();
+    emitGeometry.dispose();
+    const meshes = [hoopCore, hoopGlow, reflectionCore, reflectionGlow, floor, ...emitGlows, ...drops.flatMap((d) => [d.core, d.glow])];
+    for (const mesh of meshes) (mesh.material as ShaderMaterial).dispose();
   }
 
   return { group, setFrame, dispose };

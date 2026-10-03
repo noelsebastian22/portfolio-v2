@@ -140,7 +140,8 @@ end.
    releases.
 
 Always on in 3D: the back half of the hoop dimmed by depth; the floor reflection; the emission
-glow; the pointer tilt (±3° about `x` and `y`, eased like the portrait's push, touch ignored).
+glow; the pointer tilt (±3° about `x` only — a turn about `y` would take the front card off its
+pure translation — eased like the portrait's push, touch ignored).
 
 **Input.** Arrow keys move focus (unchanged). Focus on any card, by any key, scrolls to that card's
 dwell — "focus moves the ring". Dragging horizontally on the stage scrolls the page by the drag.

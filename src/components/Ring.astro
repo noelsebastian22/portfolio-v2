@@ -577,6 +577,11 @@ const srcset = (urls: Record<string, string>) =>
     cursor: pointer;
   }
 
+  /* The front card is the one the pulse lit: its title in --signal, as on hover (large text). */
+  .ring--3d .card--front .card__title {
+    color: var(--signal);
+  }
+
   /* A drag that starts on a card must turn the ring, not drag out its image. */
   .ring--3d .card img {
     -webkit-user-drag: none;
