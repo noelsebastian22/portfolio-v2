@@ -33,7 +33,7 @@ is today.
 | D9 | **The front card sits on the page plane.** Ring centre at `z = −R`, so the front card and the hoop's front point are at `z = 0` — 1:1 with CSS px, exactly the rail card's size. | The meeting point is where the 2D anchor is; the front card is pixel-crisp. |
 | D10 | **Each step dwells.** The turn angle is eased per step with a plateau (starting value: 35% of each step holds the card at front). After scroll stops inside the pin, the scroll settles to the nearest dwell over ~400ms via Lenis. | The ring rests on a card without needing exact scrolling. The settle starts from scroll stopping and moves the scroll — not choreography on a timer. |
 | D11 | **Reduced motion gets the rail.** | The enhanced layer never mounts under reduced motion (`shouldFallBack`). A static 3D ring would need a second, non-WebGL 3D path. Supersedes the "static ring" offered in conversation. |
-| D12 | **3D needs ≥ 900px wide (the gate's) and ≥ 700px tall.** Below either, the rail, even with the tube live. | The stage is one viewport tall and the front card is ~560px with its hoop above. Starting value, tuned at the checkpoint. |
+| D12 | **3D needs ≥ 900px wide (the gate's) and a window the ring fits in:** the hoop's back, the drops and the tallest card stacked in one viewport (`stageLayout` in `ring.ts`; ~760px tall for a 540px card). Otherwise the rail, even with the tube live. | The stage is one viewport tall. A computed fit rather than a fixed height, so a shorter card set earns 3D on shorter windows. |
 | D13 | **Enhancement extras are scroll- or pointer-driven only:** the arrival pulse, a floor reflection of the hoop, emission glow sprites, and a pointer tilt of a few degrees. No post-processing pass. | The look Noel approved, within "nothing animates on a timer"; sprites and a mirrored mesh cost a few draw calls, not a bloom pass. |
 | D14 | **The swap waits until the ring is off screen.** If `#ring` intersects the viewport when the 3D layer is ready, adding `.ring--3d` waits until it does not. | Turning on 3D changes the document's height. Off screen it shifts nothing visible (no CLS); on screen it would jump the reader. |
 
@@ -44,7 +44,7 @@ is today.
 | `src/lib/signal/path.ts` | `RING_HOLD_END_POINT = 36`; zero `x` tangents at 34 and 36. | yes | yes |
 | `src/lib/signal/anchors.ts` | Anchor point 36 to `[data-signal-hold="end"]`, edge `top`. | yes | yes |
 | `src/lib/gfx/ring.ts` | The ring's geometry, from inputs (card width, card count, stage size, scroll progress): `ringRadius`, `RING_TILT_DEG`, `turnAngle(progress)` with dwells, `cardPose(i, angle)` → CSS transform + opacity + `isFront`, `hoopPoints`, `dropEnds(angle)`, `pulse(progress)`, `dwellProgress(i)` for focus and settle, and `projectToViewport` for the parity test. | yes | yes |
-| `src/lib/gfx/ring-mesh.ts` | Three.js objects from `ring.ts` output: hoop tube (lit, so its highlight moves as it turns; back half fogged), drop tubes, emission spheres + glow sprites, the floor reflection, the pulse uniform. `dispose()`. | no | no |
+| `src/lib/gfx/ring-mesh.ts` | Three.js objects from `ring.ts` output: hoop tube (shaded like the line; back half fogged toward `--ground`), drop tubes, emission spheres + glow sprites, the floor reflection, the pulse uniform. `dispose()`. | no | no |
 | `src/lib/gfx/ring-stage.ts` | DOM wiring: the size check (D12), the off-screen swap (D14), measuring the stage, writing each card's transform/opacity/`card--front` per drawn frame, focus → scroll, drag → scroll, settle. `unmount()` restores the rail. | no | no |
 | `src/lib/gfx/scene.ts` | Mounts the ring after the tube is live, in an idle callback, like the portrait; feeds it scroll each draw; drops it on any failure without taking the tube down. A small hook — the work is in `ring-stage.ts`. | no | no |
 | `src/components/Ring.astro` | `.ring--3d` styles: tall rail, sticky one-viewport stage, `perspective`, `transform-style: preserve-3d`, cards absolutely centred, 2D track/drops/emissions hidden; the hold-end marker. No new content. | — | — |
@@ -61,20 +61,21 @@ renderer's anchors (document height changed), and start drawing. A failure at an
 rail as it was.
 
 **Layout in 3D.** The section head scrolls normally. The rail's height becomes `100vh + PIN`,
-where `PIN = 4 steps × STEP + ARRIVAL + DEPARTURE` (starting values: STEP 60vh, ARRIVAL and
-DEPARTURE 30vh each, so 3 viewports). The stage inside it is `position: sticky; top: 0; height:
+where `PIN = LEAD + 4 × STEP + TAIL` (starting values: STEP 60vh, LEAD and TAIL 25vh each, so
+2.9 viewports). The stage inside it is `position: sticky; top: 0; height:
 100vh`, full bleed, with `perspective` = the camera rig's `distance` and `perspective-origin` at
 its centre. The hoop's front point sits at the split's `x` (read off the curve, as the rail does
 now) and at a fixed stage `y`; the 2D track element moves there so `[data-signal-split]` still
 measures the meeting point. `[data-signal-hold="end"]` sits at the same stage `y` at the rail's
 end.
 
-**The beats** (pin progress `p`, 0..1, computed from `scrollY` and the measured rail top):
+**The beats** (the turn's progress is computed from `scrollY` and the measured rail top):
 
-1. **Arrival** (`p` 0 → ARRIVAL share). The hoop draws both ways round from the front point and
-   closes at the back; the drops fall; the emissions arrive; each card rises into place as its
-   drop lands. The clock is tip travel past the split, as in the rail (`SPLIT_DRAW_PX`), so a
-   reversed scroll undraws it.
+1. **Arrival** — as the ring scrolls into view, before the pin. The hoop draws both ways round
+   from the front point and closes at the back; the drops fall; each card rises into place as its
+   drop lands. The clock is tip travel past the split, as in the rail, over 0.35 viewport heights
+   (the playhead sits in the viewport's lower half, so it passes the split before the stage
+   sticks); a reversed scroll undraws it. The pin's LEAD then holds the first card.
 2. **The turn.** `turnAngle(p)` steps 72° per card with dwells (D10). During each step a pulse
    leaves the meeting point along the hoop towards the arriving card's drop; they meet as the card
    reaches the front, the pulse runs down the drop, and the emission flares. The front card gets
@@ -117,8 +118,8 @@ Every turn goes through the scroll, so there is one source of truth for the angl
 **Unit (Vitest, pure modules):**
 - `path.ts`: points 34–36 at `x: 0` with zero `x` tangent, so every sample between them has `x` 0.
 - `anchors.ts`: the new anchor is in curve order and inside the ring span.
-- `ring.ts`: radius from card width keeps adjacent cards from overlapping at ±72°; `turnAngle` is
-  monotonic, starts at 0, ends at −288°, and is flat across each dwell; `cardPose` opacity is 1 at
+- `ring.ts`: radius from card width keeps adjacent cards from overlapping at ±72°; the turn is
+  monotonic, starts on card 0, ends on card 4, and is flat across each dwell; `cardPose` opacity is 1 at
   front, 0 at back, symmetric; `dwellProgress` round-trips through `turnAngle` to each card's
   front; **parity** — a card's top-centre, transformed as CSS will and projected with the stage
   `perspective`, lands within 0.5px of the drop end the mesh uses, at 900, 1280 and 1920 wide.
@@ -134,6 +135,7 @@ pin; Tab through all five cards and each lands at the front; arrow keys; reduced
 ## 8. Docs, in the commits that change behaviour
 
 - Parent spec §9.04: the pin, the hoop, fallback adds reduced motion and short windows (D11, D12).
+- Implementation plan: `docs/superpowers/plans/2026-10-03-phase-12-3d-ring.md`.
 - `BUILD-PLAN.md`: Phase 12 expanded; Decisions for D6, D7, D11, D14; figures at the end.
 - `Ring.astro`'s header comment: the 3D mode, and which element is the meeting point in each.
 
