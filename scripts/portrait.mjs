@@ -95,8 +95,9 @@ const EDGE = { side: 0.12, top: 0.05, topFloor: 0.5, bottomStart: 0.68, bottomFl
 const ENCODERS = [
   ['avif', (img) => img.avif({ quality: 58, effort: 6 })],
   ['webp', (img) => img.webp({ quality: 80 })],
-  // 4:4:4 because the whole image is red: chroma subsampling puts its error
-  // exactly where every edge in this picture lives.
+  // 4:4:4 so the duotone's warm cast holds right up to every edge; subsampled
+  // chroma smears it into a grey fringe. JPEG is the fallback format, so these
+  // bytes only ship where neither AVIF nor WebP decodes.
   ['jpg', (img) => img.jpeg({ quality: 84, mozjpeg: true, chromaSubsampling: '4:4:4' })],
 ];
 
