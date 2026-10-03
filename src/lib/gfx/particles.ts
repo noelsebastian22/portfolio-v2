@@ -95,9 +95,9 @@ const VERTEX = /* glsl */ `
     page += DRIFT_PX * rest * vec2(sin(uTime * DRIFT_SPEED + phase), cos(uTime * DRIFT_SPEED * 0.83 + phase * 1.7));
 
     vec2 away = page - uPointer;
-    float distance = length(away);
-    float push = uPointerStrength * rest * (1.0 - smoothstep(0.0, PUSH_RADIUS, distance));
-    if (distance > 0.001) page += normalize(away) * PUSH_PX * push;
+    float pointerDistance = length(away);
+    float push = uPointerStrength * rest * (1.0 - smoothstep(0.0, PUSH_RADIUS, pointerDistance));
+    if (pointerDistance > 0.001) page += normalize(away) * PUSH_PX * push;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(page.x, -page.y, 0.0, 1.0);
     gl_PointSize = SIZE_PX * mix(0.6 + 0.6 * aBright, 0.5, travelled) * uPixelRatio;
