@@ -2,10 +2,10 @@
 /**
  * Section 04 — the shipped sites, as the 2D rail. Spec §9.04.
  *
- * This is the ring's fallback, built first: the presentation on phones and wherever the
- * WebGL gate fails (Phase 12 builds the 3D ring over the same cards). Same cards, same
- * content, same links in both, so everything here is server-rendered and the island only
- * adds behaviour.
+ * This is the ring's fallback, built first: the presentation on phones, short windows, under
+ * reduced motion and wherever the WebGL gate fails (Phase 12 builds the 3D ring over the same
+ * cards). Same cards, same content, same links in both, so everything here is server-rendered
+ * and the island only adds behaviour.
  *
  * **The split is a track.** §6 has the line split into five at the ring, one branch per
  * card. In 2D that is a horizontal track above the rail, the signal's own weight and
@@ -21,6 +21,19 @@
  *
  * The track and drops are drawn in full in the HTML. With JS off, or under reduced motion,
  * the split is complete; the island moves it back to undrawn and draws it off the tip.
+ *
+ * **The 3D mode** (Phase 12) is these same cards, restyled. `gfx/ring-stage.ts` adds
+ * `.ring--3d` once the WebGL tube is live and the ring fits the window, and only while the
+ * section is off screen, because the class changes the page's height. The rail grows by the pin
+ * length and the scroller becomes a sticky, one-viewport stage in which each card gets a
+ * `matrix3d` from `gfx/ring.ts`. WebGL draws the hoop and drops, so the 2D drops are hidden;
+ * the emissions stay on their cards. The meeting point is `[data-signal-split]` in both modes.
+ * In the rail it is the visible track. In 3D the track is hidden and moved to the stage's front
+ * point, kept in the rail rather than the sticky stage, so it measures where the curve should
+ * pass and not where the stage is stuck. `[data-signal-hold="end"]` ends the line's straight
+ * hold below the split: the cards' bottom edge in the rail, and the same stage height at the pin's
+ * end in 3D, so the line runs straight down the centre for the whole pin. Removing the class
+ * restores the rail exactly (resize below the fit, or the tube's own fallback).
  *
  * Layout is the content box every section from 03 down shares, because the renderer's
  * gutter probe assumes it (see SelectedWork.astro). The rail alone bleeds past the box's
@@ -524,6 +537,15 @@ const srcset = (urls: Record<string, string>) =>
     right: 0;
     margin-top: calc(var(--signal-stroke) / -2);
     visibility: hidden;
+  }
+
+  /* The 3D swap changes these two boxes, and ring-stage.ts reads the section's height in the
+     same task as it drops the ring, to hold a reader who is past it in place. Under reduced
+     motion global.css's net would make each change a 1ms transition, and the read would get the
+     3D box (72px short at 1280). Neither has a transition of its own. */
+  .ring__track,
+  .ring__scroller {
+    transition-property: none;
   }
 
   .ring--3d .ring__hold-end {

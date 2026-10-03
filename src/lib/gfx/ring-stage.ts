@@ -311,8 +311,15 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     if (settleTimer !== undefined) clearTimeout(settleTimer);
     drag = null;
     if (!isOn) return;
-    // Mid-pin, the page is about to lose the pin's height: land the reader on the rail.
-    const wasInsideRing = window.scrollY > measured.railTop - window.innerHeight && window.scrollY < measured.railTop + measured.pin;
+    // The page is about to lose the pin's height. Mid-pin, land the reader on the rail. Past
+    // the pin, the section shrinks above them — Chrome's scroll anchoring did not hold their
+    // place on the way in (switchOn), so neither is it trusted on the way out: the scroll moves
+    // back by exactly what the section lost, and what they were reading stays put. Read the
+    // scroll first: refreshScroll() below clamps it to the shorter page.
+    const scrollYBefore = window.scrollY;
+    const wasInsideRing = scrollYBefore > measured.railTop - window.innerHeight && scrollYBefore < measured.railTop + measured.pin;
+    const wasPastPin = scrollYBefore >= measured.railTop + measured.pin;
+    const heightBefore = section.offsetHeight;
     section.classList.remove('ring--3d');
     for (const name of ['--ring-pin', '--ring-front-y', '--ring-front-x', '--ring-perspective', '--ring-origin-x', '--ring-origin-y']) {
       section.style.removeProperty(name);
@@ -325,6 +332,7 @@ export function mountRingStage({ section, cameraDistance, markDirty, onDrop }: O
     for (const emit of emits) emit?.style.removeProperty('transform');
     refreshScroll();
     if (wasInsideRing) window.scrollTo({ top: section.getBoundingClientRect().top + window.scrollY, behavior: 'instant' });
+    else if (wasPastPin) scrollToY(scrollYBefore - (heightBefore - section.offsetHeight), { immediate: true });
   }
 
   function update(): RingFrame | null {
