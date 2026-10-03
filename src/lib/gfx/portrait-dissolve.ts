@@ -71,10 +71,11 @@ export function particleAt(home: PagePoint, homeV: number, start: PagePoint, pro
 
 /**
  * How much of the still is hidden, from the bottom, at dissolve progress `p` (design R1, D12):
- * the share of its height whose particles have started to leave. The lowest particles leave at
- * `p = 0` and the highest at `lastArrival − window`, so the photograph is gone exactly where its
- * particles are, and never hangs half-faded where they left.
+ * the share of its height whose particles are at least halfway to the line. Halfway, not just
+ * started: eroding where particles had only begun to move uncovered the sparse particles over the
+ * dark beard and mouth, and the face read as a skull mid-scroll. `particleProgress` is a
+ * smoothstep of its window, so halfway is half the window in.
  */
 export function stillErosion(progress: number): number {
-  return clamp01(progress / (DISSOLVE.lastArrival - DISSOLVE.window));
+  return clamp01((progress - DISSOLVE.window / 2) / (DISSOLVE.lastArrival - DISSOLVE.window));
 }

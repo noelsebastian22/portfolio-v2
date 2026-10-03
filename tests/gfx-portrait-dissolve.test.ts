@@ -75,21 +75,22 @@ describe('particleAt', () => {
 });
 
 describe('stillErosion', () => {
-  it('hides nothing at rest and all of the still once the highest particles have left', () => {
+  it('hides nothing until the lowest particles are halfway, and all of it once the highest are', () => {
     expect(stillErosion(0)).toBe(0);
-    expect(stillErosion(DISSOLVE.lastArrival - DISSOLVE.window)).toBe(1);
+    expect(stillErosion(DISSOLVE.window / 2)).toBe(0);
+    expect(stillErosion(DISSOLVE.lastArrival - DISSOLVE.window / 2)).toBeCloseTo(1, 9);
     expect(stillErosion(1)).toBe(1);
   });
 
-  it('hides the still exactly where particles have started to leave, and nowhere else', () => {
+  it('hides the still exactly where its particles are past halfway, and nowhere else', () => {
     for (const p of steps) {
       // The still is hidden below this height (v runs down, 0 at the top).
       const edge = 1 - stillErosion(p);
       for (const homeV of [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]) {
-        const isBelowEdge = homeV > edge + 1e-9;
-        const isAboveEdge = homeV < edge - 1e-9;
-        if (isBelowEdge && p > 0) expect(particleProgress(homeV, p)).toBeGreaterThan(0);
-        if (isAboveEdge) expect(particleProgress(homeV, p)).toBe(0);
+        const isBelowEdge = homeV > edge + 1e-6;
+        const isAboveEdge = homeV < edge - 1e-6;
+        if (isBelowEdge) expect(particleProgress(homeV, p)).toBeGreaterThan(0.5);
+        if (isAboveEdge) expect(particleProgress(homeV, p)).toBeLessThan(0.5);
       }
     }
   });
