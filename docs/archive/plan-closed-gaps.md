@@ -344,3 +344,17 @@ gaps at the bottom under a dated heading, with a line saying what closed them. N
 - **CLOSED 2026-10-03 — the scheduled run fired 2026-10-01 05:22 UTC (Actions run 36819490932, success; GitHub ran it ~5h late) and the live copy reads "a decade".** Original:
 - **Confirm the first scheduled rebuild.** `VERCEL_DEPLOY_HOOK` is set (closed gap archived);
   after the 1 Oct 00:00 UTC run, check it succeeded in Actions and the live copy says "a decade".
+
+### Closed 2026-10-04 — by Phase 12 R4 (the floating ring)
+
+Closed: R4 removed the hoop, drops and pulse, and the ring's 3D now rests the line on the front
+card's dot. The 590px note was replaced by the R4 thresholds (540 / 705px).
+
+- **3D needs a window at least 590px tall** (the 563px card at the 0.7 floor). Between that and
+  about 790px the ring renders scaled down to fit (R3): 0.95 at 1440×760, 0.86 at 1440×700.
+  Below 590px the rail stays. Why: the hoop's back, a drop and the tallest card must stack below
+  the nav in one viewport at the 17° look-down (R1).
+- **Mid-turn, the line runs past the hoop's front point, down the gap between cards to its tip.**
+  It is the spec's "the line continues", but it reads as a spine. Noel to judge.
+- **The flare jumps 0→1 as the drop pulse lands.** It reads as a flash while scrolling; never at
+  rest, since it is gone by the dwell's centre and every front card rests the same.
