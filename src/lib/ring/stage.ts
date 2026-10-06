@@ -109,7 +109,9 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
 
   const layoutFor = (viewportHeight: number) =>
     stageLayout({ viewportHeight, cardWidth, cardHeight, distance: PERSPECTIVE_PX, tiltDeg: RING_TILT_DEG });
-  if (!layoutFor(window.innerHeight).fits) return null;
+  // Reduced motion may have come on while this chunk loaded, after the gate read it.
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (reducedMotion.matches || !layoutFor(window.innerHeight).fits) return null;
 
   let isOn = false;
   let isDropped = false;
@@ -211,6 +213,12 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     if (isOn) measure();
   });
   window.addEventListener('resize', onResize);
+  // Reduced motion turned on mid-visit gives the ring up, one way, as a resize below the fit
+  // does. The tube's own fallback used to take the ring with it; the ring is its own now.
+  const onMotionChange = guarded(() => {
+    if (reducedMotion.matches) unmount();
+  });
+  reducedMotion.addEventListener('change', onMotionChange);
   // Turning 3D on grows the page, the SVG renderer re-measures the curve, and the split's x is
   // only right once it has: follow every re-measure. Unchanged values write unchanged
   // properties, so this cannot feed back into another re-measure.
@@ -364,6 +372,7 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     schedule.stop();
     visibility.disconnect();
     window.removeEventListener('resize', onResize);
+    reducedMotion.removeEventListener('change', onMotionChange);
     stopCurve();
     stopProgress();
     stopTip();
