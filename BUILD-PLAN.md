@@ -231,6 +231,18 @@ export async function createAudioEngine(): Promise<AudioEngine>;
 pressed — confirm in the network panel. State persists in `localStorage`. The toggle is a
 real `<button>` with `aria-pressed`. No MP3 ships.
 
+**Expanded 2026-10-06** — spec `docs/superpowers/specs/2026-10-06-phase-13-audio-design.md`
+(D1–D14), plan `docs/superpowers/plans/2026-10-06-phase-13-audio.md`. The interface above was a
+sketch: the context is created in the gesture by `islands/sound.ts` and passed in (D8), so
+`createAudioEngine(ctx)` is synchronous and `emit(event, at)` takes the gate's start time.
+
+| Task | Deliverable | State |
+|---|---|---|
+| 1 | `signal/emissions.ts` bus + `audio/score.ts`, tested | not started |
+| 2 | Six emission sites announce on downward arrival | not started |
+| 3 | `audio/engine.ts`, `audio/connect.ts`, `islands/sound.ts`, Nav toggle | not started |
+| 4 | Browser check, figures, docs, PR — Noel listens on the preview | not started |
+
 ## PHASE 14 — `/websites` Restyle
 
 **Deliverable:** the freelance funnel on the new system, deliberately lighter — the 2D line

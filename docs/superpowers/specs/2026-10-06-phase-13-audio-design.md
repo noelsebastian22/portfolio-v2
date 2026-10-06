@@ -42,10 +42,10 @@ the toggle is pressed.
 
 | File | Ships | Job |
 |---|---|---|
-| `src/lib/signal/emissions.ts` | main | The bus. Types `EmissionSection = 'years' \| 'work' \| 'stack' \| 'ring' \| 'contact'`, `EmissionEvent = { section, index }`. `announceEmission`, `onEmission` (returns an unsubscribe). Pure, no DOM. |
+| `src/lib/signal/emissions.ts` | main | The bus. Types `EmissionSection = 'years' \| 'work' \| 'stack' \| 'ring' \| 'contact'`, `EmissionEvent = { section, index }`. `announceEmission`, `onEmission` (returns an unsubscribe), and `hasArrived(prev, p)` — the D2 rule, shared by every island. Pure, no DOM. |
 | `src/islands/sound.ts` | main | `mountSound()`: reads/writes `localStorage`, owns `aria-pressed` and the label, creates the `AudioContext` in the gesture, `import()`s `lib/audio/connect`, arms the first-gesture start (D9), suspends on hidden tabs (D10), reverts on failure (D11). |
-| `src/lib/audio/score.ts` | lazy | Pure: `SCALE_HZ` (ten degrees), `noteFor({ section, index })` → Hz, `cutoffFor(v)` → Hz, `normaliseSpeed(pxPerSecond)` → 0..1, and a `createNoteGate()` with the cooldown and spacing of D7 (`schedule(key, now)` → start time or `null`). |
-| `src/lib/audio/engine.ts` | lazy | `createAudioEngine(ctx): AudioEngine` — the graph of D4/D5/D6. `start()`, `stop()`, `emit(event)`, `setVelocity(v)`, `tick()`. |
+| `src/lib/audio/score.ts` | lazy | Pure: `SCALE_HZ` (ten degrees), `notesFor({ section, index })` → Hz[] (two for the resolve), `cutoffFor(v)` → Hz, `normaliseSpeed(pxPerSecond)` → 0..1, and a `createNoteGate()` with the cooldown and spacing of D7 (`schedule(key, now)` → start time or `null`). |
+| `src/lib/audio/engine.ts` | lazy | `createAudioEngine(ctx): AudioEngine` — the graph of D4/D5/D6. `start()`, `stop()`, `emit(event, at)` (at the gate's audio-clock time), `setVelocity(v)`, `tick()`. |
 | `src/lib/audio/connect.ts` | lazy | `connectAudio(ctx)`: builds the engine, subscribes it to the bus, samples velocity on `gsap.ticker`, adds the hover listener; returns `{ start, stop }` for the toggle. |
 
 `Nav.astro` loses `aria-disabled` and its inert styling, and gains `<script>` mounting the island.
