@@ -27,7 +27,7 @@ the toggle is pressed.
 | D2 | **Down only.** An emission is announced when its progress crosses into "arrived" from a *painted* not-arrived state: `prev ≥ 0 && prev < 1 && p ≥ 1` (or `false → true` for Nine Years' class toggle). Unmeasured (`-1`) → arrived never announces. | Noel's choice. The scroll is the transport, so the sound follows the playhead forward. The unmeasured rule keeps a reload mid-page, a resize re-measure or reduced motion's synchronous final state from firing a burst. |
 | D3 | **Deterministic score.** A minor pentatonic over two octaves, ten degrees, A3 → G5. Each section's emissions climb from a section start degree; the final emission resolves to A2 under A3. | The page plays the same phrase every read — the line *is* the score. Minor pentatonic cannot clash in any order; major reads cheerful. |
 | D4 | **Warm analogue voice.** Drone: two saws ±7 cents at A1 plus a triangle at A2, through the master lowpass, about −26 dB, with a 0.07 Hz LFO breathing the detune. Notes: triangle + sine an octave up, 5 ms attack, ~1.4 s exponential decay. Reverb: a generated 2 s noise impulse, 25% wet. | Noel's choice (warm analogue over clinical or telemetry). Generated, so no file ships. The drone's LFO is the one timer §7 permits. |
-| D5 | **Velocity → cutoff.** Scroll speed is measured in the lazy chunk from `scrollY` deltas on the shared GSAP ticker, smoothed, normalised to 0..1 (3,000 px/s = 1), and moves the master lowpass from 450 Hz to 2.8 kHz with `setTargetAtTime` (τ 0.25 s). | Works with Lenis and with native reduced-motion scroll; `scroll.ts` is untouched. The time constant makes it glide. |
+| D5 | **Velocity → cutoff.** Scroll speed is measured in the lazy chunk from `scrollY` deltas on the shared GSAP ticker (through `timeline.ts`'s `onTick`, so GSAP keeps one importer), smoothed, normalised to 0..1 (3,000 px/s = 1), and moves the master lowpass from 450 Hz to 2.8 kHz with `setTargetAtTime` (τ 0.25 s). | Works with Lenis and with native reduced-motion scroll; `scroll.ts` is untouched. The time constant makes it glide. |
 | D6 | **Hover tick** — `tick()`: a 12 ms band-passed noise click at about −34 dB on mouse `pointerover` of `a`, `button`, `[data-card-link]`; once per element entered, at most one per 60 ms. | Noel's choice (A: in this phase). Mouse only — a tap is not a hover. |
 | D7 | **Note timing.** A 150 ms cooldown per emission, and a global spacing of 70 ms: a note asked for too soon is scheduled at the next slot; one that would sound more than 350 ms late is dropped. | A nav jump through the whole page plays a fast run, not a cluster; a jittery trackpad cannot machine-gun one note. |
 | D8 | **The `AudioContext` is created in the main bundle, inside the gesture.** `islands/sound.ts` makes it (and calls `resume()`) synchronously in the click, then `import()`s the engine and hands it the context: `createAudioEngine(ctx)`. | Safari only unlocks audio inside the gesture's own call stack; creating the context after an `await import()` can leave it suspended. The constructor is a few bytes; the graph is the lazy part. |
@@ -46,7 +46,7 @@ the toggle is pressed.
 | `src/islands/sound.ts` | main | `mountSound()`: reads/writes `localStorage`, owns `aria-pressed` and the label, creates the `AudioContext` in the gesture, `import()`s `lib/audio/connect`, arms the first-gesture start (D9), suspends on hidden tabs (D10), reverts on failure (D11). |
 | `src/lib/audio/score.ts` | lazy | Pure: `SCALE_HZ` (ten degrees), `notesFor({ section, index })` → Hz[] (two for the resolve), `cutoffFor(v)` → Hz, `normaliseSpeed(pxPerSecond)` → 0..1, and a `createNoteGate()` with the cooldown and spacing of D7 (`schedule(key, now)` → start time or `null`). |
 | `src/lib/audio/engine.ts` | lazy | `createAudioEngine(ctx): AudioEngine` — the graph of D4/D5/D6. `start()`, `stop()`, `emit(event, at)` (at the gate's audio-clock time), `setVelocity(v)`, `tick()`. |
-| `src/lib/audio/connect.ts` | lazy | `connectAudio(ctx)`: builds the engine, subscribes it to the bus, samples velocity on `gsap.ticker`, adds the hover listener; returns `{ start, stop }` for the toggle. |
+| `src/lib/audio/connect.ts` | lazy | `connectAudio(ctx)`: builds the engine, subscribes it to the bus, samples velocity through `onTick` (`motion/timeline.ts`), adds the hover listener; returns `{ start, stop }` for the toggle. |
 
 `Nav.astro` loses `aria-disabled` and its inert styling, and gains `<script>` mounting the island.
 The label is `Sound · off` / `Sound · on` (`Sound · unavailable` on failure, D11); the state is in
@@ -85,14 +85,16 @@ D5 587.33, E5 659.26, G5 783.99.
 click ─► sound.ts ─ new AudioContext() + resume() ─► import('lib/audio/connect') ─► connectAudio(ctx)
                                                                                     │
 island paint ─► announceEmission(section, i) ─► onEmission ─► gate.schedule ─► engine.emit
-gsap.ticker ─► scrollY delta ─► normaliseSpeed ─► engine.setVelocity
+onTick (timeline.ts's GSAP ticker) ─► scrollY delta ─► normaliseSpeed ─► engine.setVelocity
 pointerover a/button/card ─► engine.tick
 ```
 
 ## 5. Budget
 
-- Main bundle on `/`: ≤ +1 KB gzip (bus + toggle island). Recorded with its number.
-- Lazy chunk (`connect` + `engine` + `score`): ≤ 5 KB gzip. Recorded.
+- Main bundle on `/`: ≤ +1 KB gzip was the estimate; **measured +1,124** (64,984) with the bus folded
+  into `tip` and GSAP kept in one chunk via `timeline.ts`'s `onTick` — accepted (BUILD-PLAN
+  Decisions, 2026-10-06). `/websites` +113: `tip` carries the inert bus.
+- Lazy chunk (`connect` + `engine` + `score`): ≤ 5 KB gzip. **Measured 1,783.**
 - The lazy chunk must not appear in any page's `modulepreload` links — the integration walks
   static imports only, so a dynamic `import()` stays out; the build check confirms it.
 - No audio file ships.

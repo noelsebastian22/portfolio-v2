@@ -80,7 +80,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 10 | WebGL — gate + signal tube | **complete — live 2026-10-03** | PR #1 (`0dfc45e`); tube over the 2D line, revision R1–R4. Section archived |
 | 11 | WebGL — particle portrait | **complete — live 2026-10-03** | PR #2 (`cf91bd9`); cream still, particles over it (R1). Section archived |
 | 12 | WebGL — 3D ring | **complete — live 2026-10-06** | PR #3 (`e8f87cb`); a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Section archived |
-| 13 | Audio engine | not started | |
+| 13 | Audio engine | **in progress — PR open** | Tasks 1–3 built and reviewed; browser check 17/17. Noel listens on the preview before merge (spec §6) |
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
 
@@ -95,13 +95,14 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **63,860 (78.0%)** (Phase 12), +704 vs Phase 11 — the straight hold, `scrollToY`, `refreshScroll`, the island's 3D guards, the gutter's bottom (+27), and section 04's ring gate + dynamic import. Task 14 won back 155 of R4's +689 (the ring's gate stopped importing `gfx/gate.ts`; Vite's preload helper folded into `tip`) | 2026-10-06 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` branch **64,984 (79.3%)** (Phase 13), +1,124 vs live — the sound island (839), the emissions bus (folded into `tip`), the six sites' announces, `onTick` (+30 in `timeline`). `/websites` 59,143 (+113: `tip` carries the inert bus). Live before it: `/` 63,860 (78.0%) (Phase 12), +704 vs Phase 11 — the straight hold, `scrollToY`, `refreshScroll`, the island's 3D guards, the gutter's bottom (+27), and section 04's ring gate + dynamic import. Task 14 won back 155 of R4's +689 (the ring's gate stopped importing `gfx/gate.ts`; Vite's preload helper folded into `tip`) | 2026-10-06 |
 | Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,887 (53.1%)** (Phase 12), +119 vs Phase 11 (the ring left WebGL in R4); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-06 |
 | Ring chunk gzip (lazy, after load, no Three.js) | — | live **4,518** (`lib/ring/stage.ts`; not in any page's initial graph) | 2026-10-06 |
+| Audio chunk gzip (lazy, only once sound is turned on) | ≤ 5,120 | branch **1,783** (`lib/audio/connect.ts` + `engine.ts` + `score.ts`; in no page's initial graph or `modulepreload`) | 2026-10-06 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 326 | 2026-10-06 |
+| Tests | — | 342 | 2026-10-06 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -130,6 +131,7 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Phase 12 · 2026-10-03 (branch) | 63,287 | 77.3% | 299 |
 | Phase 12 R4 · 2026-10-06 (branch) | 63,860 | 78.0% | 326 |
 | Phase 12 · 2026-10-06 (live) | 63,860 | 78.0% | 326 |
+| Phase 13 · 2026-10-06 (branch) | 64,984 | 79.3% | 342 |
 
 ### How to measure
 
@@ -238,10 +240,10 @@ sketch: the context is created in the gesture by `islands/sound.ts` and passed i
 
 | Task | Deliverable | State |
 |---|---|---|
-| 1 | `signal/emissions.ts` bus + `audio/score.ts`, tested | not started |
-| 2 | Six emission sites announce on downward arrival | not started |
-| 3 | `audio/engine.ts`, `audio/connect.ts`, `islands/sound.ts`, Nav toggle | not started |
-| 4 | Browser check, figures, docs, PR — Noel listens on the preview | not started |
+| 1 | `signal/emissions.ts` bus + `audio/score.ts`, tested | complete (`9da62db`) |
+| 2 | Six emission sites announce on downward arrival | complete (`0f0e220`) |
+| 3 | `audio/engine.ts`, `audio/connect.ts`, `islands/sound.ts`, Nav toggle | complete (`d1ea85c`..`b916bc2`, 2 fix rounds: GSAP kept in one chunk; the bus folded into `tip`) |
+| 4 | Browser check, figures, docs, PR — Noel listens on the preview | browser check 17/17 over CDP (real gestures): no chunk until pressed, one chunk and one context under rapid toggles, 19 notes in reading order on a scroll down and none back up, a tick per link hovered, `on` restored without fetching until a gesture, Enter on the toggle turns it off, no toggle on `/websites`. Waiting on Noel's listen |
 
 ## PHASE 14 — `/websites` Restyle
 
@@ -485,7 +487,8 @@ decision was made; this section records *what it is*.
 - **2026-09-26 (Noel)** — **The sound toggle stays in the nav until Phase 13, and says plainly
   that it is not ready.** It is a focusable button with `aria-disabled="true"`, not a `disabled`
   one, so it can be reached and announced. Its visible text says sound is coming, so the state
-  is not only in a hover `title`. Activating it does nothing.
+  is not only in a hover `title`. Activating it does nothing. *Superseded by Phase 13
+  (2026-10-06): the toggle works; `aria-disabled` now marks only a browser that cannot play audio.*
 - **2026-09-26 (Noel)** — **The four unreferenced gallery masters stay** (`directline`,
   `qburst`, `srtmarine`, `winning`; 312 KB in all). "Problems, solved" may be reworked, and they
   are its source material.
@@ -641,6 +644,24 @@ decision was made; this section records *what it is*.
   +573 vs Phase 12's first build (63,860). R1's checkpoint values and the hoop-capped pointer tilt
   are superseded (archived in `docs/archive/plan-phases.md`). Phase 12 design R4.
 
+- **2026-10-06 (Noel)** — **Phase 13's sound: warm analogue, A minor pentatonic, notes on downward
+  arrival only, a hover tick in this phase.** Each emission site announces on a small bus
+  (`lib/signal/emissions.ts`) from the paint it already runs, so a note sounds on the frame its
+  dot lands; `hasArrived` (painted `< 1` → `≥ 1`, never from the unmeasured `-1`) keeps reloads and
+  re-measures silent. The score is fixed: each section climbs from its own start degree and the
+  final emission resolves to A2 + A3. Spec `2026-10-06-phase-13-audio-design.md` D1–D7.
+- **2026-10-06 (controller)** — **The `AudioContext` is created by the toggle island, inside the
+  gesture, and handed to the lazy chunk** (spec D8). Safari unlocks audio only in the gesture's own
+  call stack; after an `await import()` it can stay suspended. So `createAudioEngine(ctx)` is
+  synchronous, unlike the sketch this section's Phase 13 interface once gave.
+- **2026-10-06 (controller)** — **Reduced motion hears the drone, the cutoff and the ticks, but no
+  emission notes** (spec D12): its emissions are final from the start, so none arrives.
+- **2026-10-06 (controller)** — **GSAP has one importer, `timeline.ts`.** The audio samples scroll
+  speed through its new `onTick`; a direct `gsap` import from the lazy chunk made Rollup split GSAP
+  into a chunk of its own, +630 B on every page. The bus joins `tip` (`manualChunks`), as `follow`
+  did: −195 B and one request fewer on `/`, +83 B of inert code on `/websites`. `/` lands at +1,124
+  against the spec's ≤ +1 KB estimate; accepted, and the spec's §5 records the measured figure.
+
 ## Known Gaps
 
 Open items and standing notes only. When a gap closes, move the whole bullet verbatim to
@@ -648,6 +669,10 @@ Open items and standing notes only. When a gap closes, move the whole bullet ver
 marked RESOLVED.
 
 ### Post-launch — owed by Noel or waiting on a date
+
+- **Phase 13's sound is unheard by a person.** The browser check proves every note fires in order
+  (17/17), not how it sounds. Noel listens on the preview; the voice values (spec D4) are starting
+  values to tune by ear in `lib/audio/engine.ts`'s constants.
 
 - **Served CV is still the March PDF** (`public/noel-sebastian.pdf`); replace with a text-based
   export of the September resume. VoiceOver pass still owed (checklist in `task-9.5-report.md`).
@@ -666,6 +691,12 @@ marked RESOLVED.
   manually; consider a Lighthouse CI step afterwards.
 
 ### Cosmetic — open, not blocking
+
+- **The sound toggle's label changes width** (`Sound · off` → `on` is ~8px narrower; `unavailable`
+  is wider), so the CV link beside it moves a few pixels on toggle. Not a layout shift on load
+  unless `on` is stored (Phase 13).
+- **With JS off the toggle reads `Sound · off` and does nothing.** Audio needs JS; the label is
+  true, the button inert (Phase 13).
 
 - **The `→` in "Bundle size, 100% → 40%" renders in a fallback face** — neither font has U+2192.
   Allowlisted in `scripts/fonts.mjs`; the copy could say "to" instead.
