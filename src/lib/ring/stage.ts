@@ -11,7 +11,6 @@
  */
 
 import { gsap } from 'gsap';
-import { MIN_VIEWPORT_WIDTH } from '../gfx/gate';
 import { createRenderSchedule } from '../gfx/render-schedule';
 import { scrollToY } from '../motion/scroll';
 import { onPageProgress, refreshScroll } from '../motion/timeline';
@@ -46,6 +45,7 @@ import {
   stickyTop,
   turnSteps,
 } from './geometry';
+import { RING_MIN_VIEWPORT_WIDTH } from './gate';
 
 /** A turn the reader asked for by focusing a card, not choreography, s. */
 const FOCUS_TURN_S = 0.45;
@@ -151,7 +151,7 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     const layout = layoutFor(viewportHeight);
     // A window resized below the gate's width or the fit gives the ring up, one way (design §5).
     // The tube's fallback used to drop it for a narrow window; the ring is its own now.
-    const isTooNarrow = document.documentElement.clientWidth < MIN_VIEWPORT_WIDTH;
+    const isTooNarrow = document.documentElement.clientWidth < RING_MIN_VIEWPORT_WIDTH;
     if (isTooNarrow || !layout.fits) {
       unmount();
       return;

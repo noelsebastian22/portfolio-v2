@@ -39,8 +39,17 @@ export default defineConfig({
           // candidate: it is already far over the ~1 KB line, and merging it into anything
           // would make every one of its non-GSAP importers (Ring, Stack, Contact, tip) carry
           // GSAP whether they use it or not.
+          //
+          // Vite's preload helper joins `tip` for the same reason (Phase 12 Task 14): since
+          // section 04's script has its own dynamic import (the ring), BaseLayout and Ring
+          // share the helper, and Rollup gave it a chunk of its own (650 bytes gzip) — or,
+          // while both imported gfx/gate.ts, a gate + helper chunk (1,194). Every page that
+          // loads the helper already loads `tip`. Measured on `/`: 64,015 → 63,979 with the
+          // ring's gate no longer importing gfx/gate.ts, → 63,859 with this line (gate and
+          // helper both folded into `tip` measured 63,874).
           manualChunks(id) {
             if (/\/src\/lib\/signal\/(?:follow|tip)\.ts$/.test(id)) return 'tip';
+            if (id.includes('vite/preload-helper')) return 'tip';
           },
         },
       },

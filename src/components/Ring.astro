@@ -768,7 +768,6 @@ const srcset = (urls: Record<string, string>) =>
 
 <script>
   import { mountRing } from '../islands/ring';
-  import { forcedMode } from '../lib/gfx/gate';
   import { canTurnRing } from '../lib/ring/gate';
 
   mountRing();
@@ -781,7 +780,7 @@ const srcset = (urls: Record<string, string>) =>
     const canTurn = canTurnRing({
       viewportWidth: document.documentElement.clientWidth,
       reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-      mode: forcedMode(location.search),
+      search: location.search,
     });
     if (!section || !canTurn) return;
     import('../lib/ring/stage')
