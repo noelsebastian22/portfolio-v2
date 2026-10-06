@@ -5,6 +5,37 @@ bottom; never edit one. If an old entry turned out wrong, say so in a new live e
 
 <!-- archived, newest first -->
 
+## 2026-10-04 · claude-code · Phase 12 ring, rebuilt as R4
+
+**Did**
+- Phase 12 brainstormed, specced, planned and built on `feat/phase-12-ring` (hybrid SDD, tasks 1–13; not merged): first a WebGL hoop with DOM cards (R1–R3), then rebuilt as a floating CSS 3D ring in `src/lib/ring/` (R4).
+- Sections 04–06 now use the full content box; only 03 keeps the gutter, and `gutter.ts`'s region ends at 03's bottom.
+- `scene.ts` is byte-identical to Phase 11 again; `ring-mesh.ts` deleted.
+
+**Decided**
+- The ring is a floating CSS 3D loop in its own lazy chunk, gated on width/motion/fit, not WebGL (R4).
+- It scales to fit short windows, floor 0.7 (R3); the settle follows the direction of travel (R2).
+- Sections 04–06 use the full content box.
+
+**Didn't work**
+- The WebGL hoop, drops, glow, floor and pulse: on Noel's screen they read as amateur, and a 35% dwell per card plus 0.6-viewport steps made the turn lag.
+- A 10° look-down: the camera sits at the viewport's centre, below the hoop, so perspective cancelled the tilt and the hoop read as a flat bar. 22° put the hoop's back under the 67px nav at 800 tall.
+- Outward-facing cards: at ±72° they were ~29px edge-on slivers; cards now turn half-way.
+- A fixed ~790px minimum height: Noel's MacBook viewport never got the ring (measured: on at 1440×900, rail at 1440×760).
+- A "nearest" settle: a single 100px wheel notch was pulled back, so a notch-by-notch reader could never leave a card.
+- A controller edit of the plan (replacing from the first `pulseAt` match) deleted Task 2's tests and module; the first implementer designed bodies blind and the module was redone.
+- Claude-in-Chrome was disconnected again; browser checks ran on headless Chrome over CDP (scripts in the session scratchpad).
+
+**Open**
+- **Phase 12 Task 14 is not done** — its agent hit the usage limit before changing anything.
+- **`lib/ring/stage.ts` `update()` reads the rail's and the stage's rects every drawn frame**
+- `BUILD-PLAN.md` is 60,475 B, over lint's 60,000: the R1–R3 hoop-era Phase 12 decisions superseded by R4 are the natural thing to archive in Task 14's docs pass.
+
+**Next**
+Run Task 14 from its brief (`.superpowers/sdd/2026-10-03-phase-12-3d-ring/task-14-brief.md`, git-ignored; ledger `progress.md` beside it), then the final whole-branch review, then a PR for Noel.
+
+**Numbers** — build green · 327 tests (+81) · JS on `/` 64,015 gzip (+859 vs live) · enhanced chunk 135,913 (+145) · ring chunk 4,420 (new, lazy)
+
 ## 2026-10-03 · claude-code · Phase 11 merged
 
 **Did**
