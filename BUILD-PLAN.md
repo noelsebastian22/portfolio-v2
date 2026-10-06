@@ -4,7 +4,6 @@
 > or `superpowers:executing-plans` to implement a phase task-by-task. Steps use checkbox
 > (`- [ ]`) syntax. **Phases 10–15 carry phase-level detail only** — expand the phase you are
 > starting into task-level steps with `superpowers:writing-plans` before implementing it.
-> starting into task-level steps with `superpowers:writing-plans` before implementing it.
 
 **Goal:** Rebuild noel-sebastian.com as "Signal Path" — a dark, animation-led portfolio
 built around one continuous signal line that is simultaneously a marble diagram of Noel's
@@ -80,7 +79,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
 | 10 | WebGL — gate + signal tube | **complete — live 2026-10-03** | PR #1 (`0dfc45e`); tube over the 2D line, revision R1–R4. Section archived |
 | 11 | WebGL — particle portrait | **complete — live 2026-10-03** | PR #2 (`cf91bd9`); cream still, particles over it (R1). Section archived |
-| 12 | WebGL — 3D ring | **built — awaiting merge** | `feat/phase-12-ring`; a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Final review open. Section archived |
+| 12 | WebGL — 3D ring | **built — awaiting merge** | `feat/phase-12-ring`; a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Final review clean (2026-10-06). Section archived |
 | 13 | Audio engine | not started | |
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |

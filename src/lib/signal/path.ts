@@ -240,8 +240,8 @@ export const RING_SPLIT_POINT = 34;
 
 /**
  * The end of the ring's hold: control point 36, the last of the three that sit at `x` 0
- * below the split. Phase 12's stage is `position: sticky`, so while it is stuck the hoop's
- * front point stays put in the viewport and the page scrolls past it; pinning this point to
+ * below the split. Phase 12's stage is `position: sticky`, so while it is stuck the front
+ * card's dot stays put in the viewport and the page scrolls past it; pinning this point to
  * the end of the stuck stretch (anchors.ts) and zeroing the `x` tangent at both ends makes
  * 34 → 36 exactly vertical, so the meeting point never leaves the line. In the 2D rail the
  * same hold runs straight down behind the cards.
