@@ -90,8 +90,8 @@ Replace values here when a session re-measures; do not add a new "Measured after
 
 | Global Constraints budget | Target | Latest | Measured |
 |---|---|---|---|
-| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 11 branch): 98 / 98 / 99, `master` interleaved 98 / 98 / 98 · production ×1: 97 (2026-09-29) | 2026-10-03 |
-| LCP | ≤ 2.0s | preview, interleaved ×3 (2026-10-03): Phase 11 branch median **2,264ms** (2,267 / 2,264 / 2,189), `master` 2,274 (2,274 / 2,289 / 2,272) — no regression; the cream still is the LCP element and nothing changes before `load` — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-03 |
+| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 12 branch): 98 / 98 / 98, `master` interleaved 98 / 98 / 99 · production ×1: 97 (2026-09-29) | 2026-10-06 |
+| LCP | ≤ 2.0s | preview, interleaved ×3 (2026-10-06): Phase 12 branch median **2,265ms** (2,268 / 2,265 / 2,265), `master` 2,264 (2,275 / 2,264 / 2,188) — no regression; the ring's chunk loads after `load` and idle, and the cream still is the LCP element — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-06 |
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
