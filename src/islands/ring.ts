@@ -22,6 +22,7 @@
 
 import { easeEmission, easeLine, tipFraction, unit } from '../lib/signal/draw';
 import { followSignal, prefersReducedMotion } from '../lib/signal/follow';
+import { announceEmission, hasArrived } from '../lib/signal/emissions';
 import { signalXAtPageY } from '../lib/signal/tip';
 
 /**
@@ -82,6 +83,8 @@ export function mountRing(): void {
     // In the 3D ring (Phase 12) lib/ring/stage.ts owns the emissions, and the track and drops are hidden.
     if (section!.classList.contains('ring--3d')) return;
     if (p === painted) return;
+    // The drops land together, so the 2D split is one note.
+    if (hasArrived(painted, p)) announceEmission('ring', 0);
     painted = p;
     const done = p >= 1;
     const trackDrawn = easeLine(p / TRACK_SHARE);

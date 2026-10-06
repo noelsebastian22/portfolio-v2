@@ -22,6 +22,7 @@
 
 import { easeEmission, tipFraction } from '../lib/signal/draw';
 import { followSignal, prefersReducedMotion } from '../lib/signal/follow';
+import { announceEmission, hasArrived } from '../lib/signal/emissions';
 import { signalXAtPageY } from '../lib/signal/tip';
 
 /** Tip travel over which the emission fills — the Stack's node distance, `--s-8`. */
@@ -58,6 +59,7 @@ function followEmission(track: HTMLElement, node: HTMLElement, fill: HTMLElement
     if (trackY === null) return;
     const p = tipFraction(tipY, trackY, EMISSION_FILL_PX);
     if (p === painted) return;
+    if (hasArrived(painted, p)) announceEmission('contact', 0);
     painted = p;
     fill.style.transform = p >= 1 ? '' : `scale(${Math.max(0, easeEmission(p)).toFixed(4)})`;
   }

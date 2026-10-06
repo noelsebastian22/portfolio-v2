@@ -16,6 +16,7 @@ import { scrollToY } from '../motion/scroll';
 import { onPageProgress, refreshScroll } from '../motion/timeline';
 import { onSignalCurve, onSignalTip, signalTipY, signalXAtPageY } from '../signal/tip';
 import { tipFraction } from '../signal/draw';
+import { announceEmission, hasArrived } from '../signal/emissions';
 import {
   ARRIVAL_DRAW_VH,
   CARD_FACING_SHARE,
@@ -147,6 +148,8 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
   let restY = 0;
   /** The card the counter and dots last showed; −1 until the first draw. */
   let shownFront = -1;
+  /** The fan's last drawn opacity; `-1` until drawn, so mounting mid-ring announces nothing. */
+  let shownFan = -1;
 
   function measure(): void {
     const viewportHeight = window.innerHeight;
@@ -406,6 +409,7 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     nav!.style.removeProperty('--ring-arrive');
     for (const dot of dots) dot.removeAttribute('aria-current');
     shownFront = -1;
+    shownFan = -1;
     for (const card of cards) {
       for (const name of ['transform', 'opacity', '--ring-dim', '--ring-lit']) card.style.removeProperty(name);
       card.classList.remove('card--inert', 'card--front');
@@ -449,6 +453,9 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     const steps = turnSteps(rawSteps(scrollY - railTop, viewportHeight), viewportHeight);
     const splitY = railTop + frontY;
     const fan = fanOut(tipFraction(signalTipY(), splitY, ARRIVAL_DRAW_VH * viewportHeight));
+    // The line landing on the front card's dot is the ring's first emission.
+    if (hasArrived(shownFan, fan.opacity)) announceEmission('ring', 0);
+    shownFan = fan.opacity;
     // Pointer high opens the ellipse (as far as the stage has room above the ring), low closes
     // it. Eased toward the target, and drawing again until it gets there; then it snaps, so it
     // is exactly 0 once the pointer has gone.
@@ -492,6 +499,9 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
     // rest they agree with the card in front. Written only when it changes.
     const front = nearestCard(scrollY - railTop, viewportHeight);
     if (front !== shownFront) {
+      // Each card turned to the front is an emission arriving — forward only (spec D2).
+      const isTurnedForward = shownFront >= 0 && front > shownFront;
+      if (isTurnedForward) announceEmission('ring', front);
       shownFront = front;
       count!.textContent = String(front + 1).padStart(2, '0');
       dots.forEach((dot, i) => {

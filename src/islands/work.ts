@@ -24,6 +24,7 @@
 
 import { onSection } from '../lib/motion/timeline';
 import { reducedMotion } from '../lib/motion/scroll';
+import { announceEmission, hasArrived } from '../lib/signal/emissions';
 import { onSignalCurve, onSignalTip, signalTipY, signalXAtPageY } from '../lib/signal/tip';
 import {
   RESIZE_DEBOUNCE_MS,
@@ -72,6 +73,8 @@ interface Figure {
   cardHeight: number;
   local: number;
   painted: number;
+  /** Its place among the figures that have an emission — the scatter has none — or `null`. */
+  emitIndex: number | null;
 }
 
 function numberAttr(el: Element, name: string, value: number): void {
@@ -163,13 +166,15 @@ export function mountWork(): void {
   const figures: Figure[] = [];
   const branches: Branch[] = [];
 
+  let emitCount = 0;
   for (const card of cards) {
     const figure = card.querySelector<HTMLElement>('[data-figure]');
     const raw = figure?.dataset.diagram;
     if (figure && raw) {
       try {
         const diagram = JSON.parse(raw) as CaseStudyDiagram;
-        figures.push({ card, figure, diagram, centreOffset: 0, cardHeight: 0, local: 1, painted: 1 });
+        const hasEmit = figure.querySelector('[data-part="emit"]') !== null;
+        figures.push({ card, figure, diagram, centreOffset: 0, cardHeight: 0, local: 1, painted: 1, emitIndex: hasEmit ? emitCount++ : null });
       } catch {
         // A figure whose data will not parse keeps its server-rendered end state.
       }
@@ -213,6 +218,7 @@ export function mountWork(): void {
   function updateFigure(fig: Figure): void {
     const p = diagramProgress(fig);
     if (p === fig.painted) return;
+    if (fig.emitIndex !== null && hasArrived(fig.painted, p)) announceEmission('work', fig.emitIndex);
     fig.painted = p;
     paintDiagram(fig, p);
   }

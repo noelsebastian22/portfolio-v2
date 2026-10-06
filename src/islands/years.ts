@@ -13,6 +13,7 @@
  */
 
 import { onSection } from '../lib/motion/timeline';
+import { announceEmission } from '../lib/signal/emissions';
 
 /** Where on the section's progress the first emission arrives, and the step between. */
 const EMISSION_FIRST = 0.12;
@@ -63,10 +64,20 @@ export function mountYears(): void {
   // reaches a frame.
   section.dataset.motion = '';
 
+  // Nine Years toggles a class rather than painting a progress, so it keeps its own
+  // previous state. The first callback only records it: a load mid-page, or reduced
+  // motion's synchronous call at progress 1, must not announce every emission at once.
+  const isArrived = emissions.map(() => false);
+  let hasRecordedState = false;
+
   onSection('years', section, (local) => {
     emissions.forEach((emission, index) => {
-      emission.classList.toggle('is-arrived', local >= EMISSION_FIRST + index * EMISSION_STEP);
+      const arrivedNow = local >= EMISSION_FIRST + index * EMISSION_STEP;
+      emission.classList.toggle('is-arrived', arrivedNow);
+      if (hasRecordedState && arrivedNow && !isArrived[index]) announceEmission('years', index);
+      isArrived[index] = arrivedNow;
     });
+    hasRecordedState = true;
 
     counters.forEach((counter, index) => {
       const eased = easeOutCubic(windowProgress(local, COUNT_FIRST + index * COUNT_STEP, COUNT_SPAN));

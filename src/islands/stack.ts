@@ -20,6 +20,7 @@
 
 import { easeEmission, easeLine, tipFraction } from '../lib/signal/draw';
 import { followSignal, prefersReducedMotion } from '../lib/signal/follow';
+import { announceEmission, hasArrived } from '../lib/signal/emissions';
 import { signalXAtPageY } from '../lib/signal/tip';
 
 /**
@@ -76,10 +77,11 @@ export function mountStack(): void {
 
   /** Lights every node to the tip; at full progress the inline state is cleared. */
   function paint(tipY: number | null): void {
-    for (const op of operators) {
+    for (const [index, op] of operators.entries()) {
       if (op.ruleY === null) continue;
       const p = tipFraction(tipY, op.ruleY, NODE_FILL_PX);
       if (p === op.painted) continue;
+      if (hasArrived(op.painted, p)) announceEmission('stack', index);
       op.painted = p;
       if (p >= 1) {
         op.fill.style.transform = '';
