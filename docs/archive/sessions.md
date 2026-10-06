@@ -5,6 +5,22 @@ bottom; never edit one. If an old entry turned out wrong, say so in a new live e
 
 <!-- archived, newest first -->
 
+## 2026-10-03 · claude-code · Phase 10 merged
+
+**Did**
+- Noel passed the 60Hz check (5s+ trackpad scroll: tube stays, no `signal-tube-fallback` key).
+- PR #1 opened and merged by Noel (`0dfc45e`); production serves the gate in the `BaseLayout` script.
+- Phase 10 marked complete; its section moved verbatim to `docs/archive/plan-phases.md`; figures now read live.
+- SDD workspace for the Phase 10 plan deleted; the local branch removed.
+
+**Open**
+- nothing open beyond Known Gaps (Phase 10's parked minors, the AA cost over the tube, LCP headroom).
+
+**Next**
+Start Phase 11 (particle portrait) with superpowers:brainstorming: it must settle the parent spec §8 holding note — the hero now has no line to "arrive" and "resolve into the face". Or the Stack rework brainstorm Noel asked for, if he prefers.
+
+**Numbers** — build green · 222 tests · JS on `/` live 63,151 gzip (+1,379 vs 61,772) · enhanced chunk 132,276 gzip (51.7%)
+
 ## 2026-10-03 · claude-code · Phase 10 revision and review
 
 **Did**

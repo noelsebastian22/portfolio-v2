@@ -9,6 +9,27 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-06 · claude-code · Phase 12 Task 14, PR #3
+
+**Did**
+- Re-ran Phase 12 Task 14 (agent, reviewed inline): every failure path passes on headless Chrome over CDP; `lib/ring/stage.ts` now drops the ring on a live reduced-motion `change`; a `--ground` `::before` on the stage hides the line's tip below the front card's dot.
+- `lib/ring/gate.ts` no longer imports `gfx/gate.ts` (`RING_MIN_VIEWPORT_WIDTH` pinned by test); Vite's preload helper joins `tip` in `astro.config.mjs`. `buildTubeFromCentres` folded back into `buildTube`.
+- Docs brought to R4 (parent spec §9.04/§11, Phase 12 spec §3/§7, `Ring.astro` header); two superseded decisions archived; BUILD-PLAN under lint's 60,000 B.
+- Final whole-branch review inline: clean apart from stale "hoop" comments in `path.ts`/`anchors.ts`, fixed. Lighthouse interleaved with `master`; PR #3 opened.
+
+**Didn't work**
+- Winning back all of Task 11's +689 B base JS: only 155 B came back. Against the pre-R4 build, BaseLayout and `tip` are within ~96 B; the rest is section 04's own gate and dynamic import with its preload list. Folding gate and helper both into `tip` measured 63,874, worse than keeping the gate standalone (63,859).
+
+**Open**
+- **The Phase 12 spec's §4–§6 still describe the WebGL hoop.**
+- PR #3 is unmerged: Noel to check the ring's look on his own screen first.
+- Old `astro preview` processes from earlier sessions still listen on :4321 and :4322.
+
+**Next**
+Noel checks the ring on PR #3's Vercel preview; on approval, merge to `master`, confirm the live site, then mark Phase 12 complete and archive its section per end.md step 2.
+
+**Numbers** — build green · 326 tests (−1: −2 hoop tests, +1 width pin) · JS on `/` 63,860 gzip (−155 vs last session; +704 vs live) · enhanced 135,887 · ring chunk 4,518 · LCP median 2,265ms (`master` 2,264)
+
 ## 2026-10-04 · claude-code · Phase 12 ring, rebuilt as R4
 
 **Did**
@@ -65,20 +86,3 @@ Run Task 14 from its brief (`.superpowers/sdd/2026-10-03-phase-12-3d-ring/task-1
 Start Phase 12 (3D ring) with superpowers:brainstorming — or the Stack rework brainstorm Noel asked for, if he prefers.
 
 **Numbers** — build green · 246 tests (+24) · JS on `/` live 63,156 gzip (+5) · enhanced chunk 135,768 gzip (53.0%, +3,492) · LCP preview median 2,264 vs `master` 2,274
-
-
-## 2026-10-03 · claude-code · Phase 10 merged
-
-**Did**
-- Noel passed the 60Hz check (5s+ trackpad scroll: tube stays, no `signal-tube-fallback` key).
-- PR #1 opened and merged by Noel (`0dfc45e`); production serves the gate in the `BaseLayout` script.
-- Phase 10 marked complete; its section moved verbatim to `docs/archive/plan-phases.md`; figures now read live.
-- SDD workspace for the Phase 10 plan deleted; the local branch removed.
-
-**Open**
-- nothing open beyond Known Gaps (Phase 10's parked minors, the AA cost over the tube, LCP headroom).
-
-**Next**
-Start Phase 11 (particle portrait) with superpowers:brainstorming: it must settle the parent spec §8 holding note — the hero now has no line to "arrive" and "resolve into the face". Or the Stack rework brainstorm Noel asked for, if he prefers.
-
-**Numbers** — build green · 222 tests · JS on `/` live 63,151 gzip (+1,379 vs 61,772) · enhanced chunk 132,276 gzip (51.7%)
