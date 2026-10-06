@@ -7,7 +7,7 @@
  * reduced motion, where Lenis never runs (spec D5).
  */
 
-import { gsap } from 'gsap';
+import { onTick } from '../motion/timeline';
 import { onEmission } from '../signal/emissions';
 import { createAudioEngine } from './engine';
 import { createNoteGate, normaliseSpeed } from './score';
@@ -29,8 +29,9 @@ export function connectAudio(ctx: AudioContext): AudioControl {
   let lastScrollY = 0;
   let speed = 0;
   let hovered: Element | null = null;
+  let stopSampling: (() => void) | undefined;
 
-  function sampleSpeed(_time: number, deltaMs: number): void {
+  function sampleSpeed(deltaMs: number): void {
     const scrollY = window.scrollY;
     const pxPerSecond = deltaMs > 0 ? ((scrollY - lastScrollY) / deltaMs) * 1000 : 0;
     lastScrollY = scrollY;
@@ -55,7 +56,7 @@ export function connectAudio(ctx: AudioContext): AudioControl {
         const startAt = gate.schedule(`${event.section}:${event.index}`, ctx.currentTime);
         if (startAt !== null) engine.emit(event, startAt);
       });
-      gsap.ticker.add(sampleSpeed);
+      stopSampling = onTick(sampleSpeed);
       document.addEventListener('pointerover', tickOnHover);
       engine.start();
     },
@@ -63,7 +64,8 @@ export function connectAudio(ctx: AudioContext): AudioControl {
       if (!unsubscribe) return;
       unsubscribe();
       unsubscribe = undefined;
-      gsap.ticker.remove(sampleSpeed);
+      stopSampling?.();
+      stopSampling = undefined;
       document.removeEventListener('pointerover', tickOnHover);
       hovered = null;
       engine.stop();

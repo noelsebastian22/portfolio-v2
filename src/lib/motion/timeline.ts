@@ -123,3 +123,15 @@ export function refreshScroll(): void {
   ensurePluginRegistered();
   ScrollTrigger.refresh();
 }
+
+/**
+ * Calls `fn` with the frame's elapsed milliseconds on every tick of the one GSAP ticker that
+ * drives Lenis and ScrollTrigger (Phase 13: the audio's scroll-speed sampling). Returns the
+ * unsubscribe. Exported here, not imported from `gsap` by callers, so GSAP has one importer
+ * and stays in one shared chunk.
+ */
+export function onTick(fn: (deltaMs: number) => void): () => void {
+  const tick = (_time: number, deltaMs: number): void => fn(deltaMs);
+  gsap.ticker.add(tick);
+  return () => gsap.ticker.remove(tick);
+}
