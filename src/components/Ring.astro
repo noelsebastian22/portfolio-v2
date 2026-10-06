@@ -23,19 +23,22 @@
  * the split is complete; the island moves it back to undrawn and draws it off the tip.
  *
  * **The 3D mode** (Phase 12, revision R4) is these same cards, restyled, in CSS 3D — no WebGL.
- * The script below loads `lib/ring/stage.ts` after load and idle when its gate passes
- * (`lib/ring/gate.ts`: wide enough, no reduced motion, not `?signal=2d`); the stage adds
- * `.ring--3d` when the ring fits the window, and only while the section is off screen, because
- * the class changes the page's height. The rail grows by the pin length and the scroller becomes
- * a sticky, one-viewport stage in which each card gets a `matrix3d` from `lib/ring/geometry.ts`.
+ * The script below loads `lib/ring/stage.ts`, in its own chunk, after load and idle when its gate
+ * passes (`lib/ring/gate.ts`: at least 900px wide, no reduced motion, not `?signal=2d`; whether
+ * WebGL is on does not matter). The stage adds `.ring--3d` when the ring fits the window, scaled
+ * down if need be, and only while the section is off screen, because the class changes the
+ * page's height. The rail grows by the pin length and the scroller becomes a sticky, one-viewport
+ * stage in which each card gets a `matrix3d` from `lib/ring/geometry.ts`, on an invisible circle.
  * There is no hoop and no drop: the 2D track and drops are hidden, and the line lands on the
- * front card's emission, which stays on its card. The meeting point is `[data-signal-split]` in
- * both modes. In the rail it is the visible track. In 3D the track is hidden and moved to the
- * front card's top-centre, kept in the rail rather than the sticky stage, so it measures where
- * the curve should pass and not where the stage is stuck. `[data-signal-hold="end"]` ends the
- * line's straight hold below the split: the cards' bottom edge in the rail, and the same stage
- * height at the pin's end in 3D, so the line runs straight down the centre for the whole pin.
- * Removing the class restores the rail exactly (resize below the fit, or any failure).
+ * front card's emission, lit while it is in front. Below that dot a panel of the ground hides the
+ * line while the stage is pinned. The counter and dots under the front card are rendered here,
+ * shown only in 3D. The meeting point is `[data-signal-split]` in both modes. In the rail it is
+ * the visible track. In 3D the track is hidden and moved to the front card's top-centre, kept in
+ * the rail rather than the sticky stage, so it measures where the curve should pass and not
+ * where the stage is stuck. `[data-signal-hold="end"]` ends the line's straight hold below the
+ * split: the cards' bottom edge in the rail, and the same stage height at the pin's end in 3D, so
+ * the line runs straight down the centre for the whole pin. Removing the class restores the rail
+ * exactly: a resize below the fit or 900px, reduced motion turning on, or any failure.
  *
  * Layout is the plain content box, as 01–02 use: no signal gutter, because below 03 the line
  * runs through the centre rather than down a spine in the margin (Decisions, 2026-10-03).

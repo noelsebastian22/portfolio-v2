@@ -395,19 +395,24 @@ Menzone.
 `content.ts` carries them as `ringProjects`. TopDel used to appear twice, once as
 `freelanceCaseStudy` as well; that is gone, and the ring is the only home for freelance work.
 
-**Visual:** on a capable desktop, a 3D ring seen from a little above. The rail's split becomes
-a **hoop**: a circle of tube at the signal's weight, which the curve meets at its front point.
-Each card hangs from the hoop on a drop ending in its `--shipped` emission, so the anatomy is
-the rail's with depth. The cards are the server-rendered rail cards, restyled in CSS 3D. The
-hoop, drops and glow are drawn in the WebGL scene, and both read one geometry module
-(`gfx/ring.ts`). The section **pins** with `position: sticky`, not a GSAP pin, and the line
-holds straight down the centre for the whole pin. Scrolling turns the ring one card at a time,
-and a pulse runs from the line along the hoop and down the arriving card's drop. **Back cards
-fade**: full strength within ±30° of the front, gone by ±110°, and a faded card takes no clicks.
-Design and revisions: `2026-10-03-phase-12-3d-ring-design.md` (D1–D3, D6, R1).
+**Visual:** on a capable desktop, a floating 3D ring seen from a little above: the five cards
+on an invisible circle, with no hoop and no drops. The cards are the server-rendered rail cards,
+restyled in CSS 3D — no WebGL — and placed by one pure geometry module (`lib/ring/geometry.ts`),
+in its own lazily loaded chunk behind its own gate. The section **pins** with `position:
+sticky`, not a GSAP pin, and the line holds straight down the centre for the whole pin and
+**lands on the front card's `--shipped` emission**, which is lit (larger, a soft glow) on
+whichever card is in front; below that dot a panel of the ground hides the line while the stage
+is pinned. Scrolling turns the ring in step with the scroll, a card per 0.4 of a viewport, and
+the cards fan out from a stack into the circle as the section arrives. The side cards recede
+under a dark overlay; the ring tilts a few degrees toward the pointer, and a side card under it
+lifts toward the viewer. Under the front card, a mono counter (`02 / 05`) sits left and five dot
+buttons, each labelled "Show <site>", sit right; a dot turns the ring by moving the scroll.
+**Back cards fade**: full strength out to the side cards' place, gone by ±110°, and a faded card
+takes no clicks. Design and revisions: `2026-10-03-phase-12-3d-ring-design.md` (D1–D3, D6,
+R1–R4; R4 is the floating ring).
 
-**Interaction:** scroll turns the ring, and when the scroll stops inside the pin it settles on
-the next card in the direction the reader was going. Dragging the stage turns it too, by
+**Interaction:** scroll turns the ring, and when the scroll stops inside the pin it snaps, quickly,
+to the next card in the direction the reader was going. Dragging the stage turns it too, by
 moving the scroll. On hover, the card's long duotone capture (§10)
 scrolls inside its frame — which reads as a screen recording at the cost of an image the
 card already loads. It moves the image with `transform` at a constant speed, set per card from
@@ -418,10 +423,12 @@ Every card is a real anchor to the live site. The ring is operable by keyboard: 
 and Tab move focus between cards, and focus moves the ring — a focused card is brought to the
 front, so the focus ring is never on a faded card.
 
-**Fallback:** a horizontal scroll-snap rail on phones, short windows, under reduced motion,
-and when the WebGL gate fails. A short window is one the ring does not fit: the hoop's back,
-a drop and the tallest card must stack below the nav in one viewport, about 790px tall for
-the 560px card. Same cards, same content, same links. In the rail **the split is a track**: a horizontal stroke above
+**Fallback:** a horizontal scroll-snap rail on phones and windows under 900px wide, short
+windows, under reduced motion (also if it turns on mid-visit) and with `?signal=2d` — not when
+the WebGL gate fails: the ring needs no WebGL. A short window is one the ring does not fit even
+scaled down to 0.7: the side cards' tops, the tallest card and the counter row must fit below
+the nav in one viewport — full size from about 705px tall, the rail below about 540px, for the
+563px card. Same cards, same content, same links. In the rail **the split is a track**: a horizontal stroke above
 the cards at the signal's weight and colour, which the curve meets exactly where it reaches the
 centre (control point 34 is pinned to the track's centre line). Each card hangs off the track on
 a short drop ending in a `--shipped` emission, and says `shipped · live` in words. The drops sit
@@ -493,7 +500,7 @@ The concept is deliberately asset-light. Almost everything is generated at runti
 
 | Asset | Source |
 |---|---|
-| Signal tube, emissions, particle portrait, ring | Generated — Three.js |
+| Signal tube, emissions, particle portrait | Generated — Three.js |
 | Marble diagram, counting stats, case-study diagrams | Generated — SVG / canvas |
 | Operator glyphs, completion bar, signal mark, favicon | Hand-authored SVG |
 | Grain and noise | Procedural |
@@ -530,7 +537,8 @@ src/
     signal/       path.ts — ONE canonical curve; SvgSignal; TubeSignal
     motion/       lenis setup, gsap master timeline, section registration
     audio/        web audio engine (lazy, never fetched unless toggled)
-    gfx/          three.js scenes — tube, particles, ring; capability gate
+    gfx/          three.js scenes — tube, particles; capability gate
+    ring/         the 3D ring — CSS 3D, its own gate and lazy chunk (no three.js)
   islands/        vanilla TS entry points, one per interactive section
   components/     .astro section components
   data/           content.ts (rewritten), websites.ts

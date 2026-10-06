@@ -155,19 +155,18 @@ snaps: modern, futuristic, elegant, minimalist, professional.
 
 ## 3. Structure
 
+As built after R4 (the hoop-era rows — `gfx/ring.ts`, `gfx/ring-mesh.ts`, `gfx/ring-stage.ts`, the
+`scene.ts` hook — are gone; §4–§6 below still describe the hoop where R4 does not override them).
+
 | File | Job | Pure | Tested |
 |---|---|---|---|
 | `src/lib/signal/path.ts` | `RING_HOLD_END_POINT = 36`; zero `x` tangents at 34 and 36. | yes | yes |
 | `src/lib/signal/anchors.ts` | Anchor point 36 to `[data-signal-hold="end"]`, edge `top`. | yes | yes |
-| `src/lib/gfx/ring.ts` | The ring's geometry, from inputs (card width, card count, stage size, scroll progress): `ringRadius`, `RING_TILT_DEG`, `turnAngle(progress)` with dwells, `cardPose(i, angle)` → CSS transform + opacity + `isFront`, `hoopPoints`, `dropEnds(angle)`, `pulse(progress)`, `dwellProgress(i)` for focus and settle, and `projectToViewport` for the parity test. | yes | yes |
-| `src/lib/gfx/ring-mesh.ts` | Three.js objects from `ring.ts` output: hoop tube (shaded like the line; back half fogged toward `--ground`), drop tubes, emission spheres + glow sprites, the floor reflection, the pulse uniform. `dispose()`. | no | no |
-| `src/lib/gfx/ring-stage.ts` | DOM wiring: the size check (D12), the off-screen swap (D14), measuring the stage, writing each card's transform/opacity/`card--front` per drawn frame, focus → scroll, drag → scroll, settle. `unmount()` restores the rail. | no | no |
-| `src/lib/gfx/scene.ts` | Mounts the ring after the tube is live, in an idle callback, like the portrait; feeds it scroll each draw; drops it on any failure without taking the tube down. A small hook — the work is in `ring-stage.ts`. | no | no |
-| `src/components/Ring.astro` | `.ring--3d` styles: tall rail, sticky one-viewport stage, `perspective`, `transform-style: preserve-3d`, cards absolutely centred, 2D track/drops/emissions hidden; the hold-end marker. No new content. | — | — |
-| `src/islands/ring.ts` | Arrow keys unchanged (they move focus). The rail's focus-snap stands down while `.ring--3d` is on. | no | no |
-
-Base-path JS changes by a few bytes (one selector, one class check). Everything else is in the
-enhanced chunk.
+| `src/lib/ring/gate.ts` | `canTurnRing`: ≥ 900px wide, no reduced motion, not `?signal=2d`. Imports nothing from `gfx/gate.ts` (base JS); a test pins its width to the tube's. | yes | yes |
+| `src/lib/ring/geometry.ts` | The circle, the pin and the turn (`rawSteps`, `turnSteps`, `settleTarget`), `stageLayout` (fit, scale, nav row), `cardMatrix`/`cardPose`, `fanOut`, `recede`, `frontness`, `liftOffset`, `pointerTiltRoom`. | yes | yes |
+| `src/lib/ring/stage.ts` | DOM wiring, in its own lazy chunk: the fit check, the off-screen swap (D14), measuring, each card's `matrix3d`/opacity/`--ring-dim`/`--ring-lit` per drawn frame, focus/dot/drag → scroll, the snap, the pointer float, the counter and dots. Drops itself on any exception, a resize below the gate or the fit, or reduced motion turning on. | no | no |
+| `src/components/Ring.astro` | `.ring--3d` styles (tall rail, sticky stage, perspective, the `--ground` panel under the dot, the nav row); the hold-end marker; the server-rendered counter and dots; the script that gates and imports the stage after load and idle. | — | — |
+| `src/islands/ring.ts` | Arrow keys unchanged (they move focus). The rail's draw and focus-snap stand down while `.ring--3d` is on. | no | no |
 
 ## 4. Behaviour
 
@@ -238,19 +237,27 @@ Every turn goes through the scroll, so there is one source of truth for the angl
 **Unit (Vitest, pure modules):**
 - `path.ts`: points 34–36 at `x: 0` with zero `x` tangent, so every sample between them has `x` 0.
 - `anchors.ts`: the new anchor is in curve order and inside the ring span.
-- `ring.ts`: radius from card width keeps adjacent cards from overlapping at ±72°; the turn is
-  monotonic, starts on card 0, ends on card 4, and is flat across each dwell; `cardPose` opacity is 1 at
-  front, 0 at back, symmetric; `dwellProgress` round-trips through `turnAngle` to each card's
-  front; **parity** — a card's top-centre, transformed as CSS will and projected with the stage
-  `perspective`, lands within 0.5px of the drop end the mesh uses, at 900, 1280 and 1920 wide.
+- `ring/gate.ts`: width, reduced motion and `?signal=2d`; its width equals `gfx/gate.ts`'s.
+- `ring/geometry.ts`: radius clears adjacent cards; the pin and the linear turn; `settleTarget`
+  follows the direction of travel (R2); poses fade only the back two, symmetric; the look-down;
+  **parity** — every card's `cardMatrix` puts its top-centre exactly on `cardTop`, at full and
+  reduced scale, with and without the pointer tilt; `stageLayout` reserves the nav and scales to
+  fit (floor 0.7); the fan-out stays in depth order; `recede`, `liftOffset`, `frontness`,
+  `pointerTiltRoom`.
 
-**Browser** (headless Chrome over CDP, as in Phase 11; SwiftShader frames captured before tiers
-fall back): frames at each beat for the checkpoint; the meeting point on the line across the whole
-pin; Tab through all five cards and each lands at the front; arrow keys; reduced motion → rail;
-800px tall → rail; JS off → rail; fallback mid-pin lands on the rail.
+**Browser** (headless Chrome over CDP): frames at 1440×760, 1440×900 and 1920×1080; Tab through
+all five cards and each lands at the front; the dots; the snap. Failure paths (Task 14): a resize
+below the fit or below 900 wide mid-pin → rail, reader at the section's top; reduced motion on
+load → rail; a live switch to reduced motion → the ring drops (inside the pin onto the section's
+top, past it with the next section held in place); JS off → rail, split drawn, no nav;
+`?signal=2d` → rail; WebGL unavailable → ring on, no tube; an exception in `update()` → rail,
+place kept. The `--ground` panel at 1440×760 and 1920×1080, cards 0 and 3 in front: no line
+below the card, the ground the same either side of the panel's edges.
 
 **Budgets:** `npm run budget` — base JS within a few bytes of 63,156; enhanced chunk delta recorded
 (expected single-digit KB). LCP unaffected: the section is below the fold and mounts after load.
+After R4 (Task 14): base 63,860, enhanced 135,887, the ring's own chunk 4,518 (no Three.js, not
+initial).
 
 ## 8. Docs, in the commits that change behaviour
 

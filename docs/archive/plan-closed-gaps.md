@@ -358,3 +358,15 @@ card's dot. The 590px note was replaced by the R4 thresholds (540 / 705px).
   It is the spec's "the line continues", but it reads as a spine. Noel to judge.
 - **The flare jumps 0→1 as the drop pulse lands.** It reads as a flash while scrolling; never at
   rest, since it is gone by the dwell's centre and every front card rests the same.
+
+## Closed 2026-10-06
+
+- **CLOSED 2026-10-06 by Phase 12 Task 14 — done; base JS won back 155 B of the 689 (the rest is section 04's own gate and dynamic import, measured against the pre-R4 build). The final whole-branch review stays open (Phase Status row 12).** Original:
+- **Phase 12 Task 14 is not done** (its agent hit a usage limit before changing anything; brief at
+  `.superpowers/sdd/2026-10-03-phase-12-3d-ring/task-14-brief.md`, git-ignored). It owes: a
+  `--ground` panel behind the cards from the front point down, so the line's tip stops showing as
+  a red smudge below a shorter front card; the failure-path re-checks against `lib/ring/`; the
+  ring dropping on a live switch to reduced motion (no listener now the scene no longer drops it);
+  winning back base JS +689 (the ring's gate importing `gfx/gate.ts`); stale ring mentions in
+  `camera.ts` and the hoop-only `buildTubeFromCentres` in `tube-mesh.ts`; parent spec §9.04 and
+  the Phase 12 spec's §3/§7 brought to R4. Then the final whole-branch review, never yet run.
