@@ -370,3 +370,6 @@ card's dot. The 590px note was replaced by the R4 thresholds (540 / 705px).
   winning back base JS +689 (the ring's gate importing `gfx/gate.ts`); stale ring mentions in
   `camera.ts` and the hoop-only `buildTubeFromCentres` in `tube-mesh.ts`; parent spec §9.04 and
   the Phase 12 spec's §3/§7 brought to R4. Then the final whole-branch review, never yet run.
+- **CLOSED 2026-10-06 — the Phase 12 spec's §4–§6 rewritten to the ring as built (R4); §3's pointer to the hoop removed.** Original:
+- **The Phase 12 spec's §4–§6 still describe the WebGL hoop.** R4 replaced it; §3 points the
+  reader to Revision R4 rather than rewriting history. Rewrite or trim them if the spec is read again.

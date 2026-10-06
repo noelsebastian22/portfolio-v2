@@ -745,8 +745,6 @@ before then.
 - **`lib/ring/stage.ts` `update()` reads the rail's and the stage's rects every drawn frame**
   (moved from `ring-stage.ts`), after the previous frame's writes — one forced layout per drawn
   frame. Cache them in `measure()` if profiling shows a cost.
-- **The Phase 12 spec's §4–§6 still describe the WebGL hoop.** R4 replaced it; §3 points the
-  reader to Revision R4 rather than rewriting history. Rewrite or trim them if the spec is read again.
 
 ### Standing notes — limits and gotchas, not bugs
 

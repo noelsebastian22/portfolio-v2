@@ -156,7 +156,8 @@ snaps: modern, futuristic, elegant, minimalist, professional.
 ## 3. Structure
 
 As built after R4 (the hoop-era rows — `gfx/ring.ts`, `gfx/ring-mesh.ts`, `gfx/ring-stage.ts`, the
-`scene.ts` hook — are gone; §4–§6 below still describe the hoop where R4 does not override them).
+`scene.ts` hook — are gone). §3–§6 describe the ring as built; D1–D14 and R1–R3 above are the
+record of how it got there.
 
 | File | Job | Pure | Tested |
 |---|---|---|---|
@@ -170,67 +171,104 @@ As built after R4 (the hoop-era rows — `gfx/ring.ts`, `gfx/ring-mesh.ts`, `gfx
 
 ## 4. Behaviour
 
-**Mount.** After the tube is live, in an idle callback: if the viewport passes D12, build the
-hoop and drops, measure, wait for the ring to be off screen (D14), add `.ring--3d`, refresh the
-renderer's anchors (document height changed), and start drawing. A failure at any step leaves the
-rail as it was.
+As built after R4. The values are the shipped ones, from `ring/geometry.ts` and `ring/stage.ts`.
 
-**Layout in 3D.** The section head scrolls normally. The rail's height becomes `100vh + PIN`,
-where `PIN = LEAD + 4 × STEP + TAIL` (starting values: STEP 60vh, LEAD and TAIL 25vh each, so
-2.9 viewports). The stage inside it is `position: sticky; top: 0; height:
-100vh`, full bleed, with `perspective` = the camera rig's `distance` and `perspective-origin` at
-its centre. The hoop's front point sits at the split's `x` (read off the curve, as the rail does
-now) and at a fixed stage `y`; the 2D track element moves there so `[data-signal-split]` still
-measures the meeting point. `[data-signal-hold="end"]` sits at the same stage `y` at the rail's
-end.
+**Mount.** Section 04's script runs `canTurnRing` once the page has loaded and gone idle, and on a
+pass imports `ring/stage.ts`, its own chunk. The stage reads the rail cards' size. It returns
+without touching the page if reduced motion has come on meanwhile, or if `stageLayout` says the
+ring does not fit (D12, R3). Otherwise it waits for the section to be off screen (D14), adds
+`.ring--3d`, measures, and refreshes ScrollTrigger. A reader already past the section is moved
+by exactly what the section grew. The WebGL scene plays no part: a machine with no tube still
+gets the ring.
 
-**The beats** (the turn's progress is computed from `scrollY` and the measured rail top):
+**Layout in 3D.** The section head scrolls normally. The rail grows by the pin, `(0.15 + 4 × 0.4
++ 0.15)` viewports = 1.9, and the stage inside it is `position: sticky; top: 0`, one viewport tall
+(D6). `stageLayout` places the front point (the front card's top-centre) and the nav row as one
+block, centred, never closer than 75px to the top (it clears the 67px nav). A window too short
+for the full ring gets it scaled about the front point, down to 0.7; below that, the rail. The
+front point's `x` is the curve's own `x` at its height (`signalXAtPageY`), as the rail's track
+reads it. `perspective` is 1600px with its origin at the viewport's centre, and the ring is
+tilted 8° about `x` around the front point (D8). While the stage is stuck, a `--ground` panel
+from the front point to its bottom hides the line below the front card. `[data-signal-hold="end"]`
+sits at the rail's end, so the line holds centre for the whole pin (D7).
 
-1. **Arrival** — as the ring scrolls into view, before the pin. The hoop draws both ways round
-   from the front point and closes at the back; the drops fall; each card rises into place as its
-   drop lands. The clock is tip travel past the split, as in the rail, over 0.35 viewport heights
-   (the playhead sits in the viewport's lower half, so it passes the split before the stage
-   sticks); a reversed scroll undraws it. The pin's LEAD then holds the first card.
-2. **The turn.** `turnAngle(p)` steps 72° per card with dwells (D10). During each step a pulse
-   leaves the meeting point along the hoop towards the arriving card's drop; they meet as the card
-   reaches the front, the pulse runs down the drop, and the emission flares. The front card gets
-   `card--front` (title in `--signal`).
-3. **Departure.** The last card holds; the line continues down from the front point as the pin
-   releases.
+**The beats** (the turn is a function of `scrollY` and the measured rail top):
 
-Always on in 3D: the back half of the hoop dimmed by depth; the floor reflection; the emission
-glow; the pointer tilt (±3° about `x` only — a turn about `y` would take the front card off its
-pure translation — and upward only as far as the hoop's back still clears `STAGE_MARGIN_PX`, so
-none upward where the layout already sits on the margin; eased like the portrait's push, touch
-ignored). The front card's emission rests lit (1.25×, glow 0.75) by its frontness; the flare is a
-moment on top, peaking as the pulse lands and gone by the dwell's centre, so every card rests the same.
+1. **Arrival — the fan-out.** Driven by tip travel past the split over 0.35 viewport heights.
+   The five cards start stacked at the front point, 2px apart in depth so they sort by DOM
+   order. They spread onto the circle, turning outward only as they spread, and come up out of
+   the ground overlay, fully opaque by halfway. The counter and dots come up with them. A
+   reversed scroll gathers them back.
+2. **The turn.** Linear in scroll: 72° per step of 0.4 viewport heights, with no dwell. Each card
+   hangs by its top-centre from an invisible circle (radius 1.1 card widths) and faces outward by
+   half its angle (R1). The side cards recede under a `--ground` overlay, up to 0.6 (`recede`).
+   The back two fade between 72° and 110° and are inert below 0.3 opacity (D3). The front card is
+   lit by its `frontness`: a soft low shadow, its dot 1.25× with a `--shipped` glow, and its
+   title in `--signal` (`card--front`). The counter and the dots' `aria-current` follow
+   `nearestCard`.
+3. **The snap.** Once the scroll has been still for 110ms inside the pin, `settleTarget` picks a
+   card in the direction of travel (R2), and the scroll eases there over 0.3s (ease-out cubic). A
+   move under 8% of a step settles back to the nearest card. A reader leaving through the lead or
+   the tail is let go.
+4. **Departure.** The last card holds through the tail, and the line runs on down past the hold's
+   end as the pin releases.
 
-**Input.** Arrow keys move focus (unchanged). Focus on any card, by any key, scrolls to that card's
-dwell — "focus moves the ring". Dragging horizontally on the stage scrolls the page by the drag.
-Every turn goes through the scroll, so there is one source of truth for the angle.
+**Pointer float** (mouse and pen, over the stage). Pointer high adds up to 3° to the look-down
+and pointer low takes up to 3° away. The upward tilt is capped by `pointerTiltRoom`, so the side
+cards' tops still clear the 75px margin. The side card under the pointer lifts up to 18px toward
+the eye along its line of sight and sheds up to 35% of its overlay. The front card never lifts:
+its transform stays the identity, so its text stays crisp, and it answers with its hover-scroll
+instead. Both ease per drawn frame (0.18) while the pointer moves, then land exactly and stop
+drawing.
+
+**Input.** Every turn goes through the scroll, the one source of the angle. Arrow keys move focus,
+unchanged (`islands/ring.ts`). Focus on any card scrolls that card to the front over 0.45s. A dot
+turns the ring to its card, and focus stays on the dot. A mouse or pen drag on the stage, past
+6px, turns one step per scaled card width: dragging left brings the next card in from the right.
+On release the ring settles on the nearest card, and the click that ends the drag is swallowed.
+Native link and image drag are suppressed. Touch scrolls natively.
+
+**Drawing.** On change only. Scroll progress, the tip, the pointer, or an ease still under way
+marks the stage dirty, and it draws on the GSAP ticker after Lenis (`render-schedule.ts`). There
+is no free loop. The 110ms timer only detects that the scroll has stopped, so the snap is still
+driven by the scroll.
 
 ## 5. Failure and fallback
 
-- Any exception in the ring's mount or per-frame update: unmount the ring, remove `.ring--3d`,
-  refresh anchors. The tube and the portrait carry on (as Phase 11's portrait never hands back
-  the tube).
-- The tube's own fallback (watchdog, context loss, narrow window, reduced motion) unmounts the
-  ring first via `onHandBack`. If that happens mid-pin, the page height shrinks; the scroll is
-  re-anchored to the ring section's top so the reader lands on the rail.
-- A viewport resized below D12 unmounts the ring; resizing back does not remount it on that page
-  load (one-way, like the tube).
-- Three logs a failed shader compile without throwing: the mount renders once with
-  `renderer.debug.onShaderError` set, as the portrait does, and treats a compile error as a failure.
+- **The gate fails** (narrower than 900px, reduced motion, `?signal=2d`) or the chunk fails to
+  load: the rail. Nothing was touched.
+- **The ring does not fit**, even at 0.7: the rail.
+- **Any exception** in a draw, a measure, the observer or an event handler (`guarded`): the stage
+  unmounts. It removes `.ring--3d` and every inline property, restores the rail and refreshes the
+  anchors. A reader inside the ring, or within a viewport above it, lands on the section's top.
+  A reader past the pin is moved back by exactly what the section lost, so what they were
+  reading stays put.
+- **A resize below 900px wide or below the fit**, and **reduced motion turned on live**, unmount it
+  the same way. Both are one-way: the ring does not come back on that page load.
+- **The tube's own fallback** (WebGL unavailable, the watchdog, context loss) does not touch the
+  ring. Since R4 they are independent.
+- **JS off:** the rail, with the split drawn and no counter or dots (the nav is `display: none`
+  outside 3D).
 
 ## 6. Accessibility
 
-- Every card stays a real `<a>` in source order; nothing is reparented.
-- A focused card is always brought to the front, so the focus ring is never on a faded card.
-- Back cards have `pointer-events: none` below 0.3 opacity, so a faded card never steals a click
-  meant for the front one.
-- The hoop, drops and emissions are `aria-hidden` canvas pixels; the state is still in each card's
-  "shipped · live" text.
-- Colour contrast is unchanged: cards are opaque `--ground-lift` panels as in the rail.
+- Every card stays a real `<a>` in source order. Nothing is reparented: the cards are only
+  restyled and given a `matrix3d`.
+- A focused card is always brought to the front, so its focus ring is never on a faded card. The
+  exception is a reader who wheel-scrolls away from a focused card: the scroll turns the ring
+  without moving focus (Known Gaps).
+- The back cards take no pointer events below 0.3 opacity. The list's own box takes none either,
+  so it never covers the side cards' hover and click.
+- The dots are buttons in `<nav aria-label="Shipped sites">`. Each is labelled "Show <site>",
+  carries `aria-current` when its card is in front, and has a 24px target (WCAG 2.2). A focused
+  dot is shown in full even during the arrival fade. The counter is `aria-hidden`. Arrow keys do
+  not move between the dots (Known Gaps).
+- The track, drops and emissions are `aria-hidden`. A card's state is still in its "shipped · live"
+  text.
+- The front card keeps the rail's contrast: an opaque `--ground-lift` panel with no overlay. The
+  side cards are dimmed on purpose and are not meant to be read in place. Focus or a dot brings
+  any card to the front at full contrast.
+- Reduced motion gets the rail (D11).
 
 ## 7. Testing and verification
 
