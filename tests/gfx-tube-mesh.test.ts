@@ -4,7 +4,7 @@ import { DRAWN_FROM_T } from '../src/lib/signal/path';
 import { toPixelPoints } from '../src/lib/signal/anchors';
 import { cumulativeLengths } from '../src/lib/signal/playhead';
 import type { SignalGeometry } from '../src/lib/signal/tip';
-import { buildTube, buildTubeFromCentres, hexToRgb, pointAtLength, type TubeProfile } from '../src/lib/gfx/tube-mesh';
+import { buildTube, hexToRgb, pointAtLength, type TubeProfile } from '../src/lib/gfx/tube-mesh';
 
 /** The line as the SVG draws it on the real 1440 page, from the hero's bottom edge down. */
 function referenceGeometry(): SignalGeometry {
@@ -108,36 +108,5 @@ describe('hexToRgb', () => {
     expect(g).toBeCloseTo(0x4b / 255, 9);
     expect(b).toBeCloseTo(0x54 / 255, 9);
     expect(hexToRgb('  #ff4b54 ')).toEqual([r, g, b]);
-  });
-});
-
-describe('buildTubeFromCentres — the ring hoop is a tube in depth', () => {
-  it('builds rings round 3D centres, each vertex one radius from its centre', () => {
-    const centres: [number, number, number][] = [];
-    const lengths: number[] = [];
-    for (let i = 0; i <= 64; i++) {
-      const phi = (i / 64) * Math.PI * 2;
-      centres.push([300 * Math.sin(phi), 0, 300 * Math.cos(phi) - 300]);
-      lengths.push(i);
-    }
-    const tube = buildTubeFromCentres(centres, lengths, { radius: 4, radialSegments: 8 });
-    for (let ring = 0; ring <= 64; ring++) {
-      for (let j = 0; j < 8; j++) {
-        const v = (ring * 8 + j) * 3;
-        const d = Math.hypot(
-          tube.positions[v] - centres[ring][0],
-          tube.positions[v + 1] - centres[ring][1],
-          tube.positions[v + 2] - centres[ring][2],
-        );
-        expect(d).toBeCloseTo(4, 4);
-      }
-    }
-  });
-
-  it('is what buildTube builds for a flat line', () => {
-    const geometry = { points: [{ x: 0, y: 0 }, { x: 10, y: 20 }, { x: 15, y: 50 }], lengths: [0, 22.36, 52.77] };
-    const viaGeometry = buildTube(geometry, { radius: 4, radialSegments: 8 });
-    const viaCentres = buildTubeFromCentres(geometry.points.map((p) => [p.x, -p.y, 0]), geometry.lengths, { radius: 4, radialSegments: 8 });
-    expect(Array.from(viaCentres.positions)).toEqual(Array.from(viaGeometry.positions));
   });
 });
