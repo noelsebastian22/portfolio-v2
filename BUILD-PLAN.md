@@ -79,7 +79,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
 | 10 | WebGL — gate + signal tube | **complete — live 2026-10-03** | PR #1 (`0dfc45e`); tube over the 2D line, revision R1–R4. Section archived |
 | 11 | WebGL — particle portrait | **complete — live 2026-10-03** | PR #2 (`cf91bd9`); cream still, particles over it (R1). Section archived |
-| 12 | WebGL — 3D ring | **built — PR #3 open** | `feat/phase-12-ring`; a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Final review clean (2026-10-06); merge after Noel checks the look. Section archived |
+| 12 | WebGL — 3D ring | **complete — live 2026-10-06** | PR #3 (`e8f87cb`); a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Section archived |
 | 13 | Audio engine | not started | |
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
@@ -95,9 +95,9 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` Phase 12 branch **63,860 (78.0%)**, +704 vs live — the straight hold, `scrollToY`, `refreshScroll`, the island's 3D guards, the gutter's bottom (+27), and section 04's ring gate + dynamic import. Task 14 won back 155 of R4's +689 (the ring's gate stopped importing `gfx/gate.ts`; Vite's preload helper folded into `tip`) · live 63,156 (Phase 11) | 2026-10-06 |
-| Enhanced WebGL chunk gzip | ≤ 256,000 | Phase 12 branch **135,887 (53.1%)**, +119 vs live (the ring left WebGL in R4) · live 135,768 (Phase 11); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-06 |
-| Ring chunk gzip (lazy, after load, no Three.js) | — | Phase 12 branch **4,518** (`lib/ring/stage.ts`; not in any page's initial graph) | 2026-10-06 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **63,860 (78.0%)** (Phase 12), +704 vs Phase 11 — the straight hold, `scrollToY`, `refreshScroll`, the island's 3D guards, the gutter's bottom (+27), and section 04's ring gate + dynamic import. Task 14 won back 155 of R4's +689 (the ring's gate stopped importing `gfx/gate.ts`; Vite's preload helper folded into `tip`) | 2026-10-06 |
+| Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,887 (53.1%)** (Phase 12), +119 vs Phase 11 (the ring left WebGL in R4); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-06 |
+| Ring chunk gzip (lazy, after load, no Three.js) | — | live **4,518** (`lib/ring/stage.ts`; not in any page's initial graph) | 2026-10-06 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
@@ -129,6 +129,7 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Phase 11 · 2026-10-03 (live) | 63,156 | 77.1% | 246 |
 | Phase 12 · 2026-10-03 (branch) | 63,287 | 77.3% | 299 |
 | Phase 12 R4 · 2026-10-06 (branch) | 63,860 | 78.0% | 326 |
+| Phase 12 · 2026-10-06 (live) | 63,860 | 78.0% | 326 |
 
 ### How to measure
 

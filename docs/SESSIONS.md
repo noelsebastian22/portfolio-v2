@@ -9,6 +9,26 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-06 · claude-code · Phase 12 merged
+
+**Did**
+- Rewrote the Phase 12 spec's §4–§6 to the ring as built (R4); the Known Gap that owed it is archived.
+- Noel checked the ring on PR #3's preview and approved; merged as `e8f87cb`. Vercel's production
+  deploy succeeded; www.noel-sebastian.com serves the same script chunks as the local build, plus
+  the ring's nav, the hold-end marker and the lazy `stage` chunk (200).
+- Phase 12 marked complete in Phase Status; figures moved from branch to live (its section was
+  already archived).
+
+**Open**
+- Old `astro preview` processes from earlier sessions may still listen on :4321 and :4322.
+
+**Next**
+Start Phase 13 (audio engine): expand BUILD-PLAN's Phase 13 section into task-level steps from
+the parent spec, brainstorm first, then a Phase 13 design spec.
+
+**Numbers** — build green · 326 tests · JS on `/` 63,860 gzip (live; +704 vs Phase 11) · enhanced 135,887 · ring chunk 4,518
+
+
 ## 2026-10-06 · claude-code · Phase 12 Task 14, PR #3
 
 **Did**
@@ -60,29 +80,3 @@ Noel checks the ring on PR #3's Vercel preview; on approval, merge to `master`, 
 Run Task 14 from its brief (`.superpowers/sdd/2026-10-03-phase-12-3d-ring/task-14-brief.md`, git-ignored; ledger `progress.md` beside it), then the final whole-branch review, then a PR for Noel.
 
 **Numbers** — build green · 327 tests (+81) · JS on `/` 64,015 gzip (+859 vs live) · enhanced chunk 135,913 (+145) · ring chunk 4,420 (new, lazy)
-
-## 2026-10-03 · claude-code · Phase 11 merged
-
-**Did**
-- Phase 11 brainstormed, specced, planned and built (7 tasks + 6b, hybrid SDD); PR #2 merged (`cf91bd9`), live.
-- Hero still re-baked cream (`scripts/portrait.mjs`); ~40k particles sampled at runtime from it (`gfx/portrait-*.ts`, `particles.ts`), wired in `scene.ts`.
-- Phase 11 marked complete; its section moved verbatim to `docs/archive/plan-phases.md`.
-
-**Decided**
-- The portrait is cream, and the particles are sampled from it at runtime.
-- The still stays under the particle portrait (spec R1).
-
-**Didn't work**
-- Particles alone at 1:1 read as a skull — dark features sample to voids. Six offline splats (`gamma` 0.8–1.5, density floor 0–1, alpha floor 0–0.35) all failed: a count limit, not a constant.
-- Eroding the still where particles had only *started* leaving brought the skull back mid-scroll; it now erodes at halfway.
-- Restoring base JS to byte-identical via `manualChunks`: both variants grew it (63,240 / 63,334).
-- Claude-in-Chrome was disconnected and `agent-browser` is not installed; browser checks ran on headless Chrome + SwiftShader over CDP. SwiftShader cannot hold 40k points, so capture frames before the tiers fall back.
-
-**Open**
-- **The portrait's geometry listener is unguarded.**
-- **At 900–960px the particle portrait dissolves as it scrolls into view** (standing note, accepted).
-
-**Next**
-Start Phase 12 (3D ring) with superpowers:brainstorming — or the Stack rework brainstorm Noel asked for, if he prefers.
-
-**Numbers** — build green · 246 tests (+24) · JS on `/` live 63,156 gzip (+5) · enhanced chunk 135,768 gzip (53.0%, +3,492) · LCP preview median 2,264 vs `master` 2,274
