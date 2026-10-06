@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  RING_HOLD_END_POINT,
   RING_SPLIT_POINT,
   SECTION_SPANS,
   SPINE_FIRST_POINT,
@@ -530,17 +531,39 @@ describe('the ring split — control point RING_SPLIT_POINT, pinned to the rail 
   });
 });
 
+describe('the ring hold end — control point RING_HOLD_END_POINT', () => {
+  it('is an in-section anchor on the top edge of [data-signal-hold="end"], after the split', () => {
+    const i = IN_SECTION_ANCHORS.findIndex((a) => a.point === RING_HOLD_END_POINT);
+    expect(IN_SECTION_ANCHORS[i]).toEqual({
+      point: RING_HOLD_END_POINT,
+      selector: '[data-signal-hold="end"]',
+      edge: 'top',
+    });
+    const split = IN_SECTION_ANCHORS.findIndex((a) => a.point === RING_SPLIT_POINT);
+    expect(i).toBe(split + 1);
+  });
+
+  it('lives inside the ring span', () => {
+    const ring = SECTION_SPANS.find((s) => s.id === 'ring')!;
+    const t = controlPointT(RING_HOLD_END_POINT);
+    expect(t).toBeGreaterThan(ring.tStart);
+    expect(t).toBeLessThan(ring.tEnd);
+  });
+});
+
 describe('in-section anchors — the general mechanism', () => {
   const seams = resolveSeamPixels(TOPS, HEIGHT);
-  // Spine inside work (1850–3900), and the track inside the ring (3900–6400).
-  const MEASURED = [2300, 3700, 4600];
+  // Spine inside work (1850–3900), and the split and hold end both inside the ring (3900–6400).
+  const MEASURED = [2300, 3700, 4600, 5000];
   const anchors = resolveAnchorPixels(MEASURED, seams);
 
   it('lists the spine ends first and every anchor in curve order', () => {
+    // Phase 12: the ring's hold end joins the split as a fourth anchor.
     expect(IN_SECTION_ANCHORS.map((a) => a.point)).toEqual([
       SPINE_FIRST_POINT,
       SPINE_LAST_POINT,
       RING_SPLIT_POINT,
+      RING_HOLD_END_POINT,
     ]);
     for (let i = 1; i < ANCHOR_CURVE_Y.length; i++) {
       expect(ANCHOR_CURVE_Y[i]).toBeGreaterThan(ANCHOR_CURVE_Y[i - 1]);
@@ -573,8 +596,9 @@ describe('in-section anchors — the general mechanism', () => {
   });
 
   it('pins the split independently of the spine', () => {
-    const splitOnly = resolveAnchorPixels([null, null, 4600], seams);
-    expect(splitOnly).toEqual([null, null, 4600]);
+    // Phase 12: a fourth, unmeasured slot for the hold end — null, like the spine's here.
+    const splitOnly = resolveAnchorPixels([null, null, 4600, null], seams);
+    expect(splitOnly).toEqual([null, null, 4600, null]);
     expect(mapCurveY(ANCHOR_CURVE_Y[2], seams, splitOnly)).toBeCloseTo(4600, 9);
     // A knot's slope is set by its neighbours, so the split reaches no further than the
     // intervals either side of the ring's seams: hero and years map as with no anchors.
@@ -587,8 +611,9 @@ describe('in-section anchors — the general mechanism', () => {
   it('clamps the split into the ring section, never across a seam', () => {
     expect(resolveAnchorPixels([null, null, 3000], seams)[2]).toBe(TOPS[3]);
     expect(resolveAnchorPixels([null, null, 9000], seams)[2]).toBe(TOPS[4]);
-    // A spine end past its own seam does not drag the split with it.
-    expect(resolveAnchorPixels([2300, 4800, 4600], seams)).toEqual([2300, TOPS[3], 4600]);
+    // A spine end past its own seam does not drag the split with it. Phase 12: the trailing
+    // null is the unmeasured hold end.
+    expect(resolveAnchorPixels([2300, 4800, 4600], seams)).toEqual([2300, TOPS[3], 4600, null]);
   });
 
   it('puts the split on a drawn vertex when the curve is cut there', () => {

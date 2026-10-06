@@ -344,3 +344,32 @@ gaps at the bottom under a dated heading, with a line saying what closed them. N
 - **CLOSED 2026-10-03 — the scheduled run fired 2026-10-01 05:22 UTC (Actions run 36819490932, success; GitHub ran it ~5h late) and the live copy reads "a decade".** Original:
 - **Confirm the first scheduled rebuild.** `VERCEL_DEPLOY_HOOK` is set (closed gap archived);
   after the 1 Oct 00:00 UTC run, check it succeeded in Actions and the live copy says "a decade".
+
+### Closed 2026-10-04 — by Phase 12 R4 (the floating ring)
+
+Closed: R4 removed the hoop, drops and pulse, and the ring's 3D now rests the line on the front
+card's dot. The 590px note was replaced by the R4 thresholds (540 / 705px).
+
+- **3D needs a window at least 590px tall** (the 563px card at the 0.7 floor). Between that and
+  about 790px the ring renders scaled down to fit (R3): 0.95 at 1440×760, 0.86 at 1440×700.
+  Below 590px the rail stays. Why: the hoop's back, a drop and the tallest card must stack below
+  the nav in one viewport at the 17° look-down (R1).
+- **Mid-turn, the line runs past the hoop's front point, down the gap between cards to its tip.**
+  It is the spec's "the line continues", but it reads as a spine. Noel to judge.
+- **The flare jumps 0→1 as the drop pulse lands.** It reads as a flash while scrolling; never at
+  rest, since it is gone by the dwell's centre and every front card rests the same.
+
+## Closed 2026-10-06
+
+- **CLOSED 2026-10-06 by Phase 12 Task 14 — done; base JS won back 155 B of the 689 (the rest is section 04's own gate and dynamic import, measured against the pre-R4 build). The final whole-branch review stays open (Phase Status row 12).** Original:
+- **Phase 12 Task 14 is not done** (its agent hit a usage limit before changing anything; brief at
+  `.superpowers/sdd/2026-10-03-phase-12-3d-ring/task-14-brief.md`, git-ignored). It owes: a
+  `--ground` panel behind the cards from the front point down, so the line's tip stops showing as
+  a red smudge below a shorter front card; the failure-path re-checks against `lib/ring/`; the
+  ring dropping on a live switch to reduced motion (no listener now the scene no longer drops it);
+  winning back base JS +689 (the ring's gate importing `gfx/gate.ts`); stale ring mentions in
+  `camera.ts` and the hoop-only `buildTubeFromCentres` in `tube-mesh.ts`; parent spec §9.04 and
+  the Phase 12 spec's §3/§7 brought to R4. Then the final whole-branch review, never yet run.
+- **CLOSED 2026-10-06 — the Phase 12 spec's §4–§6 rewritten to the ring as built (R4); §3's pointer to the hoop removed.** Original:
+- **The Phase 12 spec's §4–§6 still describe the WebGL hoop.** R4 replaced it; §3 points the
+  reader to Revision R4 rather than rewriting history. Rewrite or trim them if the spec is read again.

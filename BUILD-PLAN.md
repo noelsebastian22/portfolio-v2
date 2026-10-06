@@ -4,7 +4,6 @@
 > or `superpowers:executing-plans` to implement a phase task-by-task. Steps use checkbox
 > (`- [ ]`) syntax. **Phases 10–15 carry phase-level detail only** — expand the phase you are
 > starting into task-level steps with `superpowers:writing-plans` before implementing it.
-> starting into task-level steps with `superpowers:writing-plans` before implementing it.
 
 **Goal:** Rebuild noel-sebastian.com as "Signal Path" — a dark, animation-led portfolio
 built around one continuous signal line that is simultaneously a marble diagram of Noel's
@@ -80,28 +79,29 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 9 | SHIPPABLE — 2D site complete | **complete — live 2026-09-29** | `master` at `c2b0e46`, live on www.noel-sebastian.com; old site tagged `v1-letterpress`. Figures below |
 | 10 | WebGL — gate + signal tube | **complete — live 2026-10-03** | PR #1 (`0dfc45e`); tube over the 2D line, revision R1–R4. Section archived |
 | 11 | WebGL — particle portrait | **complete — live 2026-10-03** | PR #2 (`cf91bd9`); cream still, particles over it (R1). Section archived |
-| 12 | WebGL — 3D ring | not started | |
+| 12 | WebGL — 3D ring | **built — PR #3 open** | `feat/phase-12-ring`; a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Final review clean (2026-10-06); merge after Noel checks the look. Section archived |
 | 13 | Audio engine | not started | |
 | 14 | `/websites` restyle | not started | |
 | 15 | Preloader + final polish | not started | |
 
-### Current figures — 2026-10-03
+### Current figures — 2026-10-06
 
 Replace values here when a session re-measures; do not add a new "Measured after" section.
 
 | Global Constraints budget | Target | Latest | Measured |
 |---|---|---|---|
-| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 11 branch): 98 / 98 / 99, `master` interleaved 98 / 98 / 98 · production ×1: 97 (2026-09-29) | 2026-10-03 |
-| LCP | ≤ 2.0s | preview, interleaved ×3 (2026-10-03): Phase 11 branch median **2,264ms** (2,267 / 2,264 / 2,189), `master` 2,274 (2,274 / 2,289 / 2,272) — no regression; the cream still is the LCP element and nothing changes before `load` — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-03 |
+| Lighthouse mobile Performance | ≥ 95 | preview ×3 (Phase 12 branch): 98 / 98 / 98, `master` interleaved 98 / 98 / 99 · production ×1: 97 (2026-09-29) | 2026-10-06 |
+| LCP | ≤ 2.0s | preview, interleaved ×3 (2026-10-06): Phase 12 branch median **2,265ms** (2,268 / 2,265 / 2,265), `master` 2,264 (2,275 / 2,264 / 2,188) — no regression; the ring's chunk loads after `load` and idle, and the cream still is the LCP element — see Known Gaps → Performance · production ×1: 2,165ms (2026-09-29) | 2026-10-06 |
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **63,156 (77.1%)** (Phase 11; +5 vs Phase 10 is Rollup exporting `playheadPageY` to the scene chunk) | 2026-10-03 |
-| Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,768 (53.0%)** (Phase 11, +3,492 for the portrait); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-03 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` Phase 12 branch **63,860 (78.0%)**, +704 vs live — the straight hold, `scrollToY`, `refreshScroll`, the island's 3D guards, the gutter's bottom (+27), and section 04's ring gate + dynamic import. Task 14 won back 155 of R4's +689 (the ring's gate stopped importing `gfx/gate.ts`; Vite's preload helper folded into `tip`) · live 63,156 (Phase 11) | 2026-10-06 |
+| Enhanced WebGL chunk gzip | ≤ 256,000 | Phase 12 branch **135,887 (53.1%)**, +119 vs live (the ring left WebGL in R4) · live 135,768 (Phase 11); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-06 |
+| Ring chunk gzip (lazy, after load, no Three.js) | — | Phase 12 branch **4,518** (`lib/ring/stage.ts`; not in any page's initial graph) | 2026-10-06 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 246 | 2026-10-03 |
+| Tests | — | 326 | 2026-10-06 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -127,6 +127,8 @@ the Phase 9 LCP diagnosis, are in `docs/archive/plan-phases.md`.
 | Phase 10 · 2026-10-03 (live, after the final-review fixes) | 63,151 | 77.1% | 222 |
 | Phase 11 · 2026-10-03 (branch) | 63,157 | 77.1% | 246 |
 | Phase 11 · 2026-10-03 (live) | 63,156 | 77.1% | 246 |
+| Phase 12 · 2026-10-03 (branch) | 63,287 | 77.3% | 299 |
+| Phase 12 R4 · 2026-10-06 (branch) | 63,860 | 78.0% | 326 |
 
 ### How to measure
 
@@ -156,7 +158,10 @@ src/
       scene.ts           Three.js renderer lifecycle              (phase 10)
       render-schedule.ts draws in the scroll tick, only when dirty (phase 10)
       particles.ts       portrait point cloud                      (phase 11)
-      ring.ts            3D ring carousel                          (phase 12)
+    ring/                the 3D ring — CSS 3D, no WebGL, own chunk (phase 12, R4)
+      gate.ts            its own gate (in section 04's script)
+      geometry.ts        circle, turn, fit, poses — pure, tested
+      stage.ts           the DOM side: swap, cards, input, drop
   islands/               one vanilla TS entry per interactive section
   components/            .astro section components
   data/
@@ -200,19 +205,9 @@ For the interfaces those phases produced, the code is the source of truth (`src/
 
 ---
 
-# PHASES 12–15 — Phase-Level Detail
+# PHASES 13–15 — Phase-Level Detail
 
 Expand the phase you are about to start into task-level steps before implementing it.
-
-## PHASE 12 — WebGL: 3D Ring
-
-**Deliverable:** the ring carousel — cards on a circle via `rotateY(θ) translateZ(radius)`,
-drag to spin, with the signal splitting into one branch per card.
-
-**Files:** `src/lib/gfx/ring.ts`, `src/islands/ring.ts` (extended)
-
-**Verification:** arrow keys rotate the ring and move focus together. Every card remains a
-real link. The Phase 7 rail still renders whenever the gate fails.
 
 ## PHASE 13 — Audio Engine
 
@@ -574,6 +569,64 @@ decision was made; this section records *what it is*.
   to the line (`stillErosion`, `portrait-dissolve.ts`). Chosen over more, smaller particles (≈3×
   the GPU work, still grainy) and blue-noise placement (a sampler rewrite). Phase 11 design R1,
   D10 revised, D12.
+- **2026-10-03** — **The 3D ring pins with `position: sticky`, not a GSAP pin.** In 3D the rail
+  grows by the pin length and its stage sticks for that distance. A GSAP pin wraps the section in a
+  spacer and fixes it to the viewport; sticky keeps the content in place, scrolls natively under
+  Lenis and needs no ScrollTrigger. Phase 12 design D6.
+- **2026-10-03** — **The line holds straight down the centre through the ring, in 2D too.** Control
+  points 34–36 sit at `x: 0` with zero `x` tangents, and point 36 is pinned to
+  `[data-signal-hold="end"]` (`RING_HOLD_END_POINT`), so 34→36 is exactly vertical. While pinned,
+  the hoop's front point is fixed in the viewport and stays on the line; without the hold the line
+  would slide off it mid-turn. Zero tangents rather than new waypoints keep the curve's shape, and
+  the rail gains a straight hold behind its cards. Phase 12 design D7.
+- **2026-10-03** — **Reduced motion gets the rail, not a static 3D ring.** The enhanced layer
+  never mounts under reduced motion, and a static ring would need a second, non-WebGL 3D path.
+  Supersedes the "static ring" offered in conversation. Phase 12 design D11.
+- **2026-10-03** — **Turning 3D on waits until the ring is off screen.** `.ring--3d` changes the
+  document's height: off screen it shifts nothing visible (no CLS), on screen it would jump the
+  reader. A reader already past the ring is held in place by moving the scroll by exactly what the
+  section gained — or, when the ring drops, lost — because Chrome's scroll anchoring did not hold
+  them. Phase 12 design D14.
+- **2026-10-03 (controller)** — **The ring's settle follows the direction of travel, not the
+  nearest card.** At 1280×800 a wheel notch (100px) is under half a step (480px), so settling to
+  the nearest card pulled a notch-by-notch reader back to the card they had left: six single
+  notches from card 1 all came back to it. That broke D1 (a reader who only scrolls sees all five).
+  A move under 8% of a step settles to the nearest card; a larger one settles on the next card in
+  the direction moved; leaving through the lead or the tail is never settled. `settleTarget` in
+  `ring.ts`, unit-tested. Phase 12 design R2.
+
+- **2026-10-03 (Noel)** — **The ring scales to fit a short window, down to 0.7, rather than
+  giving up.** At 1440×760, the laptop case, the full-size ring did not fit and the reader got
+  the rail. `stageLayout` now returns the largest uniform scale that fits, about the front point,
+  for the hoop, drops, cards and floor. That is 1 where the full ring fits, so tall windows are
+  unchanged. The floor is `MIN_RING_SCALE` 0.7: below it the card text gets too small, so the rail
+  stays. The line's thickness never scales. 3D's minimum height drops from about 790px to 590px
+  (563px card). Enhanced chunk +358 B gzip (141,079 → 141,437). Phase 12 design R3.
+- **2026-10-03 (Noel)** — **Sections 04–06 use the full content box; only 03 Selected Work keeps
+  the signal's gutter.** The gutter exists for the line's spine, which runs down the left margin
+  in 03 only. Below it the line runs through the centre and weaves behind content, so the gutter
+  only pushed 04 Ring, 05 Stack and 06 Contact right of 01–02's left edge for nothing. The dim
+  rule's gutter region now ends at 03's bottom (the `ring` seam), or a point of the 2D line in
+  the old gutter's `x` below 03 would count as clear and draw at full strength under text. The
+  cost is conservative: on a screen wide enough that the centring margin alone clears the curve
+  (2560), a run in 04 that sits in that empty margin, and was lit, is now dim. The tube is full
+  strength everywhere (Phase 10 R3) and is unaffected. Base path +27 B gzip. Spec §7.3 updated.
+
+- **2026-10-03 (Noel)** — **The ring is a floating CSS 3D loop; the hoop and all WebGL go (Phase 12
+  R4).** On his own screen the hoop, drops, glow, floor and pulse read as amateur and the turn
+  lagged (a 35% dwell per card, 0.6-viewport steps, a slow settle). Now: five cards on an invisible
+  circle, side cards receding under a dark overlay; the line lands on the front card's lit yellow
+  dot (no drop), and a `--ground` panel hides it below the dot while pinned; the turn tracks the
+  scroll linearly with 0.4-viewport steps and snaps in the direction of travel after 110ms over
+  0.3s (R2's rule); the cards fan out from a stack on arrival; the ring floats toward the pointer
+  (±3°, capped so the side cards' tops clear the nav) and a side card lifts under it; a mono
+  counter and five "Show <site>" dot buttons sit under the front card. Pure CSS 3D in its own lazy
+  chunk (`src/lib/ring/`) with its own gate — ≥ 900px wide, no reduced motion (a live switch drops
+  it), not `?signal=2d`, and fit (R3) — not WebGL's, so machines that fail the WebGL gate still get
+  it. `ring-mesh.ts` and the scene's ring wiring are deleted; `scene.ts` is back to its Phase 11
+  text. Tilt 8°, perspective 1600px. Enhanced chunk −5,550 (135,887); ring chunk 4,518; base
+  +573 vs Phase 12's first build (63,860). R1's checkpoint values and the hoop-capped pointer tilt
+  are superseded (archived in `docs/archive/plan-phases.md`). Phase 12 design R4.
 
 ## Known Gaps
 
@@ -679,6 +732,20 @@ before then.
   future edit that could would stop the 2D reveal. The fix is a local try/catch that calls
   `dropPortrait()` — not `whileLive`, which would take the tube down with it.
 
+### Parked by Phase 12 — 2026-10-03 (not blocking merge)
+
+- **3D needs a window at least 540px tall; full size from 705px** (563px card, nav reserved). In
+  between the ring renders scaled down to fit (R3), floor 0.7. Why: the side cards' tops, the
+  tallest card and the counter/dots row must fit below the nav in one viewport. The row is as
+  wide as the front card, counter left and dots right, so the middle stays clear under the dot.
+- **Wheel-scrolling away from a keyboard-focused card leaves its focus ring on a turned-aside
+  card.** Inherent to scroll-as-transport: the scroll turns the ring and does not move focus.
+- **The dots are clickable during the arrival fade, and arrow keys do not move between them.**
+  The fade happens below the fold; the dots are plain Tab-order buttons by design.
+- **`lib/ring/stage.ts` `update()` reads the rail's and the stage's rects every drawn frame**
+  (moved from `ring-stage.ts`), after the previous frame's writes — one forced layout per drawn
+  frame. Cache them in `measure()` if profiling shows a cost.
+
 ### Standing notes — limits and gotchas, not bugs
 
 - **At 900–960px the particle portrait dissolves as it scrolls into view.** The hero stacks below
@@ -708,10 +775,12 @@ before then.
   the 2026-09-20 note recommending `--virtual-time-budget=5000` for screenshots: it is fine for
   static paint, wrong for anything animated. Motion must be verified over real-time CDP. Every
   Phase 4 check except the anchor trace was rAF-independent, so they stand.
-- **The content-box assumption is load-bearing.** `gutter.ts`'s lit/dim bands assume every section
-  from 03 down lays out as a centred `--container` with `--s-5` padding plus
-  `padding-left: var(--signal-gutter)`. A section built differently gets a line lit under its
-  text. Phases 7–8 build to it, or extend the probe.
+- **The content-box assumption is load-bearing.** Only 03 Selected Work reserves the gutter: it
+  lays out as a centred `--container` with `--s-5` padding plus `padding-left:
+  var(--signal-gutter)`, and `gutter.ts`'s lit/dim bands assume exactly that box. The probe's
+  region runs from 03's top to the next section's top (`GutterRegion.bottom`, measured in
+  `svg-signal.ts`), so the line is dim everywhere in 04–06, which use the plain content box like
+  01–02. A section that wants the gutter back must reserve it in CSS *and* extend the region.
 - **`global.css`'s reduced-motion rule turns inline style writes into 1ms transitions**, which
   stalled in headless Chrome. The branch and each scrubbed diagram part opt out. Any later island
   that writes positions per frame needs the same opt-out; worth one shared class in the Phase 9 pass.

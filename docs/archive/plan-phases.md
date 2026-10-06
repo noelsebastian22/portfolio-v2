@@ -1272,3 +1272,46 @@ particles are sampled at runtime from the still (design D8).
 **Verification:** holds 60fps on a mid-range laptop. Falls back to the Phase 5 duotone still
 whenever the gate fails. Particle count scales down on weaker hardware rather than dropping
 frames.
+
+## Archive pass 2026-10-03 — Phase 12
+
+Phase Status note as it stood before the pass:
+
+| 12 | WebGL — 3D ring | not started | |
+
+The phase was built to its design and plan, not to the phase-level sketch below:
+`docs/superpowers/specs/2026-10-03-phase-12-3d-ring-design.md` (revisions R1–R2) ·
+`docs/superpowers/plans/2026-10-03-phase-12-3d-ring.md`.
+
+## PHASE 12 — WebGL: 3D Ring
+
+**Deliverable:** the ring carousel — cards on a circle via `rotateY(θ) translateZ(radius)`,
+drag to spin, with the signal splitting into one branch per card.
+
+**Files:** `src/lib/gfx/ring.ts`, `src/islands/ring.ts` (extended)
+
+**Verification:** arrow keys rotate the ring and move focus together. Every card remains a
+real link. The Phase 7 rail still renders whenever the gate fails.
+
+## Archive pass 2026-10-06 — Phase 12, after R4
+
+Superseded by R4 (the floating CSS 3D ring, 2026-10-03): the Phase 12 sketch above (cards via
+`src/lib/gfx/ring.ts`, falling back "whenever the gate fails") — the ring is now `src/lib/ring/`
+with its own gate, independent of WebGL's.
+
+Decisions moved verbatim out of `BUILD-PLAN.md` → Decisions: the hoop-era values R4 superseded.
+
+- **2026-10-03 (controller, for Noel's review)** — **The ring's checkpoint values: a 17° look-down,
+  a 75px stage margin, cards turned half-way, and a fit that excludes the floor.** At 1280×800 the
+  hoop read as a flat bar: it sat above eye level, and perspective cancelled the 10° tilt. 22°
+  then put the hoop's back under the 67px nav at 800 tall; 17° is the steepest whole degree that
+  clears it with `STAGE_MARGIN_PX` 75 (nav + 8). `CARD_FACING_SHARE` 0.5 turns each card half its
+  angle round the ring, so side cards at ±72° read as cards, not ~29px slivers. The floor
+  reflection may run off the bottom. Cost: 3D needs a window about 790px tall for the 560px card
+  (771px for 540px), so many 13–14" laptops get the rail (Known Gaps). Phase 12 design R1.
+- **2026-10-03 (controller)** — **The ring's pointer tilt is capped by the room above the hoop,
+  not reserved in the layout.** `pointerTiltRoom()` lets the pointer tilt the ring up only as far
+  as the hoop's back still clears the nav plus `STAGE_MARGIN_PX`. On a window where the layout
+  already sits on the margin, the pointer can only tilt the ring down. Reserving the full
+  17° + 3° in `stageLayout` raised the 3D minimum height from 790 to 835px and dropped 1280×800 to
+  the rail. Phase 12 design §4.

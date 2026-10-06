@@ -17,7 +17,9 @@
  * Layout is against the signal's gutter (spec §7.3): a centred `--container` padded by
  * `--s-5`, plus `padding-left: var(--signal-gutter)`. That is exactly the content box the
  * renderer's gutter probe assumes (`.signal-gutter-probe` in global.css), so the line's lit
- * run and the content agree on where content starts. Change one, change both.
+ * run and the content agree on where content starts. Change one, change both. This is the
+ * only section that reserves the gutter — it is the spine's margin — so the probe's region
+ * runs from this section's top to the next one's (gutter.ts); 04–06 use the plain box.
  *
  * The first card carries `data-signal-spine="start"` and the last `"end"`: the renderer
  * pins the curve's spine to the first card's top and the last card's bottom (anchors.ts),

@@ -32,7 +32,7 @@
  * `import()`, never in a page's own closure. Separately, it finds the enhanced chunk — every
  * chunk no page loads up front that a late (dynamic-import) entry point reaches on its way to
  * Three.js — sums its gzip size, reports it, and gates it at 256,000 bytes (250 KB gzip,
- * spec §12).
+ * spec §12). Every other late chunk (the Phase 12 ring's) is summed and reported, not gated.
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -175,6 +175,12 @@ function main() {
   const enhancedTotal = [...enhanced.values()].reduce((sum, file) => sum + file.gzip, 0);
   const pct = ((enhancedTotal / ENHANCED_BUDGET_BYTES) * 100).toFixed(1);
   console.log(`\nEnhanced WebGL chunk (after interaction): ${enhancedTotal} gzip, ${pct}% of ${ENHANCED_BUDGET_BYTES}.`);
+  // Phase 12 (revision R4): section 04's ring is CSS 3D in its own late chunk, reached by a
+  // dynamic import and never Three.js. Reported, not gated: every late chunk outside the
+  // enhanced set. A chunk both load (render-schedule) is counted once, in the enhanced chunk.
+  const otherLate = lateEntries.filter((urlPath) => !enhanced.has(urlPath));
+  const otherLateTotal = otherLate.reduce((sum, urlPath) => sum + gzipSync(readDistFile(urlPath)).length, 0);
+  console.log(`Other late chunks, no Three.js (after load): ${otherLateTotal} gzip — ${otherLate.join(', ') || 'none'}.`);
   const enhancedOverBudget = enhancedTotal > ENHANCED_BUDGET_BYTES;
   if (enhancedOverBudget) console.error(`Enhanced chunk exceeds ${ENHANCED_BUDGET_BYTES} bytes.`);
   if (pagesLoadingThree.length > 0 || enhancedOverBudget) process.exit(1);

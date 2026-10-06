@@ -4,10 +4,15 @@
  * left of the content box's left edge — the gutter's right edge, or on a screen wider than
  * the container, the empty centring margin plus the gutter.
  *
+ * The gutter is section 03's alone — the margin its spine runs down — so it has a top and a
+ * bottom: 03's top and the top of the section after it. Sections 04–06 use the plain
+ * content box, so a point in the old gutter's x but below that bottom sits under text.
+ *
  * Text paints over the line, and `--type` on full-strength `--signal` is ~2.9:1. Inside the
  * gutter nothing sits on the line; outside it something might, so it drops to
- * `--signal-dim-alpha`. One rule covers sections 01–02 (no gutter at all), the sweep that
- * opens section 03 and crosses its heading, and phone width, where the gutter is zero.
+ * `--signal-dim-alpha`. One rule covers sections 01–02 and 04–06 (outside the gutter's top
+ * and bottom), the sweep that opens section 03 and crosses its heading, and phone width,
+ * where the gutter is zero.
  *
  * Pure module: the renderer measures the gutter and hands in the same pixel points it draws.
  */
@@ -18,8 +23,13 @@ import type { PixelPoint } from './anchors';
 export type Band = readonly [top: number, bottom: number];
 
 export interface GutterRegion {
-  /** Pixel `y` where the gutter starts — the top of the first section that reserves it. */
+  /** Pixel `y` where the gutter starts — the top of the section that reserves it. */
   top: number;
+  /**
+   * Pixel `y` where the gutter ends — the top of the section after the one that reserves
+   * it, or the box height if there is none.
+   */
+  bottom: number;
   /**
    * Pixel `x` where content begins: the centring margin, plus the container's padding,
    * plus `--signal-gutter`. At phone width the gutter is 0 and this is the page padding.
@@ -30,8 +40,8 @@ export interface GutterRegion {
 }
 
 /**
- * Contiguous `y` ranges where the drawn line clears the content: at or below `region.top`,
- * and with `x + reach` at or left of `region.contentLeft`.
+ * Contiguous `y` ranges where the drawn line clears the content: between `region.top` and
+ * `region.bottom`, and with `x + reach` at or left of `region.contentLeft`.
  *
  * There is no special case for phone width. There the content edge is the page padding
  * (24px) and the curve never comes within 13% of the width of the left edge, so no point
@@ -47,15 +57,20 @@ export function gutterBands(points: readonly PixelPoint[], region: GutterRegion)
   let bandTop: number | null = null;
   const clearRight = region.contentLeft - region.reach;
 
-  const isInside = (p: PixelPoint): boolean => p.y >= region.top && p.x <= clearRight;
+  const isInside = (p: PixelPoint): boolean =>
+    p.y >= region.top && p.y <= region.bottom && p.x <= clearRight;
 
-  /** Where segment a→b crosses the gutter's boundary (its right edge or its top). */
+  /**
+   * Where segment a→b crosses the gutter's boundary — its right edge, its top or its bottom.
+   * The gutter is a band of `y` cut by a line of `x`, so the crossing is where the chord
+   * crosses that line (or, if it does not, the outside end's `y`), clamped into the band.
+   * The clamp also lands a band clipped at the top or bottom exactly on that edge.
+   */
   const crossingY = (a: PixelPoint, b: PixelPoint): number => {
-    const crossesTop = (a.y < region.top) !== (b.y < region.top);
-    if (crossesTop) return region.top;
-    const dx = b.x - a.x;
-    if (dx === 0) return b.y;
-    return a.y + ((clearRight - a.x) / dx) * (b.y - a.y);
+    const crossesRight = (a.x <= clearRight) !== (b.x <= clearRight);
+    const outside = isInside(a) ? b : a;
+    const y = crossesRight ? a.y + ((clearRight - a.x) / (b.x - a.x)) * (b.y - a.y) : outside.y;
+    return Math.min(region.bottom, Math.max(region.top, y));
   };
 
   for (let i = 0; i < points.length; i++) {

@@ -114,3 +114,12 @@ export function onPageProgress(fn: (t: number) => void): () => void {
 
   return () => trigger.kill();
 }
+
+/**
+ * Re-measures every trigger after the document changed height without a resize — the 3D
+ * ring adding or removing its pin (Phase 12). ScrollTrigger only refreshes on its own events.
+ */
+export function refreshScroll(): void {
+  ensurePluginRegistered();
+  ScrollTrigger.refresh();
+}

@@ -2,10 +2,10 @@
 /**
  * Section 04 — the shipped sites, as the 2D rail. Spec §9.04.
  *
- * This is the ring's fallback, built first: the presentation on phones and wherever the
- * WebGL gate fails (Phase 12 builds the 3D ring over the same cards). Same cards, same
- * content, same links in both, so everything here is server-rendered and the island only
- * adds behaviour.
+ * This is the ring's fallback, built first: the presentation on phones, short windows, under
+ * reduced motion and with `?signal=2d` (Phase 12 builds the 3D ring over the same cards). Same
+ * cards, same content, same links in both, so everything here is server-rendered and the island
+ * only adds behaviour.
  *
  * **The split is a track.** §6 has the line split into five at the ring, one branch per
  * card. In 2D that is a horizontal track above the rail, the signal's own weight and
@@ -22,10 +22,28 @@
  * The track and drops are drawn in full in the HTML. With JS off, or under reduced motion,
  * the split is complete; the island moves it back to undrawn and draws it off the tip.
  *
- * Layout is the content box every section from 03 down shares, because the renderer's
- * gutter probe assumes it (see SelectedWork.astro). The rail alone bleeds past the box's
- * right edge to the viewport's, so the next card visibly runs off the page. Never left:
- * the gutter is the line's.
+ * **The 3D mode** (Phase 12, revision R4) is these same cards, restyled, in CSS 3D — no WebGL.
+ * The script below loads `lib/ring/stage.ts`, in its own chunk, after load and idle when its gate
+ * passes (`lib/ring/gate.ts`: at least 900px wide, no reduced motion, not `?signal=2d`; whether
+ * WebGL is on does not matter). The stage adds `.ring--3d` when the ring fits the window, scaled
+ * down if need be, and only while the section is off screen, because the class changes the
+ * page's height. The rail grows by the pin length and the scroller becomes a sticky, one-viewport
+ * stage in which each card gets a `matrix3d` from `lib/ring/geometry.ts`, on an invisible circle.
+ * There is no hoop and no drop: the 2D track and drops are hidden, and the line lands on the
+ * front card's emission, lit while it is in front. Below that dot a panel of the ground hides the
+ * line while the stage is pinned. The counter and dots under the front card are rendered here,
+ * shown only in 3D. The meeting point is `[data-signal-split]` in both modes. In the rail it is
+ * the visible track. In 3D the track is hidden and moved to the front card's top-centre, kept in
+ * the rail rather than the sticky stage, so it measures where the curve should pass and not
+ * where the stage is stuck. `[data-signal-hold="end"]` ends the line's straight hold below the
+ * split: the cards' bottom edge in the rail, and the same stage height at the pin's end in 3D, so
+ * the line runs straight down the centre for the whole pin. Removing the class restores the rail
+ * exactly: a resize below the fit or 900px, reduced motion turning on, or any failure.
+ *
+ * Layout is the plain content box, as 01–02 use: no signal gutter, because below 03 the line
+ * runs through the centre rather than down a spine in the margin (Decisions, 2026-10-03).
+ * The rail alone bleeds past the box's right edge to the viewport's, so the next card
+ * visibly runs off the page. Never left: the cards start where the heading does.
  */
 import { ringProjects } from '../data/content';
 import captures from '../data/ring-captures.json';
@@ -54,6 +72,9 @@ const SCROLL_PX_PER_S = 400;
 const RETURN_PX_PER_S = 1600;
 
 const seconds = (value: number) => `${value.toFixed(2)}s`;
+
+/** The counter's two digits: `01 / 05`. */
+const pad = (value: number) => String(value).padStart(2, '0');
 
 const cards = ringProjects.map((project) => {
   const capture = manifest[project.slug];
@@ -175,7 +196,25 @@ const srcset = (urls: Record<string, string>) =>
             </li>
           ))}
         </ul>
+
+        {/* The 3D ring's counter and dots (revision R4), under the front card. Outside the
+            card list's 3D context, so they never depth-sort with the cards. Shown only in 3D:
+            in the rail every card is already in reach, and the buttons would do nothing. */}
+        <nav class="ring__nav" aria-label="Shipped sites" data-ring-nav>
+          <p class="ring__count" aria-hidden="true"><span data-ring-count>01</span> / {pad(cards.length)}</p>
+          <ul class="ring__dots" role="list">
+            {cards.map((card, i) => (
+              <li>
+                <button type="button" class="ring__dot" data-ring-dot={i} aria-label={`Show ${card.title}`}></button>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
+
+      {/* Where the line's hold below the split ends (anchors.ts, RING_HOLD_END_POINT): the
+          cards' bottom edge in the rail, the pin's end in 3D. */}
+      <span class="ring__hold-end" data-signal-hold="end" aria-hidden="true"></span>
     </div>
   </div>
 </section>
@@ -190,12 +229,12 @@ const srcset = (urls: Record<string, string>) =>
     padding-block: var(--section-y);
   }
 
-  /* The content box the signal's gutter probe assumes — see SelectedWork.astro. */
+  /* The plain content box, as 01–02 use: no signal gutter. Only 03's spine runs down the
+     margin, so only SelectedWork.astro reserves it (and the dim rule's gutter ends there). */
   .ring__inner {
     max-width: var(--container);
     margin-inline: auto;
     padding-inline: var(--s-5);
-    padding-left: calc(var(--s-5) + var(--signal-gutter));
   }
 
   /* ── Section head — the house voice, as SelectedWork sets it ────────────────────── */
@@ -307,6 +346,12 @@ const srcset = (urls: Record<string, string>) =>
     /* So the last card can clear the viewport's edge rather than sit on it. */
     padding: 0 var(--s-5) 0 0;
     list-style: none;
+  }
+
+  /* Zero-height: only its top edge is read, as the curve's anchor. */
+  .ring__hold-end {
+    display: block;
+    height: 0;
   }
 
   /* ── A card ─────────────────────────────────────────────────────────────────────── */
@@ -495,10 +540,277 @@ const srcset = (urls: Record<string, string>) =>
     clip-path: inset(50%);
     white-space: nowrap;
   }
+
+  /* ── The 3D ring (Phase 12) — on only while lib/ring/stage.ts has mounted it ─────── */
+
+  /* The rail grows by the pin; the stage sticks for that distance (design D6). */
+  .ring--3d .ring__rail {
+    position: relative;
+    height: calc(100vh + var(--ring-pin, 0px));
+  }
+
+  /* The meeting point and the hold's end stay in the rail, never in the sticky stage: the
+     renderer measures them with getBoundingClientRect, and a stuck element measures where it
+     is stuck, not where the curve should pass. */
+  .ring--3d .ring__track {
+    position: absolute;
+    top: var(--ring-front-y, 0px);
+    left: 0;
+    right: 0;
+    margin-top: calc(var(--signal-stroke) / -2);
+    visibility: hidden;
+  }
+
+  /* The 3D swap changes these two boxes, and stage.ts reads the section's height in the
+     same task as it drops the ring, to hold a reader who is past it in place. Under reduced
+     motion global.css's net would make each change a 1ms transition, and the read would get the
+     3D box (72px short at 1280). Neither has a transition of its own. */
+  .ring__track,
+  .ring__scroller {
+    transition-property: none;
+  }
+
+  .ring--3d .ring__hold-end {
+    position: absolute;
+    top: calc(var(--ring-front-y, 0px) + var(--ring-pin, 0px));
+    left: 0;
+  }
+
+  .ring--3d .ring__scroller {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  /* The line ends at the front card's dot. While pinned it would carry on down the centre to
+     its tip, and below a card shorter than the stage that tip glowed under it. The line is
+     below the page (z −1), so a panel of the ground from the front point to the stage's
+     bottom hides it there — inside the stuck stage only: above the dot, and once the pin
+     releases, the line is untouched. First in the stage and with no z-index, so the cards and
+     the nav paint over it; the grain paints over both it and the page alike. */
+  .ring--3d .ring__scroller::before {
+    position: absolute;
+    top: var(--ring-front-y, 0px);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: var(--ground);
+    content: '';
+    pointer-events: none;
+  }
+
+  /* One 3D context for all five, so they depth-sort; stage.ts sets its perspective. */
+  .ring--3d .ring__cards {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    padding: 0;
+    perspective: var(--ring-perspective, 1000px);
+    perspective-origin: var(--ring-origin-x, 50%) var(--ring-origin-y, 50%);
+    transform-style: preserve-3d;
+    /* The list's own box is the 3D context's z = 0 plane, in front of every side card (they
+       sit behind the front one): it would take their hover and their clicks. The cards take
+       pointer events themselves; the stage under the list still takes the drag. */
+    pointer-events: none;
+  }
+
+  .ring--3d .card {
+    pointer-events: auto;
+  }
+
+  /* Each card's top-centre sits on the front point; stage.ts writes its matrix3d. */
+  .ring--3d .card {
+    position: absolute;
+    top: var(--ring-front-y, 0px);
+    left: var(--ring-front-x, 50%);
+    margin-left: calc(var(--ring-card) / -2);
+    transform-origin: 50% 0;
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+
+  .ring--3d .card--inert {
+    pointer-events: none;
+  }
+
+  /* Depth without a filter (cost): the side cards recede under the ground, the front one stands
+     off it on a soft, low shadow. stage.ts writes `--ring-dim` (0 dead front, rising a step
+     round; 1 before the cards arrive, which come up out of the ground) and `--ring-lit` (1 dead
+     front, 0 half a step round) per drawn frame. Both drive pseudo-elements' opacity only. */
+  .ring--3d .card::before,
+  .ring--3d .card::after {
+    position: absolute;
+    border-radius: inherit;
+    content: '';
+    pointer-events: none;
+  }
+
+  /* Under the card, so only the shadow outside its box shows. */
+  .ring--3d .card::before {
+    z-index: -1;
+    inset: 0;
+    box-shadow: 0 40px 80px -32px color-mix(in srgb, black 70%, transparent);
+    opacity: var(--ring-lit, 0);
+  }
+
+  /* Over everything on the card, its emission and border included. */
+  .ring--3d .card::after {
+    z-index: 2;
+    inset: -1px;
+    /* Out by the border, so its corners are rounder by as much, or the border's corners show. */
+    border-radius: calc(var(--radius) + 1px);
+    background: var(--ground);
+    opacity: var(--ring-dim, 0);
+  }
+
+  /* The line lands on the front card's dot: lit, a touch larger, with a soft glow. */
+  .ring--3d .card__emit {
+    /* Half of it sits above the card, out of the overlay's reach: it recedes with its card. */
+    opacity: calc(1 - var(--ring-dim, 0));
+    box-shadow: 0 0 12px 2px color-mix(in srgb, var(--shipped) calc(55% * var(--ring-lit, 0)), transparent);
+    transform: scale(calc(1 + 0.25 * var(--ring-lit, 0)));
+  }
+
+  /* Dragging the stage turns the ring (stage.ts); the link still reads as a link. */
+  .ring--3d .ring__scroller {
+    cursor: grab;
+  }
+
+  .ring--3d .card__link {
+    cursor: pointer;
+  }
+
+  /* The front card's title in --signal, as on hover (large text). */
+  .ring--3d .card--front .card__title {
+    color: var(--signal);
+  }
+
+  /* A drag that starts on a card must turn the ring, not drag out its image. */
+  .ring--3d .card img {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
+  /* No drops in 3D: the line lands on the front card's emission, which stays on its card. */
+  .ring--3d .card__drop {
+    display: none;
+  }
+
+  /* ── The counter and dots (revision R4) — 3D only ─────────────────────────────────── */
+
+  .ring__nav {
+    display: none;
+  }
+
+  /* Flat in the stage, under the front card and as wide as it: the counter under its text's
+     left edge, the dots under its right. The middle stays clear, because the line runs on down
+     the centre below the card and its tip can show there. stage.ts sets `--ring-nav-y` from
+     geometry.ts's stageLayout, which reserves NAV_HEIGHT_PX — this row's height — for it, and
+     `--ring-scale`, the ring's. It comes up with the cards as they arrive (`--ring-arrive`),
+     and a focused dot is always shown in full. */
+  .ring--3d .ring__nav {
+    position: absolute;
+    top: var(--ring-nav-y, 100%);
+    left: var(--ring-front-x, 50%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: calc(var(--ring-card) * var(--ring-scale, 1));
+    height: 24px;
+    padding-inline: var(--s-4);
+    transform: translateX(-50%);
+    opacity: var(--ring-arrive, 1);
+    cursor: auto;
+  }
+
+  .ring--3d .ring__nav:focus-within {
+    opacity: 1;
+  }
+
+  .ring__count {
+    margin: 0;
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  /* The card in front reads first; the count out of five recedes. */
+  .ring__count [data-ring-count] {
+    color: var(--type);
+  }
+
+  /* Out by the hit area's margin round the dot, so the last dot's edge, not its target's, lines
+     up with the card's text. */
+  .ring__dots {
+    display: flex;
+    margin: 0 -8px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A 24px target (WCAG 2.2) round an 8px dot. */
+  .ring__dot {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+  }
+
+  .ring__dot::before {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--type) 30%, transparent);
+    content: '';
+    transition: background-color 0.2s ease-out;
+  }
+
+  .ring__dot:hover::before {
+    background: color-mix(in srgb, var(--type) 60%, transparent);
+  }
+
+  .ring__dot[aria-current='true']::before {
+    background: var(--signal);
+  }
 </style>
 
 <script>
   import { mountRing } from '../islands/ring';
+  import { canTurnRing } from '../lib/ring/gate';
 
   mountRing();
+
+  // Phase 12: the 3D ring, decided only once the page is loaded and idle (as BaseLayout does
+  // for the tube), so it never touches first paint. Its code is behind this import, in no
+  // initial chunk. Whether it fits the window is the stage's own check.
+  function startRing(): void {
+    const section = document.querySelector<HTMLElement>('[data-ring]');
+    const canTurn = canTurnRing({
+      viewportWidth: document.documentElement.clientWidth,
+      reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      search: location.search,
+    });
+    if (!section || !canTurn) return;
+    import('../lib/ring/stage')
+      .then(({ mountRingStage }) => mountRingStage({ section }))
+      .catch(() => {
+        // A failed chunk load, or a mount that threw before switching on: the rail was never
+        // touched, so there is nothing to undo.
+      });
+  }
+  const whenIdle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn) : fn());
+  if (document.readyState === 'complete') whenIdle(startRing);
+  else window.addEventListener('load', () => whenIdle(startRing), { once: true });
 </script>

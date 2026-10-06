@@ -79,6 +79,8 @@ export function mountRing(): void {
 
   /** Draws the split to linear progress `p`, 0..1; at 1 the inline styles are cleared. */
   function paint(p: number): void {
+    // In the 3D ring (Phase 12) lib/ring/stage.ts owns the emissions, and the track and drops are hidden.
+    if (section!.classList.contains('ring--3d')) return;
     if (p === painted) return;
     painted = p;
     const done = p >= 1;
@@ -151,6 +153,8 @@ function mountArrowKeys(section: HTMLElement, links: HTMLAnchorElement[]): void 
  */
 function mountFocusSnap(scroller: HTMLElement): void {
   scroller.addEventListener('focusin', (event) => {
+    // In the 3D ring (Phase 12) focus turns the ring through the scroll instead.
+    if (scroller.closest('.ring--3d')) return;
     const card = (event.target as Element).closest<HTMLElement>('.card');
     if (!card) return;
     const view = scroller.getBoundingClientRect();

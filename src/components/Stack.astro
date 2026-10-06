@@ -22,8 +22,8 @@
  * own group name instead, and the chain's punctuation is hidden from it. The section
  * marker already says `pipe()`.
  *
- * Layout is the content box every section from 03 down shares, because the renderer's
- * gutter probe assumes it (see SelectedWork.astro).
+ * Layout is the plain content box, as 01–02 use: no signal gutter, because below 03 the line
+ * runs through the centre rather than down a spine in the margin (Decisions, 2026-10-03).
  */
 import { skillGroups } from '../data/content';
 
@@ -83,12 +83,12 @@ const lastIndex = skillGroups.length - 1;
     padding-block: var(--section-y);
   }
 
-  /* The content box the signal's gutter probe assumes — see SelectedWork.astro. */
+  /* The plain content box, as 01–02 use: no signal gutter. Only 03's spine runs down the
+     margin, so only SelectedWork.astro reserves it (and the dim rule's gutter ends there). */
   .stack__inner {
     max-width: var(--container);
     margin-inline: auto;
     padding-inline: var(--s-5);
-    padding-left: calc(var(--s-5) + var(--signal-gutter));
   }
 
   /* ── Section head — the house voice, as SelectedWork sets it ────────────────────── */

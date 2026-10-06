@@ -238,6 +238,16 @@ export const SPINE_SPAN: Readonly<{ tStart: number; tEnd: number }> = {
  */
 export const RING_SPLIT_POINT = 34;
 
+/**
+ * The end of the ring's hold: control point 36, the last of the three that sit at `x` 0
+ * below the split. Phase 12's stage is `position: sticky`, so while it is stuck the front
+ * card's dot stays put in the viewport and the page scrolls past it; pinning this point to
+ * the end of the stuck stretch (anchors.ts) and zeroing the `x` tangent at both ends makes
+ * 34 → 36 exactly vertical, so the meeting point never leaves the line. In the 2D rail the
+ * same hold runs straight down behind the cards.
+ */
+export const RING_HOLD_END_POINT = 36;
+
 function clamp01(value: number): number {
   if (!(value > 0)) return 0; // also catches NaN
   if (value > 1) return 1;
@@ -250,18 +260,21 @@ function clamp01(value: number): number {
  * neighbour at either end — which makes the curve leave and arrive along the chord instead
  * of flicking off-screen.
  *
- * One exception: the spine. Its points share one `x`, but Catmull-Rom takes the tangent at
- * its ends from the sweep arriving and the lean toward the ring, both of which move in
- * `x`, and would bow the first and last spine segments. The `x` tangent there is zero
- * instead, so the spine is straight end to end and the segments either side of it still
- * meet it with a continuous tangent.
+ * Two exceptions: the spine, and the ring hold. The spine's points share one `x`, but
+ * Catmull-Rom takes the tangent at its ends from the sweep arriving and the lean toward the
+ * ring, both of which move in `x`, and would bow the first and last spine segments. The
+ * ring hold (`RING_SPLIT_POINT` to `RING_HOLD_END_POINT`) needs the same treatment for the
+ * same reason — the arc arriving and the lean into the stack both move in `x`. Both get a
+ * zero `x` tangent at their ends instead, so each run is straight end to end and the
+ * segments either side still meet it with a continuous tangent.
  */
 const TANGENTS: readonly SignalPoint[] = CONTROL_POINTS.map((_, i) => {
   const previous = CONTROL_POINTS[Math.max(i - 1, 0)];
   const next = CONTROL_POINTS[Math.min(i + 1, TOTAL_SEGMENTS)];
   const isSpineEnd = i === SPINE_FIRST_POINT || i === SPINE_LAST_POINT;
+  const isHoldEnd = i === RING_SPLIT_POINT || i === RING_HOLD_END_POINT;
   return {
-    x: isSpineEnd ? 0 : (next.x - previous.x) / 2,
+    x: isSpineEnd || isHoldEnd ? 0 : (next.x - previous.x) / 2,
     y: (next.y - previous.y) / 2,
     z: (next.z - previous.z) / 2,
   };

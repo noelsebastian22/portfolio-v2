@@ -8,6 +8,8 @@ import {
   SPINE_FIRST_POINT,
   SPINE_LAST_POINT,
   DRAWN_FROM_T,
+  RING_HOLD_END_POINT,
+  RING_SPLIT_POINT,
 } from '../src/lib/signal/path';
 
 describe('sampleSignal', () => {
@@ -88,7 +90,7 @@ describe('the work spine', () => {
     }
   });
 
-  it('leaves every segment off the spine exactly plain Catmull-Rom', () => {
+  it('leaves every segment off the spine and the ring hold exactly plain Catmull-Rom', () => {
     // The reference: uniform Catmull-Rom through the same control points, read back off
     // the curve itself (it passes through each of them), with the terminal point standing
     // in for the missing neighbour at either end.
@@ -112,19 +114,38 @@ describe('the work spine', () => {
       };
     };
 
-    // The tangent override at points 21 and 26 reaches the segments that end on them.
+    // The tangent override at points 21 and 26 reaches the segments that end on them, and
+    // the same override at points 34 and 36 (the ring hold) reaches theirs.
     const touchesSpine = (t: number) =>
       t > controlPointT(SPINE_FIRST_POINT - 1) && t < controlPointT(SPINE_LAST_POINT + 1);
+    const touchesHold = (t: number) =>
+      t > controlPointT(RING_SPLIT_POINT - 1) && t < controlPointT(RING_HOLD_END_POINT + 1);
     let checked = 0;
     for (let i = 0; i <= 5000; i++) {
       const t = i / 5000;
-      if (touchesSpine(t)) continue;
+      if (touchesSpine(t) || touchesHold(t)) continue;
       const [actual, expected] = [sampleSignal(t), reference(t)];
       expect(actual.x).toBeCloseTo(expected.x, 12);
       expect(actual.y).toBeCloseTo(expected.y, 12);
       expect(actual.z).toBeCloseTo(expected.z, 12);
       checked++;
     }
-    expect(checked).toBeGreaterThan(4000);
+    // The spine (7 segments) and the hold (4) are skipped; everything else, ~78% of the
+    // curve, is checked.
+    expect(checked).toBeGreaterThan(3800);
+  });
+});
+
+describe('the ring hold — RING_SPLIT_POINT to RING_HOLD_END_POINT', () => {
+  // Phase 12 (D7): while the 3D ring's stage is stuck, the hoop's front point is fixed in the
+  // viewport and the page scrolls past it, so the line must be exactly vertical through the
+  // whole pinned stretch — any bow walks the meeting point off the line.
+  it('is exactly x 0 at every sample between the two points', () => {
+    const samples = sampleSignalRange(controlPointT(RING_SPLIT_POINT), controlPointT(RING_HOLD_END_POINT), 2001);
+    for (const p of samples) expect(p.x).toBe(0);
+  });
+
+  it('ends on the last point that holds centre', () => {
+    expect(RING_HOLD_END_POINT).toBe(RING_SPLIT_POINT + 2);
   });
 });
