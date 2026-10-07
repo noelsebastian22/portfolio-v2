@@ -8,13 +8,10 @@
  * also why there is no hamburger: a disclosure menu is a behaviour, and behaviour here
  * would be an island rendering navigation that the server can render outright.
  *
- * The sound toggle is present but inert until Phase 13 builds the audio graph. It is a
- * real focusable `<button>` — `aria-disabled="true"`, not `disabled` — with no handler at
- * all, rather than one wired to do nothing: a control that responds but changes nothing is
- * worse than one that plainly is not ready yet. `disabled` would also have dropped it from
- * the Tab order and out of most screen readers' announcements, which a `title` attribute
- * cannot make up for (Decisions, 2026-09-26); the visible label says "not yet" itself, and
- * `aria-pressed="false"` states the toggle's own (off) state regardless.
+ * The sound toggle (Phase 13) is a real `<button>` with `aria-pressed`, labelled with its
+ * state in words as well. Its island is tiny; the audio itself is a lazy chunk fetched only
+ * once sound is turned on (spec §8). `aria-disabled` is set only if the browser cannot play
+ * audio, and the label then says so.
  */
 import { nav } from '../data/content';
 ---
@@ -35,13 +32,8 @@ import { nav } from '../data/content';
     </ul>
 
     <div class="site-nav__actions">
-      <button
-        class="site-nav__sound"
-        type="button"
-        aria-pressed="false"
-        aria-disabled="true"
-      >
-        Sound · soon
+      <button class="site-nav__sound" type="button" aria-pressed="false" data-sound-toggle>
+        Sound · off
       </button>
       <a class="site-nav__cv" href="/noel-sebastian.pdf" download>
         Download CV
@@ -136,12 +128,16 @@ import { nav } from '../data/content';
   }
 
   .site-nav__sound[aria-disabled='true'] {
-    /* Reads as not-yet rather than broken: still legible, plainly not operable. Not
-       `disabled` — that drops the button from the Tab order and from most screen
-       readers' announcement entirely (Decisions, 2026-09-26); `aria-disabled` keeps it
-       reachable and nameable while still doing nothing on activation. */
+    /* Only when the browser cannot play audio (spec D11): still legible and reachable, plainly not operable. */
     opacity: 0.55;
     cursor: not-allowed;
+  }
+
+  /* On: the border is the signal — a graphic, which is what §7.1 allows --signal for —
+     and the label brightens; the state is also in the words and in aria-pressed. */
+  .site-nav__sound[aria-pressed='true'] {
+    border-color: var(--signal);
+    color: var(--type);
   }
 
   /* --signal on a CTA is exactly what §7.1 reserves it for. --ground on it rather than
@@ -200,3 +196,9 @@ import { nav } from '../data/content';
     }
   }
 </style>
+
+<script>
+  import { mountSound } from '../islands/sound';
+
+  mountSound();
+</script>

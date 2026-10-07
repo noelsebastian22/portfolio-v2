@@ -47,8 +47,11 @@ export default defineConfig({
           // loads the helper already loads `tip`. Measured on `/`: 64,015 → 63,979 with the
           // ring's gate no longer importing gfx/gate.ts, → 63,859 with this line (gate and
           // helper both folded into `tip` measured 63,874).
+          //
+          // The emissions bus (Phase 13) joins `tip` too: as its own chunk it was a 173-byte
+          // request, and folding it in took `/` from 65,179 to 64,984.
           manualChunks(id) {
-            if (/\/src\/lib\/signal\/(?:follow|tip)\.ts$/.test(id)) return 'tip';
+            if (/\/src\/lib\/signal\/(?:follow|tip|emissions)\.ts$/.test(id)) return 'tip';
             if (id.includes('vite/preload-helper')) return 'tip';
           },
         },

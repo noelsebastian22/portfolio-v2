@@ -9,6 +9,34 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-06 · claude-code · Phase 13 audio, PR #4
+
+**Did**
+- Brainstormed Phase 13 with Noel, then wrote the spec (`2026-10-06-phase-13-audio-design.md`, D1–D14) and the plan; BUILD-PLAN's Phase 13 section expanded.
+- Built it: the `lib/signal/emissions.ts` bus with `hasArrived`, announces in years/work/stack/ring/stage/contact, `lib/audio/score.ts` (tested), `engine.ts` and `connect.ts` (lazy), and `islands/sound.ts` with the Nav toggle.
+- Browser check over CDP with real input events (scratchpad `sound-check.mjs`), 17/17: all 19 notes play in reading order on a scroll down, none play going up, and no chunk loads until the toggle is pressed.
+- PR #4 is open; branch `feat/phase-13-audio`. Stopped the stale `astro preview` on :4321 (from 3 Oct).
+
+**Decided**
+- Warm analogue voice, A minor pentatonic, notes on downward arrival only, hover tick included (Noel).
+- The `AudioContext` is created in the gesture by the island and passed to the lazy chunk.
+- Reduced motion gets the drone, cutoff and ticks, but no notes.
+- GSAP has one importer (`timeline.ts`'s new `onTick`); the bus joins `tip`; `/` accepted at +1,124 against the ≤ +1 KB estimate.
+
+**Didn't work**
+- Importing `gsap` directly in `lib/audio/connect.ts` made Rollup split GSAP into its own `index` chunk, +630 B on every page (`/websites` 59,030 → 59,681). Import from `motion/timeline.ts` instead.
+- `window.scrollTo(0, 0)` in a CDP script does not reset the page under Lenis, so the first check turned sound on mid-page and heard only 8 notes. Reload instead.
+
+**Open**
+- **Phase 13's sound is unheard by a person** (Known Gaps → Post-launch).
+- **The sound toggle's label changes width**; **with JS off the toggle reads `Sound · off`** (both under Known Gaps → Cosmetic).
+- `check.mjs lint` WARNs: BUILD-PLAN.md is 63,157 B (limit 60,000) — this session's live Phase 13 section and decisions. Not archived: the phase is unfinished; archiving its section at merge brings it back under.
+
+**Next**
+Noel listens on PR #4's Vercel preview and tunes the constants in `lib/audio/engine.ts` if needed. Then merge, confirm production, mark Phase 13 complete and archive its section.
+
+**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (+1,124 vs live) · `/websites` 59,143 (+113) · audio chunk 1,783 (lazy)
+
 ## 2026-10-06 · claude-code · Phase 12 merged
 
 **Did**
@@ -49,34 +77,3 @@ the parent spec, brainstorm first, then a Phase 13 design spec.
 Noel checks the ring on PR #3's Vercel preview; on approval, merge to `master`, confirm the live site, then mark Phase 12 complete and archive its section per end.md step 2.
 
 **Numbers** — build green · 326 tests (−1: −2 hoop tests, +1 width pin) · JS on `/` 63,860 gzip (−155 vs last session; +704 vs live) · enhanced 135,887 · ring chunk 4,518 · LCP median 2,265ms (`master` 2,264)
-
-## 2026-10-04 · claude-code · Phase 12 ring, rebuilt as R4
-
-**Did**
-- Phase 12 brainstormed, specced, planned and built on `feat/phase-12-ring` (hybrid SDD, tasks 1–13; not merged): first a WebGL hoop with DOM cards (R1–R3), then rebuilt as a floating CSS 3D ring in `src/lib/ring/` (R4).
-- Sections 04–06 now use the full content box; only 03 keeps the gutter, and `gutter.ts`'s region ends at 03's bottom.
-- `scene.ts` is byte-identical to Phase 11 again; `ring-mesh.ts` deleted.
-
-**Decided**
-- The ring is a floating CSS 3D loop in its own lazy chunk, gated on width/motion/fit, not WebGL (R4).
-- It scales to fit short windows, floor 0.7 (R3); the settle follows the direction of travel (R2).
-- Sections 04–06 use the full content box.
-
-**Didn't work**
-- The WebGL hoop, drops, glow, floor and pulse: on Noel's screen they read as amateur, and a 35% dwell per card plus 0.6-viewport steps made the turn lag.
-- A 10° look-down: the camera sits at the viewport's centre, below the hoop, so perspective cancelled the tilt and the hoop read as a flat bar. 22° put the hoop's back under the 67px nav at 800 tall.
-- Outward-facing cards: at ±72° they were ~29px edge-on slivers; cards now turn half-way.
-- A fixed ~790px minimum height: Noel's MacBook viewport never got the ring (measured: on at 1440×900, rail at 1440×760).
-- A "nearest" settle: a single 100px wheel notch was pulled back, so a notch-by-notch reader could never leave a card.
-- A controller edit of the plan (replacing from the first `pulseAt` match) deleted Task 2's tests and module; the first implementer designed bodies blind and the module was redone.
-- Claude-in-Chrome was disconnected again; browser checks ran on headless Chrome over CDP (scripts in the session scratchpad).
-
-**Open**
-- **Phase 12 Task 14 is not done** — its agent hit the usage limit before changing anything.
-- **`lib/ring/stage.ts` `update()` reads the rail's and the stage's rects every drawn frame**
-- `BUILD-PLAN.md` is 60,475 B, over lint's 60,000: the R1–R3 hoop-era Phase 12 decisions superseded by R4 are the natural thing to archive in Task 14's docs pass.
-
-**Next**
-Run Task 14 from its brief (`.superpowers/sdd/2026-10-03-phase-12-3d-ring/task-14-brief.md`, git-ignored; ledger `progress.md` beside it), then the final whole-branch review, then a PR for Noel.
-
-**Numbers** — build green · 327 tests (+81) · JS on `/` 64,015 gzip (+859 vs live) · enhanced chunk 135,913 (+145) · ring chunk 4,420 (new, lazy)
