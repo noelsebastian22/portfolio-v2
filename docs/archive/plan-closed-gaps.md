@@ -373,3 +373,7 @@ card's dot. The 590px note was replaced by the R4 thresholds (540 / 705px).
 - **CLOSED 2026-10-06 — the Phase 12 spec's §4–§6 rewritten to the ring as built (R4); §3's pointer to the hoop removed.** Original:
 - **The Phase 12 spec's §4–§6 still describe the WebGL hoop.** R4 replaced it; §3 points the
   reader to Revision R4 rather than rewriting history. Rewrite or trim them if the spec is read again.
+- **CLOSED 2026-10-07 — Noel heard the sound on PR #4's preview; it plays. Its character is a new deferred item (Deferred by Noel — 2026-10-07).** Original:
+- **Phase 13's sound is unheard by a person.** The browser check proves every note fires in order
+  (17/17), not how it sounds. Noel listens on the preview; the voice values (spec D4) are starting
+  values to tune by ear in `lib/audio/engine.ts`'s constants.

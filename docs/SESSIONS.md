@@ -9,6 +9,24 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-07 · claude-code · Phase 13 merged
+
+**Did**
+- Noel heard the sound on PR #4's preview: it plays. Merged as `175b8ba`. www.noel-sebastian.com serves the same script chunks as the local build, and the lazy `connect` chunk returns 200.
+- Phase 13 marked complete; its section and the superseded 2026-09-26 sound-toggle Decision are archived in `docs/archive/plan-phases.md`, and the "unheard" gap is closed. Figures moved from branch to live.
+- BUILD-PLAN.md trimmed back under lint's 60,000 B (59,999) by tightening this phase's own Decisions and gaps.
+
+**Decided**
+- The sound's voice is to be reworked later; the mechanics stay (Deferred by Noel — 2026-10-07).
+
+**Open**
+- **The sound reads like a horror or sci-fi film score, not a portfolio** (Known Gaps → Deferred by Noel — 2026-10-07).
+
+**Next**
+Start Phase 14 (`/websites` restyle): expand BUILD-PLAN's Phase 14 section into task-level steps, brainstorm first, then a design spec. Or, if Noel prefers, rework the sound's voice first — by ear, in `lib/audio/engine.ts`.
+
+**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (live; +1,124 vs Phase 12) · audio chunk 1,783 (lazy)
+
 ## 2026-10-06 · claude-code · Phase 13 audio, PR #4
 
 **Did**
@@ -55,25 +73,3 @@ Start Phase 13 (audio engine): expand BUILD-PLAN's Phase 13 section into task-le
 the parent spec, brainstorm first, then a Phase 13 design spec.
 
 **Numbers** — build green · 326 tests · JS on `/` 63,860 gzip (live; +704 vs Phase 11) · enhanced 135,887 · ring chunk 4,518
-
-
-## 2026-10-06 · claude-code · Phase 12 Task 14, PR #3
-
-**Did**
-- Re-ran Phase 12 Task 14 (agent, reviewed inline): every failure path passes on headless Chrome over CDP; `lib/ring/stage.ts` now drops the ring on a live reduced-motion `change`; a `--ground` `::before` on the stage hides the line's tip below the front card's dot.
-- `lib/ring/gate.ts` no longer imports `gfx/gate.ts` (`RING_MIN_VIEWPORT_WIDTH` pinned by test); Vite's preload helper joins `tip` in `astro.config.mjs`. `buildTubeFromCentres` folded back into `buildTube`.
-- Docs brought to R4 (parent spec §9.04/§11, Phase 12 spec §3/§7, `Ring.astro` header); two superseded decisions archived; BUILD-PLAN under lint's 60,000 B.
-- Final whole-branch review inline: clean apart from stale "hoop" comments in `path.ts`/`anchors.ts`, fixed. Lighthouse interleaved with `master`; PR #3 opened.
-
-**Didn't work**
-- Winning back all of Task 11's +689 B base JS: only 155 B came back. Against the pre-R4 build, BaseLayout and `tip` are within ~96 B; the rest is section 04's own gate and dynamic import with its preload list. Folding gate and helper both into `tip` measured 63,874, worse than keeping the gate standalone (63,859).
-
-**Open**
-- **The Phase 12 spec's §4–§6 still describe the WebGL hoop.**
-- PR #3 is unmerged: Noel to check the ring's look on his own screen first.
-- Old `astro preview` processes from earlier sessions still listen on :4321 and :4322.
-
-**Next**
-Noel checks the ring on PR #3's Vercel preview; on approval, merge to `master`, confirm the live site, then mark Phase 12 complete and archive its section per end.md step 2.
-
-**Numbers** — build green · 326 tests (−1: −2 hoop tests, +1 width pin) · JS on `/` 63,860 gzip (−155 vs last session; +704 vs live) · enhanced 135,887 · ring chunk 4,518 · LCP median 2,265ms (`master` 2,264)

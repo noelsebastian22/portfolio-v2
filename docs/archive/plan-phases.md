@@ -1315,3 +1315,79 @@ Decisions moved verbatim out of `BUILD-PLAN.md` → Decisions: the hoop-era valu
   already sits on the margin, the pointer can only tilt the ring down. Reserving the full
   17° + 3° in `stageLayout` raised the 3D minimum height from 790 to 835px and dropped 1280×800 to
   the rail. Phase 12 design §4.
+
+## Archive pass 2026-10-07 — Phase 13
+
+Phase Status note as it stood before the pass:
+
+| 13 | Audio engine | **in progress — PR open** | Tasks 1–3 built and reviewed; browser check 17/17. Noel listens on the preview before merge (spec §6) |
+
+The phase was built to its design and plan: `docs/superpowers/specs/2026-10-06-phase-13-audio-design.md`
+(D1–D14) · `docs/superpowers/plans/2026-10-06-phase-13-audio.md`. Merged as PR #4 (`175b8ba`).
+Nothing carried forward but the voice's character (Known Gaps → Deferred by Noel — 2026-10-07).
+
+## PHASE 13 — Audio Engine
+
+**Deliverable:** generative Web Audio — a drone bed, one pentatonic note per emission,
+scroll velocity mapped to filter cutoff.
+
+**Files:** `src/lib/audio/engine.ts`
+
+```ts
+export interface AudioEngine {
+  start(): Promise<void>;
+  stop(): void;
+  emit(index: number): void;        // index into the pentatonic scale
+  setVelocity(v: number): void;     // 0..1 → filter cutoff
+}
+export async function createAudioEngine(): Promise<AudioEngine>;
+```
+
+**Verification:** off by default. The module is **never fetched** unless the toggle is
+pressed — confirm in the network panel. State persists in `localStorage`. The toggle is a
+real `<button>` with `aria-pressed`. No MP3 ships.
+
+**Expanded 2026-10-06** — spec `docs/superpowers/specs/2026-10-06-phase-13-audio-design.md`
+(D1–D14), plan `docs/superpowers/plans/2026-10-06-phase-13-audio.md`. The interface above was a
+sketch: the context is created in the gesture by `islands/sound.ts` and passed in (D8), so
+`createAudioEngine(ctx)` is synchronous and `emit(event, at)` takes the gate's start time.
+
+| Task | Deliverable | State |
+|---|---|---|
+| 1 | `signal/emissions.ts` bus + `audio/score.ts`, tested | complete (`9da62db`) |
+| 2 | Six emission sites announce on downward arrival | complete (`0f0e220`) |
+| 3 | `audio/engine.ts`, `audio/connect.ts`, `islands/sound.ts`, Nav toggle | complete (`d1ea85c`..`b916bc2`, 2 fix rounds: GSAP kept in one chunk; the bus folded into `tip`) |
+| 4 | Browser check, figures, docs, PR — Noel listens on the preview | browser check 17/17 over CDP (real gestures): no chunk until pressed, one chunk and one context under rapid toggles, 19 notes in reading order on a scroll down and none back up, a tick per link hovered, `on` restored without fetching until a gesture, Enter on the toggle turns it off, no toggle on `/websites`. Waiting on Noel's listen |
+
+The Decision Phase 13 superseded, moved here from BUILD-PLAN → Decisions on the same pass:
+
+- **2026-09-26 (Noel)** — **The sound toggle stays in the nav until Phase 13, and says plainly
+  that it is not ready.** It is a focusable button with `aria-disabled="true"`, not a `disabled`
+  one, so it can be reached and announced. Its visible text says sound is coming, so the state
+  is not only in a hover `title`. Activating it does nothing. *Superseded by Phase 13
+  (2026-10-06): the toggle works; `aria-disabled` now marks only a browser that cannot play audio.*
+
+Phase 13's Decisions and Cosmetic gaps as first written (2026-10-06), before the 2026-10-07 trim that kept BUILD-PLAN under lint's size limit:
+
+- **2026-10-06 (Noel)** — **Phase 13's sound: warm analogue, A minor pentatonic, notes on downward
+  arrival only, a hover tick in this phase.** Each emission site announces on a small bus
+  (`lib/signal/emissions.ts`) from the paint it already runs, so a note sounds on the frame its
+  dot lands; `hasArrived` (painted `< 1` → `≥ 1`, never from the unmeasured `-1`) keeps reloads and
+  re-measures silent. The score is fixed: each section climbs from its own start degree and the
+  final emission resolves to A2 + A3. Spec `2026-10-06-phase-13-audio-design.md` D1–D7.
+- **2026-10-06 (controller)** — **The `AudioContext` is created by the toggle island, inside the
+  gesture, and handed to the lazy chunk** (spec D8). Safari unlocks audio only in the gesture's own
+  call stack; after an `await import()` it can stay suspended. So `createAudioEngine(ctx)` is
+  synchronous, unlike the sketch this section's Phase 13 interface once gave.
+- **2026-10-06 (controller)** — **Reduced motion hears the drone, the cutoff and the ticks, but no
+  emission notes** (spec D12): its emissions are final from the start, so none arrives.
+- **2026-10-06 (controller)** — **GSAP has one importer, `timeline.ts`.** The audio samples scroll
+  speed through its new `onTick`; a direct `gsap` import from the lazy chunk made Rollup split GSAP
+  into a chunk of its own, +630 B on every page. The bus joins `tip` (`manualChunks`), as `follow`
+  did: −195 B and one request fewer on `/`, +83 B of inert code on `/websites`. `/` lands at +1,124
+  against the spec's ≤ +1 KB estimate; accepted, and the spec's §5 records the measured figure.
+- **The sound toggle's label changes width** (`Sound · off` → `on` is ~8px narrower; `unavailable`
+  is wider), so the CV link beside it moves a few pixels on toggle. Not a layout shift on load
+  unless `on` is stored (Phase 13).
+- **With JS off the toggle reads `Sound · off` and does nothing.** Audio needs JS; the label is
+  true, the button inert (Phase 13).
