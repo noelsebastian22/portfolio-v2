@@ -81,7 +81,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 11 | WebGL — particle portrait | **complete — live 2026-10-03** | PR #2 (`cf91bd9`); cream still, particles over it (R1). Section archived |
 | 12 | WebGL — 3D ring | **complete — live 2026-10-06** | PR #3 (`e8f87cb`); a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Section archived |
 | 13 | Audio engine | **complete — live 2026-10-07** | PR #4 (`175b8ba`); drone, a note per emission, speed → cutoff, hover tick behind the nav toggle. Noel heard it; its character is to be reworked (Deferred, 2026-10-07). Section archived |
-| 14 | `/websites` restyle | not started | |
+| 14 | `/websites` restyle | **in progress** | Branch `feat/phase-14-websites`; spec + plan written 2026-10-07 |
 | 15 | Preloader + final polish | not started | |
 
 ### Current figures — 2026-10-06
@@ -224,7 +224,13 @@ only, no particle portrait, no ring, no WebGL, no audio (spec §14).
 **Verification:** the page no longer references Tailwind. Its distinct SEO targeting for
 local-business search is preserved.
 
-- [ ] Remove the `/websites` redirect from `vercel.json`, the sitemap filter, and restore Contact's `/websites` link.
+Design: `docs/superpowers/specs/2026-10-07-phase-14-websites-design.md`. Plan:
+`docs/superpowers/plans/2026-10-07-phase-14-websites.md`.
+
+- [ ] **Task 14.1 — the restyled page.** Seven section components in `src/components/websites/`
+  plus `SectionHead`; shared primitives in `src/styles/websites.css`; the nav loses its script.
+- [ ] **Task 14.2 — back live.** Remove the `/websites` redirect from `vercel.json`, the sitemap
+  filter, and restore Contact's `/websites` link; `npm run budget` gates `/websites` too.
 
 ## PHASE 15 — Preloader + Final Polish
 
