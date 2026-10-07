@@ -6,10 +6,7 @@ export default defineConfig({
   site: 'https://www.noel-sebastian.com',
   output: 'static',
   integrations: [
-    sitemap({
-      // Task 9.7: exclude /websites until the restyle in Phase 14
-      filter: (page) => !page.startsWith('https://www.noel-sebastian.com/websites'),
-    }),
+    sitemap(),
     modulePreload(),
   ],
   build: {

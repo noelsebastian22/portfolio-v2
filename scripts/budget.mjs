@@ -24,8 +24,8 @@
  * place inside the HTML response would show. Accepted: it is a stable, page-independent
  * number, and it errs conservative rather than optimistic against the budget.
  *
- * Only `/` is gated (exit 1 over budget) — `/websites` is reported, not gated, until Phase
- * 14 restyles it (BUILD-PLAN.md, Phase 9 "Deliberately not in Phase 9").
+ * `/` and `/websites` are gated (exit 1 over budget); `/404` is reported only. `/websites`
+ * joined the gate when Phase 14 restyled it.
  *
  * Phase 10: this script also fails the build if any page's initial script graph contains
  * Three.js (`containsThree`, lib/budget.mjs) — the WebGL tube is only ever behind a dynamic
@@ -45,7 +45,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
 const BUDGET_BYTES = 81_920; // 80 KB gzip, spec §12 — copied verbatim, never re-derived.
 const ENHANCED_BUDGET_BYTES = 256_000; // 250 KB gzip, spec §12 — the post-interactive WebGL chunk.
-const GATED_PAGE = '/';
+const GATED_PAGES = new Set(['/', '/websites']);
 
 /** Every `*.html` file under `dist/`, as absolute filesystem paths. */
 function findHtmlFiles(dir) {
@@ -138,11 +138,11 @@ function main() {
 
   const pages = findHtmlFiles(DIST).map(measurePage).sort((a, b) => a.page.localeCompare(b.page));
 
-  let overBudget = false;
+  const overBudget = [];
   for (const result of pages) {
     printReport(result);
-    if (result.page === GATED_PAGE && result.total > BUDGET_BYTES) {
-      overBudget = true;
+    if (GATED_PAGES.has(result.page) && result.total > BUDGET_BYTES) {
+      overBudget.push(result.page);
     }
   }
 
@@ -185,8 +185,8 @@ function main() {
   if (enhancedOverBudget) console.error(`Enhanced chunk exceeds ${ENHANCED_BUDGET_BYTES} bytes.`);
   if (pagesLoadingThree.length > 0 || enhancedOverBudget) process.exit(1);
 
-  if (overBudget) {
-    console.error(`\n${GATED_PAGE} exceeds the ${BUDGET_BYTES}-byte budget.`);
+  if (overBudget.length > 0) {
+    console.error(`\n${overBudget.join(', ')} exceeds the ${BUDGET_BYTES}-byte budget.`);
     process.exit(1);
   }
 }
