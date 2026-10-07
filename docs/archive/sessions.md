@@ -5,6 +5,34 @@ bottom; never edit one. If an old entry turned out wrong, say so in a new live e
 
 <!-- archived, newest first -->
 
+## 2026-10-06 · claude-code · Phase 13 audio, PR #4
+
+**Did**
+- Brainstormed Phase 13 with Noel, then wrote the spec (`2026-10-06-phase-13-audio-design.md`, D1–D14) and the plan; BUILD-PLAN's Phase 13 section expanded.
+- Built it: the `lib/signal/emissions.ts` bus with `hasArrived`, announces in years/work/stack/ring/stage/contact, `lib/audio/score.ts` (tested), `engine.ts` and `connect.ts` (lazy), and `islands/sound.ts` with the Nav toggle.
+- Browser check over CDP with real input events (scratchpad `sound-check.mjs`), 17/17: all 19 notes play in reading order on a scroll down, none play going up, and no chunk loads until the toggle is pressed.
+- PR #4 is open; branch `feat/phase-13-audio`. Stopped the stale `astro preview` on :4321 (from 3 Oct).
+
+**Decided**
+- Warm analogue voice, A minor pentatonic, notes on downward arrival only, hover tick included (Noel).
+- The `AudioContext` is created in the gesture by the island and passed to the lazy chunk.
+- Reduced motion gets the drone, cutoff and ticks, but no notes.
+- GSAP has one importer (`timeline.ts`'s new `onTick`); the bus joins `tip`; `/` accepted at +1,124 against the ≤ +1 KB estimate.
+
+**Didn't work**
+- Importing `gsap` directly in `lib/audio/connect.ts` made Rollup split GSAP into its own `index` chunk, +630 B on every page (`/websites` 59,030 → 59,681). Import from `motion/timeline.ts` instead.
+- `window.scrollTo(0, 0)` in a CDP script does not reset the page under Lenis, so the first check turned sound on mid-page and heard only 8 notes. Reload instead.
+
+**Open**
+- **Phase 13's sound is unheard by a person** (Known Gaps → Post-launch).
+- **The sound toggle's label changes width**; **with JS off the toggle reads `Sound · off`** (both under Known Gaps → Cosmetic).
+- `check.mjs lint` WARNs: BUILD-PLAN.md is 63,157 B (limit 60,000) — this session's live Phase 13 section and decisions. Not archived: the phase is unfinished; archiving its section at merge brings it back under.
+
+**Next**
+Noel listens on PR #4's Vercel preview and tunes the constants in `lib/audio/engine.ts` if needed. Then merge, confirm production, mark Phase 13 complete and archive its section.
+
+**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (+1,124 vs live) · `/websites` 59,143 (+113) · audio chunk 1,783 (lazy)
+
 ## 2026-10-06 · claude-code · Phase 12 merged
 
 **Did**

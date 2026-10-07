@@ -81,7 +81,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 11 | WebGL — particle portrait | **complete — live 2026-10-03** | PR #2 (`cf91bd9`); cream still, particles over it (R1). Section archived |
 | 12 | WebGL — 3D ring | **complete — live 2026-10-06** | PR #3 (`e8f87cb`); a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Section archived |
 | 13 | Audio engine | **complete — live 2026-10-07** | PR #4 (`175b8ba`); drone, a note per emission, speed → cutoff, hover tick behind the nav toggle. Noel heard it; its character is to be reworked (Deferred, 2026-10-07). Section archived |
-| 14 | `/websites` restyle | **in review — PR #5** | Content frozen; one component per section; back live on merge (redirect, sitemap filter gone); budget gates it |
+| 14 | `/websites` restyle | **complete — live 2026-10-07** | PR #5 (`034309b`); restyle only, one component per section, redirect gone, budget-gated. Noel checked the preview. Section archived |
 | 15 | Preloader + final polish | not started | |
 
 ### Current figures — 2026-10-06
@@ -95,7 +95,7 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **64,984 (79.3%)** (Phase 13), +1,124 vs Phase 12 — the sound island, the emissions bus, `onTick`. `/websites` **58,752 (71.7%)**, −391 (Phase 14: the nav's script gone), gated since Phase 14 | 2026-10-07 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **64,984 (79.3%)** (Phase 13), +1,124 vs Phase 12 — the sound island, the emissions bus, `onTick`. `/websites` live **58,752 (71.7%)**, −391 (Phase 14: the nav's script gone), gated since Phase 14 | 2026-10-07 |
 | Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,887 (53.1%)** (Phase 12), +119 vs Phase 11 (the ring left WebGL in R4); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-06 |
 | Ring chunk gzip (lazy, after load, no Three.js) | — | live **4,518** (`lib/ring/stage.ts`; not in any page's initial graph) | 2026-10-06 |
 | Audio chunk gzip (lazy, only once sound is turned on) | ≤ 5,120 | live **1,783** (`lib/audio/connect.ts` + `engine.ts` + `score.ts`; in no page's initial graph or `modulepreload`) | 2026-10-06 |
@@ -209,14 +209,9 @@ For the interfaces those phases produced, the code is the source of truth (`src/
 
 ---
 
-# PHASES 13–15 — Phase-Level Detail
+# PHASE 15 — Phase-Level Detail
 
 Expand the phase you are about to start into task-level steps before implementing it.
-
-## PHASE 14 — `/websites` Restyle
-
-Built; in review as PR #5. Its section is archived in `docs/archive/plan-phases.md`; design and
-plan in `docs/superpowers/specs|plans/2026-10-07-phase-14-websites*`.
 
 ## PHASE 15 — Preloader + Final Polish
 
