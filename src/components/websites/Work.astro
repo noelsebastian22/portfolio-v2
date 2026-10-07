@@ -3,6 +3,9 @@
  * 02 — Recent work. Each card's capture is also a link to the live site, but out of the
  * tab order and the accessibility tree: the "Open the site" button is the one real target,
  * so a keyboard or screen-reader user meets each site once, not twice.
+ *
+ * No separate "Concept" badge: every self-directed build's `kind` already opens with
+ * "Concept build", and saying it twice on one line read as a mistake.
  */
 import SectionHead from './SectionHead.astro';
 import { websitesWork as work } from '../../data/websites';
@@ -31,10 +34,7 @@ import { websitesWork as work } from '../../data/websites';
             />
           </a>
           <div class="work__body">
-            <p class="work__meta">
-              <span>{project.kind}</span>
-              {project.concept && <span class="work__badge">Concept</span>}
-            </p>
+            <p class="work__meta">{project.kind}</p>
             <h3 class="work__title">{project.title}</h3>
             <p class="work__desc">{project.desc}</p>
             <a
@@ -104,23 +104,12 @@ import { websitesWork as work } from '../../data/websites';
   }
 
   .work__meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--s-2) var(--s-3);
     margin: 0;
     color: var(--type-dim);
     font-family: var(--font-mono);
     font-size: 11.5px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-  }
-
-  .work__badge {
-    padding: 2px var(--s-2);
-    border: 1px solid color-mix(in srgb, var(--type) 24%, transparent);
-    border-radius: var(--radius);
-    font-size: 10.5px;
   }
 
   .work__title {

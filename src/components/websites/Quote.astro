@@ -1,8 +1,9 @@
 ---
 /**
  * 06 — Get started. The same ContactForm.astro the home page's Contact uses (final review,
- * I4), preset to "A project" — one form, one Formspree wiring, no drifting copy. The form
- * draws its own opaque panel. `mountContactForms()` in websites.astro binds it.
+ * I4) — one form, one Formspree wiring, no drifting copy — fixed to "A project" with the
+ * role/project question hidden, since this page's reader is always a client. The form draws
+ * its own opaque panel. `mountContactForms()` in websites.astro binds it.
  */
 import SectionHead from './SectionHead.astro';
 import ContactForm from '../ContactForm.astro';
@@ -20,7 +21,7 @@ import { CONTACT_EMAIL } from '../../lib/contact-form';
       </p>
     </div>
 
-    <ContactForm lookingFor="project" />
+    <ContactForm lookingFor="project" hideChoice />
   </div>
 </section>
 

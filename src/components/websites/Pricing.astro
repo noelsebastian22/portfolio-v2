@@ -104,6 +104,14 @@ import { websitesPricing as pricing } from '../../data/websites';
     line-height: 1.55;
   }
 
+  /* Two lines reserved side by side, so the three prices sit on one row whichever
+     summary is shortest. */
+  @media (min-width: 960px) {
+    .pricing__summary {
+      min-height: calc(2 * 1.55em);
+    }
+  }
+
   .pricing__price {
     margin: var(--s-6) 0 0;
     color: var(--type);

@@ -146,6 +146,8 @@ const featuredHost = featured ? new URL(featured.site).hostname.replace(/^www\./
     border: 1px solid color-mix(in srgb, var(--type) 14%, transparent);
     border-radius: var(--radius);
     background: var(--ground-lift);
+    /* A link, so the host in its bar would otherwise inherit the underline. */
+    text-decoration: none;
     transition: border-color 0.2s;
   }
 

@@ -21,9 +21,16 @@ interface Props {
   lookingFor?: LookingFor;
   /** Prefixes every id, so two instances can coexist on one page without collisions. */
   idPrefix?: string;
+  /**
+   * Sends `lookingFor` as a hidden field instead of asking. `/websites` sets it: its reader
+   * is always a client, and "A role" is recruiter wording they should never be offered.
+   * Formspree still records the same column.
+   */
+  hideChoice?: boolean;
 }
 
-const { lookingFor, idPrefix = 'contact' } = Astro.props;
+const { lookingFor, idPrefix = 'contact', hideChoice = false } = Astro.props;
+const showChoice = !(hideChoice && lookingFor);
 
 const endpoint = resolveFormEndpoint(import.meta.env.PUBLIC_FORMSPREE_ENDPOINT);
 // A mailto: form with JS off posts its fields as the email body; plain text reads.
@@ -31,19 +38,23 @@ const enctype = endpoint.startsWith('mailto:') ? 'text/plain' : undefined;
 ---
 
 <form class="form" data-contact-form method="post" action={endpoint} enctype={enctype}>
-  <fieldset class="form__choice">
-    <legend class="form__label">I'm looking for (optional)</legend>
-    <div class="form__options">
-      <label class="form__option">
-        <input type="radio" name="lookingFor" value="role" checked={lookingFor === 'role'} />
-        <span>A role</span>
-      </label>
-      <label class="form__option">
-        <input type="radio" name="lookingFor" value="project" checked={lookingFor === 'project'} />
-        <span>A project</span>
-      </label>
-    </div>
-  </fieldset>
+  {showChoice ? (
+    <fieldset class="form__choice">
+      <legend class="form__label">I'm looking for (optional)</legend>
+      <div class="form__options">
+        <label class="form__option">
+          <input type="radio" name="lookingFor" value="role" checked={lookingFor === 'role'} />
+          <span>A role</span>
+        </label>
+        <label class="form__option">
+          <input type="radio" name="lookingFor" value="project" checked={lookingFor === 'project'} />
+          <span>A project</span>
+        </label>
+      </div>
+    </fieldset>
+  ) : (
+    <input type="hidden" name="lookingFor" value={lookingFor} />
+  )}
 
   <div class="form__pair">
     <div class="form__field">
