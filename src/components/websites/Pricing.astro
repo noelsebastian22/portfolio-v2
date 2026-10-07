@@ -1,0 +1,191 @@
+---
+/**
+ * 03 — Pricing. The featured tier carries the signal border and the "Most common" tag; the
+ * others' quote buttons are ghosts, so the eye lands on one choice, not three.
+ */
+import SectionHead from './SectionHead.astro';
+import { websitesPricing as pricing } from '../../data/websites';
+---
+
+<section class="w-section pricing" id="pricing" aria-labelledby="pricing-title">
+  <div class="w-inner">
+    <SectionHead id="pricing-title" marker="03 — Pricing" title={pricing.title} lede={pricing.intro} />
+
+    <ul class="pricing__tiers" role="list">
+      {pricing.tiers.map((tier) => (
+        <li class:list={['w-panel', 'pricing__tier', { 'pricing__tier--featured': tier.featured }]}>
+          {tier.featured && <p class="pricing__tag">Most common</p>}
+          <h3 class="pricing__name">{tier.name}</h3>
+          <p class="pricing__summary">{tier.summary}</p>
+          <p class="pricing__price">{tier.price}</p>
+          <p class="pricing__timeline">{tier.timeline}</p>
+          <ul class="w-ticks pricing__includes" role="list">
+            {tier.includes.map((line) => <li>{line}</li>)}
+          </ul>
+          <a class:list={['w-btn', 'pricing__cta', { 'w-btn--ghost': !tier.featured }]} href="#contact">
+            Get a quote<span class="w-sr">: {tier.name}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="w-panel pricing__extras">
+      <h3 class="pricing__extras-title">Add-ons</h3>
+      <dl class="pricing__addons">
+        {pricing.addOns.map((addOn) => (
+          <div class="pricing__addon">
+            <dt>{addOn.label}</dt>
+            <dd>{addOn.price}</dd>
+          </div>
+        ))}
+      </dl>
+      <p class="pricing__note">{pricing.note}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pricing__tiers {
+    display: grid;
+    gap: var(--s-4);
+    margin: clamp(var(--s-6), 4vw, var(--s-7)) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 960px) {
+    .pricing__tiers {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .pricing__tier {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: var(--s-6);
+  }
+
+  .pricing__tier--featured {
+    border-color: var(--signal);
+  }
+
+  .pricing__tag {
+    position: absolute;
+    top: var(--s-6);
+    right: var(--s-6);
+    margin: 0;
+    padding: 3px var(--s-2);
+    border-radius: var(--radius);
+    background: var(--signal);
+    color: var(--ground);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pricing__name {
+    margin: 0;
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-stretch: 112%;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .pricing__summary {
+    margin: var(--s-2) 0 0;
+    color: var(--type-dim);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .pricing__price {
+    margin: var(--s-6) 0 0;
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: clamp(28px, 2.6vw, 38px);
+    font-stretch: 112%;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .pricing__timeline {
+    margin: var(--s-3) 0 0;
+    color: var(--signal);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pricing__includes {
+    margin: var(--s-6) 0 var(--s-7);
+    color: var(--type-dim);
+    font-size: 15px;
+  }
+
+  .pricing__cta {
+    margin-top: auto;
+  }
+
+  .pricing__extras {
+    margin-top: var(--s-4);
+    padding: var(--s-6);
+  }
+
+  .pricing__extras-title {
+    margin: 0 0 var(--s-4);
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pricing__addons {
+    margin: 0;
+  }
+
+  .pricing__addon {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-1) var(--s-5);
+    padding-block: var(--s-3);
+    border-bottom: 1px solid color-mix(in srgb, var(--type) 8%, transparent);
+  }
+
+  .pricing__addon:first-child {
+    padding-top: 0;
+  }
+
+  .pricing__addon dt {
+    color: var(--type);
+    font-size: 15px;
+  }
+
+  .pricing__addon dd {
+    margin: 0;
+    color: var(--type);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .pricing__note {
+    max-width: 72ch;
+    margin: var(--s-5) 0 0;
+    color: var(--type-dim);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+</style>

@@ -1,107 +1,129 @@
 ---
 /**
- * Nav for /websites. Separate from Nav.astro because that one's links point at
- * the root-domain sections — reusing it here would give a business owner a menu
- * of pages about Angular experience.
+ * Nav for /websites. Separate from Nav.astro because that one's links point at the home
+ * page's sections — reusing it here would give a business owner a menu of pages about
+ * Angular experience.
  *
- * The one link back to the portfolio is deliberately quiet and last. Anyone who
- * wants the engineering CV will find it; nobody is pushed toward it.
+ * Zero JavaScript, like Nav.astro: no hamburger. The quote button is this page's one
+ * conversion, so it is never behind a menu. Below 900px the section links take their own
+ * row, and below that row's natural width they scroll sideways inside it rather than
+ * wrapping into a nav three rows deep — the nav is sticky, and every row it grows is
+ * screen a phone loses.
  */
 import { websitesNav } from '../data/websites';
 ---
 
-<nav
-  class="nav-anim-entrance sticky top-0 z-50 border-b border-ink/[0.09]"
-  style="backdrop-filter:blur(10px);background:rgba(243,240,232,.82)"
->
-  <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-6 px-6 py-4 md:px-10">
-    <a
-      href="#top"
-      class="font-bricolage text-[22px] font-extrabold leading-none tracking-[-0.5px] text-ink no-underline"
-    >
-      NOEL S<span class="text-accent">.</span>
+<nav class="w-nav" aria-label="Primary">
+  <div class="w-nav__inner">
+    <a class="w-nav__brand" href="#top">
+      <img src="/favicon.svg" width="26" height="26" alt="" />
+      <span class="w-nav__name">Noel Sebastian</span>
     </a>
 
-    <div class="hidden items-center gap-[26px] lg:flex">
-      {websitesNav.map((l) => (
-        <a
-          href={l.href}
-          class="font-mono text-[12.5px] uppercase tracking-[1px] text-ink-secondary no-underline transition-colors duration-200 hover:text-accent"
-        >
-          {l.label}
-        </a>
+    <ul class="w-nav__links" role="list">
+      {websitesNav.map((link) => (
+        <li>
+          <a class="w-nav__link" href={link.href}>{link.label}</a>
+        </li>
       ))}
-    </div>
+    </ul>
 
-    <a
-      href="#contact"
-      class="hidden items-center gap-2 rounded-full bg-accent px-[22px] py-3 text-sm font-bold text-white no-underline transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink md:inline-flex"
-    >
-      Get a quote →
-    </a>
-
-    <button
-      id="wnav-btn"
-      class="flex flex-col gap-1.5 p-2 lg:hidden"
-      aria-label="Open menu"
-      aria-expanded="false"
-      aria-controls="wnav-menu"
-    >
-      <span class="block h-0.5 w-6 bg-ink"></span>
-      <span class="block h-0.5 w-6 bg-ink"></span>
-      <span class="block h-0.5 w-6 bg-ink"></span>
-    </button>
-  </div>
-
-  <div id="wnav-menu" hidden class="border-t border-ink/10 bg-cream px-[1.8rem] py-6 lg:hidden">
-    <div class="flex flex-col gap-4">
-      {websitesNav.map((l) => (
-        <a
-          href={l.href}
-          class="font-mono text-[13px] uppercase tracking-[1px] text-ink-secondary no-underline"
-        >
-          {l.label}
-        </a>
-      ))}
-      <a
-        href="#contact"
-        class="mt-2 inline-flex w-fit items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-white no-underline"
-      >
-        Get a quote →
-      </a>
-    </div>
+    <a class="w-btn w-btn--small w-nav__cta" href="#contact">Get a quote</a>
   </div>
 </nav>
 
-<script is:inline>
-  (function () {
-    var btn = document.getElementById('wnav-btn');
-    var menu = document.getElementById('wnav-menu');
-    if (!btn || !menu) return;
+<style>
+  .w-nav {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    border-bottom: 1px solid color-mix(in srgb, var(--type) 10%, transparent);
+    /* Fallback first, as Nav.astro: a nav with no background would let the line run
+       through the links. */
+    background: var(--ground);
+    background: color-mix(in srgb, var(--ground) 84%, transparent);
+    backdrop-filter: blur(10px);
+  }
 
-    function setOpen(open) {
-      menu.hidden = !open;
-      btn.classList.toggle('is-open', open);
-      btn.setAttribute('aria-expanded', String(open));
-      btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  .w-nav__inner {
+    display: grid;
+    grid-template-areas: 'brand links cta';
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--s-3) var(--s-6);
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: var(--s-3) var(--s-5);
+  }
+
+  .w-nav__brand {
+    display: inline-flex;
+    grid-area: brand;
+    align-items: center;
+    gap: var(--s-3);
+    color: var(--type);
+    text-decoration: none;
+  }
+
+  .w-nav__name {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+  }
+
+  .w-nav__links {
+    display: flex;
+    grid-area: links;
+    justify-content: center;
+    gap: var(--s-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .w-nav__link {
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color 0.2s;
+  }
+
+  .w-nav__link:hover {
+    color: var(--type);
+  }
+
+  .w-nav__cta {
+    grid-area: cta;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 899px) {
+    .w-nav__inner {
+      grid-template-areas:
+        'brand cta'
+        'links links';
+      grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    btn.addEventListener('click', function () {
-      setOpen(menu.hidden);
-    });
+    /* Bleeds to the screen edges so a link scrolled under them is visibly cut, which is
+       the cue that the row scrolls. The block padding is room for the focus ring, which
+       an overflow container would otherwise clip. */
+    .w-nav__links {
+      justify-content: flex-start;
+      margin-inline: calc(-1 * var(--s-5));
+      padding: var(--s-1) var(--s-5);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
 
-    menu.querySelectorAll('a').forEach(function (a) {
-      a.addEventListener('click', function () {
-        setOpen(false);
-      });
-    });
-
-    // Escape closes it, and focus goes back to the trigger.
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !menu.hidden) {
-        setOpen(false);
-        btn.focus();
-      }
-    });
-  })();
-</script>
+    .w-nav__links::-webkit-scrollbar {
+      display: none;
+    }
+  }
+</style>

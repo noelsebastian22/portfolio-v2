@@ -1,0 +1,123 @@
+---
+/**
+ * 05 — FAQ. Native `<details>`, so every answer opens with JS off. From 960px the head is
+ * sticky in its own column while the questions scroll past it.
+ *
+ * The +/× is drawn in CSS: `+` is in both faces, but a drawn mark rotates about its true
+ * centre, where a glyph rotates about its em box.
+ */
+import SectionHead from './SectionHead.astro';
+import { websitesFaq as faq } from '../../data/websites';
+---
+
+<section class="w-section faq" id="faq" aria-labelledby="faq-title">
+  <div class="w-inner faq__inner">
+    <div class="faq__head">
+      <SectionHead id="faq-title" marker="05 — FAQ" title="Questions people ask" />
+    </div>
+
+    <div class="faq__list">
+      {faq.map((item) => (
+        <details class="faq__item">
+          <summary class="faq__question">
+            <span>{item.q}</span>
+            <span class="faq__icon" aria-hidden="true"></span>
+          </summary>
+          <p class="faq__answer">{item.a}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq__inner {
+    display: grid;
+    gap: clamp(var(--s-6), 4vw, var(--s-7));
+  }
+
+  @media (min-width: 960px) {
+    .faq__inner {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+      gap: var(--s-9);
+      align-items: start;
+    }
+
+    /* Clears the sticky nav (one row at this width), with the same air as anchor jumps. */
+    .faq__head {
+      position: sticky;
+      top: var(--s-9);
+    }
+  }
+
+  .faq__item {
+    border-bottom: 1px solid color-mix(in srgb, var(--type) 12%, transparent);
+  }
+
+  .faq__item:first-child {
+    border-top: 1px solid color-mix(in srgb, var(--type) 12%, transparent);
+  }
+
+  .faq__question {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--s-5);
+    padding-block: var(--s-5);
+    color: var(--type);
+    font-size: clamp(17px, 1.3vw, 19px);
+    font-weight: 600;
+    line-height: 1.4;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  /* Safari still paints the default disclosure triangle without this. */
+  .faq__question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq__icon {
+    position: relative;
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 0.35em;
+    color: var(--type-dim);
+    transition: transform 0.2s, color 0.2s;
+  }
+
+  .faq__icon::before,
+  .faq__icon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    margin-top: -1px;
+    background: currentColor;
+  }
+
+  .faq__icon::after {
+    transform: rotate(90deg);
+  }
+
+  .faq__question:hover .faq__icon,
+  .faq__item[open] .faq__icon {
+    color: var(--signal);
+  }
+
+  .faq__item[open] .faq__icon {
+    transform: rotate(45deg);
+  }
+
+  .faq__answer {
+    max-width: 64ch;
+    margin: 0;
+    padding-bottom: var(--s-5);
+    color: var(--type-dim);
+    font-size: 15.5px;
+    line-height: 1.65;
+  }
+</style>

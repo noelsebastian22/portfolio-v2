@@ -1,0 +1,120 @@
+---
+/**
+ * 04 — How it works. The four steps sit on one hairline with a node per step — the signal's
+ * emissions, without the vocabulary. Horizontal from 960px, vertical below. Pure CSS.
+ */
+import SectionHead from './SectionHead.astro';
+import { websitesProcess as steps } from '../../data/websites';
+---
+
+<section class="w-section process" id="process" aria-labelledby="process-title">
+  <div class="w-inner">
+    <SectionHead id="process-title" marker="04 — How it works" title="Four steps, no surprises" />
+
+    <ol class="process__steps" role="list">
+      {steps.map((step) => (
+        <li class="process__step">
+          <span class="process__node" aria-hidden="true"></span>
+          <span class="process__no" aria-hidden="true">{step.no}</span>
+          <h3 class="process__title">{step.title}</h3>
+          <p class="process__body">{step.body}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .process__steps {
+    --node: 13px;
+
+    display: grid;
+    gap: var(--s-7);
+    margin: clamp(var(--s-6), 4vw, var(--s-7)) 0 0;
+    padding: 0 0 0 var(--s-7);
+    list-style: none;
+  }
+
+  .process__step {
+    position: relative;
+  }
+
+  /* The track, one segment per step, from this node's centre to the next one's — so it
+     starts and ends on a node at every width rather than running past the last step's
+     text. Painted before the step's own children, so each hollow node sits over its own
+     segment, and the next step's node over this segment's end. */
+  .process__step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: calc(2px + var(--node) / 2);
+    bottom: calc(-1 * (var(--s-7) + 2px + var(--node) / 2));
+    left: calc(-1 * var(--s-7) + var(--node) / 2 - 0.5px);
+    width: 1px;
+    background: color-mix(in srgb, var(--type) 18%, transparent);
+  }
+
+  /* Hollow, like an emission the tip has not reached; opaque so the track stops at it. */
+  .process__node {
+    position: absolute;
+    top: 2px;
+    left: calc(-1 * var(--s-7));
+    width: var(--node);
+    height: var(--node);
+    box-sizing: border-box;
+    border: 2px solid var(--signal);
+    border-radius: 50%;
+    background: var(--ground);
+  }
+
+  .process__no {
+    color: var(--signal);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .process__title {
+    margin: var(--s-3) 0 var(--s-3);
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-stretch: 112%;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .process__body {
+    max-width: 48ch;
+    margin: 0;
+    color: var(--type-dim);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 960px) {
+    .process__steps {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--s-6);
+      padding: 0;
+    }
+
+    .process__step:not(:last-child)::before {
+      top: calc(var(--node) / 2 - 0.5px);
+      right: calc(-1 * (var(--s-6) + var(--node) / 2));
+      bottom: auto;
+      left: calc(var(--node) / 2);
+      width: auto;
+      height: 1px;
+    }
+
+    /* In flow above the number, but still positioned, so it paints over the segment. */
+    .process__node {
+      position: relative;
+      top: auto;
+      left: auto;
+      display: block;
+      margin-bottom: var(--s-5);
+    }
+  }
+</style>
