@@ -9,6 +9,30 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-07 · claude-code · Phase 14 websites, PR #5
+
+**Did**
+- Rebuilt `/websites` on the Signal Path system: seven section components in `src/components/websites/` + `SectionHead`, shared primitives in `src/styles/websites.css`, `WebsitesNav` without its script. Content in `data/websites.ts` untouched; no Tailwind left in `src/`.
+- Put it back live: `vercel.json` redirect, sitemap filter gone; Contact links `/websites`; `scripts/budget.mjs` gates `/websites`.
+- Review round (controller, from screenshots): prices aligned across tiers, the doubled "Concept" label dropped, the hero frame's underline removed, `ContactForm` `hideChoice` so clients are never offered "A role".
+- Browser check (headless Chromium, 5 widths): no sideways scroll, anchors settle at 96px as on `/`, focus ring on every control; JS off renders all sections, FAQ opens, form posts. PR #5 open, not merged.
+
+**Decided**
+- Phase 14 restyles only; `data/websites.ts` frozen; the line stays unanchored (Noel).
+- `ContactForm` `hideChoice`; `/websites` budget-gated (controller).
+
+**Didn't work**
+- Measuring anchor jumps 1.6s after the click read "under the nav" on `astro preview`: Lenis's glide takes ~2s. Sampled over 4s, `/websites` and `/` both settle at the section top = 96px. Not a bug.
+
+**Open**
+- **`/websites` has no phone number** and **Shared `/websites` links preview as the recruiter site** (Known Gaps → Post-launch).
+- A dev server Noel started at 14:52 is still on :4321; it was left running.
+
+**Next**
+Noel opens PR #5's preview on a phone (hero, pricing, a test quote; `/websites` without the slash loads) and merges; then mark Phase 14 complete and start Phase 15 (preloader + OG images).
+
+**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0) · `/websites` 58,752 (−391)
+
 ## 2026-10-07 · claude-code · Phase 13 merged
 
 **Did**
@@ -55,21 +79,3 @@ Noel listens on PR #4's Vercel preview and tunes the constants in `lib/audio/eng
 
 **Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (+1,124 vs live) · `/websites` 59,143 (+113) · audio chunk 1,783 (lazy)
 
-## 2026-10-06 · claude-code · Phase 12 merged
-
-**Did**
-- Rewrote the Phase 12 spec's §4–§6 to the ring as built (R4); the Known Gap that owed it is archived.
-- Noel checked the ring on PR #3's preview and approved; merged as `e8f87cb`. Vercel's production
-  deploy succeeded; www.noel-sebastian.com serves the same script chunks as the local build, plus
-  the ring's nav, the hold-end marker and the lazy `stage` chunk (200).
-- Phase 12 marked complete in Phase Status; figures moved from branch to live (its section was
-  already archived).
-
-**Open**
-- Old `astro preview` processes from earlier sessions may still listen on :4321 and :4322.
-
-**Next**
-Start Phase 13 (audio engine): expand BUILD-PLAN's Phase 13 section into task-level steps from
-the parent spec, brainstorm first, then a Phase 13 design spec.
-
-**Numbers** — build green · 326 tests · JS on `/` 63,860 gzip (live; +704 vs Phase 11) · enhanced 135,887 · ring chunk 4,518

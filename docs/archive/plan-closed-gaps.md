@@ -377,3 +377,18 @@ card's dot. The 590px note was replaced by the R4 thresholds (540 / 705px).
 - **Phase 13's sound is unheard by a person.** The browser check proves every note fires in order
   (17/17), not how it sounds. Noel listens on the preview; the voice values (spec D4) are starting
   values to tune by ear in `lib/audio/engine.ts`'s constants.
+
+## Closed by Phase 14 — 2026-10-07
+
+- **CLOSED 2026-10-07 — the sitemap filter is gone and `404.astro`'s comment is now true; the `global.css` nit stays open.** Original:
+- **Final-review minors, deferred (2026-09-27):** comment nits in `global.css` (the wrap is below
+  360, not 390) and `404.astro` (no sitemap `filter` exists); the sitemap filter hard-codes the
+  domain. M5 is parked for Noel (see Carried forward).
+- **CLOSED 2026-10-07 — (6) closed: no `font-bricolage` (or any Tailwind) class survives in `src/`; (4) stays open.** Original:
+- **Two Phase 4 review minors are still open** (the list of seven is archived; five are resolved).
+  (4) The desktop signal layer crosses footer text at narrow widths — cosmetic, kept legible by
+  `--signal-dim-alpha`; see the Task 8.2 re-check below. (6) Lowercase `font-bricolage` class
+  strings survive on `/websites` only — Phase 14's restyle owns them.
+- **CLOSED 2026-10-07 — Phase 14 removed the redirect from `vercel.json`.** Original:
+- **The `/websites` redirect is only verifiable on a Vercel deployment** (`astro preview`
+  ignores `vercel.json`). Verified on preview and production 2026-09-29.
