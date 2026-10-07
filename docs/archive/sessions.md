@@ -5,6 +5,25 @@ bottom; never edit one. If an old entry turned out wrong, say so in a new live e
 
 <!-- archived, newest first -->
 
+## 2026-10-06 · claude-code · Phase 12 merged
+
+**Did**
+- Rewrote the Phase 12 spec's §4–§6 to the ring as built (R4); the Known Gap that owed it is archived.
+- Noel checked the ring on PR #3's preview and approved; merged as `e8f87cb`. Vercel's production
+  deploy succeeded; www.noel-sebastian.com serves the same script chunks as the local build, plus
+  the ring's nav, the hold-end marker and the lazy `stage` chunk (200).
+- Phase 12 marked complete in Phase Status; figures moved from branch to live (its section was
+  already archived).
+
+**Open**
+- Old `astro preview` processes from earlier sessions may still listen on :4321 and :4322.
+
+**Next**
+Start Phase 13 (audio engine): expand BUILD-PLAN's Phase 13 section into task-level steps from
+the parent spec, brainstorm first, then a Phase 13 design spec.
+
+**Numbers** — build green · 326 tests · JS on `/` 63,860 gzip (live; +704 vs Phase 11) · enhanced 135,887 · ring chunk 4,518
+
 ## 2026-10-06 · claude-code · Phase 12 Task 14, PR #3
 
 **Did**

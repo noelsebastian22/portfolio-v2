@@ -1391,3 +1391,27 @@ Phase 13's Decisions and Cosmetic gaps as first written (2026-10-06), before the
   unless `on` is stored (Phase 13).
 - **With JS off the toggle reads `Sound · off` and does nothing.** Audio needs JS; the label is
   true, the button inert (Phase 13).
+
+The Decision Phase 14 superseded, moved here from BUILD-PLAN → Decisions on 2026-10-07:
+
+- **2026-09-27 (Noel)** — **`/websites` redirects (307) to `/#contact` until Phase 14.** Its
+  unrestyled state would have replaced production's working page on merge; the recruiter site
+  ships now. `vercel.json` holds the redirect, the sitemap filter drops the URL, and Contact's
+  freelance line points at the form instead of the page.
+
+## PHASE 14 — `/websites` Restyle
+
+**Deliverable:** the freelance funnel on the new system, deliberately lighter — the 2D line
+only, no particle portrait, no ring, no WebGL, no audio (spec §14).
+
+**Files:** `src/pages/websites.astro`, `src/components/WebsitesNav.astro`,
+`src/data/websites.ts`
+
+**Verification:** the page no longer references Tailwind. Its distinct SEO targeting for
+local-business search is preserved.
+
+Design: `docs/superpowers/specs/2026-10-07-phase-14-websites-design.md`. Plan:
+`docs/superpowers/plans/2026-10-07-phase-14-websites.md`.
+
+- [x] **Task 14.1** — the page, one component per section. **Task 14.2** — back live: redirect and
+  sitemap filter gone, Contact's link restored, `/websites` budget-gated.

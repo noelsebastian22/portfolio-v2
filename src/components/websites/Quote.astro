@@ -1,0 +1,68 @@
+---
+/**
+ * 06 — Get started. The same ContactForm.astro the home page's Contact uses (final review,
+ * I4) — one form, one Formspree wiring, no drifting copy — fixed to "A project" with the
+ * role/project question hidden, since this page's reader is always a client. The form draws
+ * its own opaque panel. `mountContactForms()` in websites.astro binds it.
+ */
+import SectionHead from './SectionHead.astro';
+import ContactForm from '../ContactForm.astro';
+import { CONTACT_EMAIL } from '../../lib/contact-form';
+---
+
+<section class="w-section quote" id="contact" aria-labelledby="contact-title">
+  <div class="w-inner quote__inner">
+    <div class="quote__intro">
+      <SectionHead id="contact-title" marker="06 — Get started" title="Tell me about the job" />
+      <p class="quote__lede">
+        No obligation and no sales call. Send the details and you'll get a price, or an honest
+        answer that you don't need what you think you need. Or email me directly at
+        <a class="quote__link" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+      </p>
+    </div>
+
+    <ContactForm lookingFor="project" hideChoice />
+  </div>
+</section>
+
+<style>
+  .quote {
+    padding-bottom: clamp(var(--s-8), 9vw, var(--s-10));
+  }
+
+  .quote__inner {
+    display: grid;
+    gap: clamp(var(--s-6), 4vw, var(--s-7));
+  }
+
+  @media (min-width: 960px) {
+    .quote__inner {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: var(--s-9);
+      align-items: start;
+    }
+  }
+
+  .quote__lede {
+    max-width: 52ch;
+    margin: var(--s-5) 0 0;
+    color: var(--type-dim);
+    font-size: clamp(15px, 1.15vw, 17px);
+    line-height: 1.6;
+  }
+
+  /* Contact.astro's link treatment. */
+  .quote__link {
+    color: var(--type);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--type) 35%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+    overflow-wrap: anywhere;
+    transition: text-decoration-color 0.2s;
+  }
+
+  .quote__link:hover {
+    text-decoration-color: currentColor;
+  }
+</style>

@@ -1,0 +1,149 @@
+---
+/**
+ * 02 — Recent work. Each card's capture is also a link to the live site, but out of the
+ * tab order and the accessibility tree: the "Open the site" button is the one real target,
+ * so a keyboard or screen-reader user meets each site once, not twice.
+ *
+ * No separate "Concept" badge: every self-directed build's `kind` already opens with
+ * "Concept build", and saying it twice on one line read as a mistake.
+ */
+import SectionHead from './SectionHead.astro';
+import { websitesWork as work } from '../../data/websites';
+---
+
+<section class="w-section work" id="work" aria-labelledby="work-title">
+  <div class="w-inner">
+    <SectionHead
+      id="work-title"
+      marker="02 — Recent work"
+      title="Sites I've built"
+      lede="Open any of them on your phone. That is the honest test — how it feels in the hand, and how long it takes to appear."
+    />
+
+    <ul class="work__grid" role="list">
+      {work.map((project) => (
+        <li class="w-panel work__card">
+          <a class="work__shot" href={project.site} target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true">
+            <img
+              src={project.img}
+              width="900"
+              height="495"
+              alt={`Screenshot of the ${project.title} website`}
+              loading="lazy"
+              decoding="async"
+            />
+          </a>
+          <div class="work__body">
+            <p class="work__meta">{project.kind}</p>
+            <h3 class="work__title">{project.title}</h3>
+            <p class="work__desc">{project.desc}</p>
+            <a
+              class="w-btn w-btn--ghost w-btn--small work__link"
+              href={project.site}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-describedby="new-tab-note"
+            >
+              Open the site<span class="w-sr">: {project.title}</span>
+            </a>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    <p class="work__note">
+      Builds marked <strong>concept</strong> were made on my own initiative rather than for a
+      paying client — the code and the craft are identical, and I would rather label them than
+      let you assume otherwise.
+    </p>
+  </div>
+</section>
+
+<style>
+  .work__grid {
+    display: grid;
+    gap: var(--s-5);
+    margin: clamp(var(--s-6), 4vw, var(--s-7)) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 768px) {
+    .work__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .work__card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .work__card:hover {
+    border-color: var(--signal);
+  }
+
+  .work__shot {
+    display: block;
+    border-bottom: 1px solid color-mix(in srgb, var(--type) 10%, transparent);
+  }
+
+  .work__shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .work__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--s-6);
+  }
+
+  .work__meta {
+    margin: 0;
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .work__title {
+    margin: var(--s-3) 0 var(--s-3);
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: clamp(22px, 2vw, 26px);
+    font-stretch: 112%;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  .work__desc {
+    margin: 0 0 var(--s-6);
+    color: var(--type-dim);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .work__link {
+    margin-top: auto;
+  }
+
+  .work__note {
+    max-width: 62ch;
+    margin: var(--s-6) 0 0;
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+
+  .work__note strong {
+    color: var(--type);
+  }
+</style>

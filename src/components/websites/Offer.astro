@@ -1,0 +1,72 @@
+---
+/** 01 — What you get: the six foundations every build ships with. */
+import SectionHead from './SectionHead.astro';
+import { websitesWhat as what } from '../../data/websites';
+---
+
+<section class="w-section offer" id="what" aria-labelledby="what-title">
+  <div class="w-inner">
+    <SectionHead id="what-title" marker="01 — What you get" title={what.title} lede={what.intro} />
+
+    <ul class="offer__grid" role="list">
+      {what.items.map((item) => (
+        <li class="w-panel offer__item">
+          <span class="offer__no" aria-hidden="true">{item.no}</span>
+          <h3 class="offer__title">{item.title}</h3>
+          <p class="offer__body">{item.body}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .offer__grid {
+    display: grid;
+    gap: var(--s-4);
+    margin: clamp(var(--s-6), 4vw, var(--s-7)) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 640px) {
+    .offer__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .offer__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .offer__item {
+    padding: var(--s-6);
+  }
+
+  .offer__no {
+    color: var(--signal);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .offer__title {
+    margin: var(--s-4) 0 var(--s-3);
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-stretch: 112%;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .offer__body {
+    margin: 0;
+    color: var(--type-dim);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+</style>

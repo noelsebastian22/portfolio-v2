@@ -1,0 +1,210 @@
+---
+/**
+ * The hero: what this is, the next step, and a real site beside it. A business owner
+ * judges a web developer by the work, so the first client build in `websitesWork` sits in
+ * the second column rather than below the fold. Read from the data, so when the project
+ * list changes the hero follows — and a list with no client build renders one column
+ * instead of an empty frame.
+ *
+ * Every card capture is the top 900×495 of its site (scripts/optimise-gallery.mjs), so
+ * the dimensions are constants, not per-project data.
+ */
+import { websitesHero as hero, websitesWork } from '../../data/websites';
+
+const featured = websitesWork.find((project) => !project.concept);
+const featuredHost = featured ? new URL(featured.site).hostname.replace(/^www\./, '') : '';
+---
+
+<section class:list={['hero', { 'hero--solo': !featured }]} aria-labelledby="hero-title">
+  <div class="w-inner hero__inner">
+    <div class="hero__copy">
+      <p class="hero__eyebrow">{hero.eyebrow}</p>
+      <h1 class="hero__title" id="hero-title">{hero.headline}</h1>
+      <p class="hero__sub">{hero.sub}</p>
+
+      <div class="hero__actions">
+        <a class="w-btn" href={hero.primaryCta.href}>{hero.primaryCta.label}</a>
+        <a class="w-btn w-btn--ghost" href={hero.secondaryCta.href}>{hero.secondaryCta.label}</a>
+      </div>
+
+      <ul class="w-ticks hero__facts" role="list">
+        {hero.facts.map((fact) => <li>{fact}</li>)}
+      </ul>
+    </div>
+
+    {featured && (
+      <figure class="hero__sample">
+        <a
+          class="hero__frame"
+          href={featured.site}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-describedby="new-tab-note"
+        >
+          <span class="hero__bar" aria-hidden="true">
+            <span class="hero__dot"></span>
+            <span class="hero__dot"></span>
+            <span class="hero__dot"></span>
+            <span class="hero__host">{featuredHost}</span>
+          </span>
+          <img
+            class="hero__shot"
+            src={featured.img}
+            width="900"
+            height="495"
+            alt={`Screenshot of the ${featured.title} website`}
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </a>
+        <figcaption class="hero__caption">
+          <span class="hero__kind">{featured.kind}</span>
+          <span class="hero__name">{featured.title}</span>
+        </figcaption>
+      </figure>
+    )}
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding-block: clamp(var(--s-8), 8vw, var(--s-10)) clamp(var(--s-4), 2vw, var(--s-6));
+  }
+
+  .hero__inner {
+    display: grid;
+    align-items: center;
+    gap: var(--s-8);
+  }
+
+  @media (min-width: 960px) {
+    .hero__inner {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      gap: var(--s-9);
+    }
+
+    .hero--solo .hero__inner {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .hero__eyebrow {
+    margin: 0;
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .hero__title {
+    margin: var(--s-5) 0 0;
+    color: var(--type);
+    font-family: var(--font-display);
+    font-size: clamp(36px, 4.6vw, 68px);
+    font-stretch: 125%;
+    font-weight: 700;
+    line-height: 0.94;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .hero__sub {
+    max-width: 54ch;
+    margin: var(--s-5) 0 0;
+    color: var(--type-dim);
+    font-size: clamp(16px, 1.25vw, 19px);
+    line-height: 1.6;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-6);
+  }
+
+  .hero__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3) var(--s-6);
+    margin-top: var(--s-6);
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+  }
+
+  .hero__sample {
+    margin: 0;
+  }
+
+  .hero__frame {
+    display: block;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--type) 14%, transparent);
+    border-radius: var(--radius);
+    background: var(--ground-lift);
+    /* A link, so the host in its bar would otherwise inherit the underline. */
+    text-decoration: none;
+    transition: border-color 0.2s;
+  }
+
+  .hero__frame:hover {
+    border-color: var(--signal);
+  }
+
+  .hero__bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: var(--s-2) var(--s-3);
+    border-bottom: 1px solid color-mix(in srgb, var(--type) 10%, transparent);
+    color: var(--type-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .hero__dot {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--type) 22%, transparent);
+  }
+
+  .hero__host {
+    min-width: 0;
+    margin-left: var(--s-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hero__shot {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .hero__caption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-4);
+    margin-top: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .hero__kind {
+    color: var(--type-dim);
+  }
+
+  .hero__name {
+    color: var(--type);
+  }
+</style>

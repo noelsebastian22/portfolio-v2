@@ -81,7 +81,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 11 | WebGL — particle portrait | **complete — live 2026-10-03** | PR #2 (`cf91bd9`); cream still, particles over it (R1). Section archived |
 | 12 | WebGL — 3D ring | **complete — live 2026-10-06** | PR #3 (`e8f87cb`); a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Section archived |
 | 13 | Audio engine | **complete — live 2026-10-07** | PR #4 (`175b8ba`); drone, a note per emission, speed → cutoff, hover tick behind the nav toggle. Noel heard it; its character is to be reworked (Deferred, 2026-10-07). Section archived |
-| 14 | `/websites` restyle | not started | |
+| 14 | `/websites` restyle | **in review — PR #5** | Content frozen; one component per section; back live on merge (redirect, sitemap filter gone); budget gates it |
 | 15 | Preloader + final polish | not started | |
 
 ### Current figures — 2026-10-06
@@ -95,7 +95,7 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **64,984 (79.3%)** (Phase 13), +1,124 vs Phase 12's 63,860 — the sound island (839), the emissions bus (folded into `tip`), the six sites' announces, `onTick` (+30 in `timeline`). `/websites` 59,143 (+113: `tip` carries the inert bus) | 2026-10-07 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **64,984 (79.3%)** (Phase 13), +1,124 vs Phase 12 — the sound island, the emissions bus, `onTick`. `/websites` **58,752 (71.7%)**, −391 (Phase 14: the nav's script gone), gated since Phase 14 | 2026-10-07 |
 | Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,887 (53.1%)** (Phase 12), +119 vs Phase 11 (the ring left WebGL in R4); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-06 |
 | Ring chunk gzip (lazy, after load, no Three.js) | — | live **4,518** (`lib/ring/stage.ts`; not in any page's initial graph) | 2026-10-06 |
 | Audio chunk gzip (lazy, only once sound is turned on) | ≤ 5,120 | live **1,783** (`lib/audio/connect.ts` + `engine.ts` + `score.ts`; in no page's initial graph or `modulepreload`) | 2026-10-06 |
@@ -215,16 +215,8 @@ Expand the phase you are about to start into task-level steps before implementin
 
 ## PHASE 14 — `/websites` Restyle
 
-**Deliverable:** the freelance funnel on the new system, deliberately lighter — the 2D line
-only, no particle portrait, no ring, no WebGL, no audio (spec §14).
-
-**Files:** `src/pages/websites.astro`, `src/components/WebsitesNav.astro`,
-`src/data/websites.ts`
-
-**Verification:** the page no longer references Tailwind. Its distinct SEO targeting for
-local-business search is preserved.
-
-- [ ] Remove the `/websites` redirect from `vercel.json`, the sitemap filter, and restore Contact's `/websites` link.
+Built; in review as PR #5. Its section is archived in `docs/archive/plan-phases.md`; design and
+plan in `docs/superpowers/specs|plans/2026-10-07-phase-14-websites*`.
 
 ## PHASE 15 — Preloader + Final Polish
 
@@ -487,10 +479,6 @@ decision was made; this section records *what it is*.
   The rule was already `docs/resume-transcript.md` (2026-09-20's decision, above) plus any
   confirmed notes added to it since; both files now say that, identically.
 
-- **2026-09-27 (Noel)** — **`/websites` redirects (307) to `/#contact` until Phase 14.** Its
-  unrestyled state would have replaced production's working page on merge; the recruiter site
-  ships now. `vercel.json` holds the redirect, the sitemap filter drops the URL, and Contact's
-  freelance line points at the form instead of the page.
 - **2026-09-29** — **Archivo's `wdth` axis is cut to 100–125.** The site only sets 100%, 112% and
   125%; the originals were already Google's Latin subset, so codepoints saved ~4% and the axis cut
   saved the rest (90 → 57 KB). `tokens.css` declares `font-stretch: 100% 125%`, and
@@ -620,6 +608,13 @@ decision was made; this section records *what it is*.
   direct import from a lazy chunk split GSAP into its own chunk, +630 B on every page. The bus
   joins `tip`. `/` +1,124 against the spec's ≤ +1 KB estimate, accepted.
 
+- **2026-10-07 (Noel)** — **Phase 14 restyles only; `data/websites.ts` is frozen** (the project
+  list is reworked later). The line stays unanchored (option A). The rest is in spec
+  `2026-10-07-phase-14-websites-design.md`. Supersedes 2026-09-27's redirect.
+- **2026-10-07 (controller)** — **`ContactForm`'s `hideChoice`**: `/websites` sends
+  `lookingFor=project` hidden, never offering a client "A role". `npm run budget` gates
+  `/websites` too.
+
 ## Known Gaps
 
 Open items and standing notes only. When a gap closes, move the whole bullet verbatim to
@@ -628,6 +623,10 @@ marked RESOLVED.
 
 ### Post-launch — owed by Noel or waiting on a date
 
+- **`/websites` has no phone number.** Spec §14's reader "needs to find a phone number"; none is
+  in `data/websites.ts` and none may be invented. Add one there (and to `serviceSchema`).
+- **Shared `/websites` links preview as the recruiter site** — `BaseLayout`'s OG image and alt
+  ("Senior Web Engineer & Angular Specialist"). Phase 15 generates OG images.
 - **Served CV is still the March PDF** (`public/noel-sebastian.pdf`); replace with a text-based
   export of the September resume. VoiceOver pass still owed (checklist in `task-9.5-report.md`).
 
@@ -652,13 +651,11 @@ marked RESOLVED.
 
 - **The `→` in "Bundle size, 100% → 40%" renders in a fallback face** — neither font has U+2192.
   Allowlisted in `scripts/fonts.mjs`; the copy could say "to" instead.
-- **Final-review minors, deferred (2026-09-27):** comment nits in `global.css` (the wrap is below
-  360, not 390) and `404.astro` (no sitemap `filter` exists); the sitemap filter hard-codes the
-  domain. M5 is parked for Noel (see Carried forward).
-- **Two Phase 4 review minors are still open** (the list of seven is archived; five are resolved).
+- **Final-review minors, deferred (2026-09-27):** a comment nit in `global.css` (the wrap is below
+  360, not 390). M5 is parked for Noel (see Carried forward).
+- **One Phase 4 review minor is still open** (the list of seven is archived; six are resolved).
   (4) The desktop signal layer crosses footer text at narrow widths — cosmetic, kept legible by
-  `--signal-dim-alpha`; see the Task 8.2 re-check below. (6) Lowercase `font-bricolage` class
-  strings survive on `/websites` only — Phase 14's restyle owns them.
+  `--signal-dim-alpha`; see the Task 8.2 re-check below.
 - **Re-checked by Task 8.2 — the Phase 4 minor about footer text crossing the line** is covered
   by the dim rule (the line is dim anywhere it does not clear content). Measured with Contact
   built: at 1440, 1920 and 2560 the line crosses no footer text; at 1024 it crosses the colophon;
@@ -761,8 +758,6 @@ before then.
   `scene.ts` is imported after `load` + idle. A later phase that adds a scroll-publishing ticker
   listener after the scene loads would be drawn one frame late.
 
-- **The `/websites` redirect is only verifiable on a Vercel deployment** (`astro preview`
-  ignores `vercel.json`). Verified on preview and production 2026-09-29.
 - **`onSection`'s first callback arrives on the next refresh/rAF pass, not synchronously inside the
   `onSection()` call.** A section already on screen at page load *does* receive its initial progress
   — traced through `ScrollTrigger.refresh()`'s `isFirstRefresh && !_refreshingAll && self.update()`,
