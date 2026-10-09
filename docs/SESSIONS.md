@@ -9,6 +9,29 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-10 · claude-code · Sound rework planned
+
+**Did**
+- Started Phase 15 brainstorming; Noel paused it to rework the sound first (preloader understanding: hero renders under the curtain at full opacity, decided before first paint by inline `<head>` script, 0ms LCP cost).
+- Wrote spec `docs/superpowers/specs/2026-10-09-sound-track-design.md` (D1–D16) and plan `docs/superpowers/plans/2026-10-09-sound-track.md` (5 tasks) on `feat/sound-track`. No site code changed.
+
+**Decided**
+- Phase 15 waits for the sound rework.
+- A licensed track ("A New Daydream", DEX 1200, Epidemic Sound) replaces the synthesised voice; Vercel Blob, not the repo; licence gate before merge.
+
+**Didn't work**
+- **A lo-fi re-voicing of the synth** (A major pentatonic, Amaj7 triangle pad with wow, two-operator FM e-piano notes, 1.2 s room, tape hiss, cutoff 1–4.5 kHz). Built on the branch, green, Noel listened: "nope this is not what I am looking for." Discarded, never committed. He wants a recorded track, not a better synth.
+- **Identifying saifullah.dev's music from its files.** It streams Ogg Vorbis from `/api/audio?track=default` (~0.9 MB) and `digital-minimalism`, plus `/effects/*.ogg`; the tags were stripped by an ffmpeg re-encode, the page credits nothing, and the author has no public repos. Not downloaded or used — not ours. Noel found the track he wanted on Epidemic Sound himself.
+
+**Open**
+- **The sound reads like a horror or sci-fi film score** (Known Gaps → Deferred 2026-10-07) — now blocked on Noel's Epidemic Sound account (the file) and the licence answer (spec D12).
+- `portfolio-v2` is a public repo: the track must never be committed (spec D2).
+
+**Next**
+Run plan Tasks 1 and 3 (`scripts/audio.mjs`, `lib/audio/brightness.ts`) — neither needs the file. Once Noel has `assets-src/audio/a-new-daydream.wav`, Task 2 onward.
+
+**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0) · `/websites` 58,752 (±0) · lint WARN: BUILD-PLAN ~60.1 KB (limit 60,000) — nothing closed to archive; archiving the sound gap when the rework merges brings it under
+
 ## 2026-10-07 · claude-code · Phase 14 merged
 
 **Did**
@@ -46,22 +69,3 @@ Start Phase 15 (preloader + OG images, `src/islands/preloader.ts`, `scripts/og-i
 Noel opens PR #5's preview on a phone (hero, pricing, a test quote; `/websites` without the slash loads) and merges; then mark Phase 14 complete and start Phase 15 (preloader + OG images).
 
 **Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0) · `/websites` 58,752 (−391)
-
-## 2026-10-07 · claude-code · Phase 13 merged
-
-**Did**
-- Noel heard the sound on PR #4's preview: it plays. Merged as `175b8ba`. www.noel-sebastian.com serves the same script chunks as the local build, and the lazy `connect` chunk returns 200.
-- Phase 13 marked complete; its section and the superseded 2026-09-26 sound-toggle Decision are archived in `docs/archive/plan-phases.md`, and the "unheard" gap is closed. Figures moved from branch to live.
-- BUILD-PLAN.md trimmed back under lint's 60,000 B (59,999) by tightening this phase's own Decisions and gaps.
-
-**Decided**
-- The sound's voice is to be reworked later; the mechanics stay (Deferred by Noel — 2026-10-07).
-
-**Open**
-- **The sound reads like a horror or sci-fi film score, not a portfolio** (Known Gaps → Deferred by Noel — 2026-10-07).
-
-**Next**
-Start Phase 14 (`/websites` restyle): expand BUILD-PLAN's Phase 14 section into task-level steps, brainstorm first, then a design spec. Or, if Noel prefers, rework the sound's voice first — by ear, in `lib/audio/engine.ts`.
-
-**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (live; +1,124 vs Phase 12) · audio chunk 1,783 (lazy)
-

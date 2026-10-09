@@ -82,7 +82,7 @@ Update this table at the end of every session. It is the first thing a cold sess
 | 12 | WebGL — 3D ring | **complete — live 2026-10-06** | PR #3 (`e8f87cb`); a floating CSS 3D ring (no WebGL), scroll-pinned, scales to fit (R4). Section archived |
 | 13 | Audio engine | **complete — live 2026-10-07** | PR #4 (`175b8ba`); drone, a note per emission, speed → cutoff, hover tick behind the nav toggle. Noel heard it; its character is to be reworked (Deferred, 2026-10-07). Section archived |
 | 14 | `/websites` restyle | **complete — live 2026-10-07** | PR #5 (`034309b`); restyle only, one component per section, redirect gone, budget-gated. Noel checked the preview. Section archived |
-| 15 | Preloader + final polish | not started | |
+| 15 | Preloader + final polish | not started — after the sound rework | |
 
 ### Current figures — 2026-10-06
 
@@ -609,6 +609,12 @@ decision was made; this section records *what it is*.
 - **2026-10-07 (controller)** — **`ContactForm`'s `hideChoice`**: `/websites` sends
   `lookingFor=project` hidden, never offering a client "A role". `npm run budget` gates
   `/websites` too.
+
+- **2026-10-09 (Noel)** — **Phase 15 waits for the sound rework.**
+- **2026-10-09 (Noel)** — **A licensed track replaces the synth voice** ("A New Daydream", DEX
+  1200, Epidemic Sound): speed → lowpass and the tick stay, the drone and notes go. Hosted on
+  Vercel Blob, never in this public repo; no merge before the licence check. Spec
+  `2026-10-09-sound-track-design.md` D1–D16.
 
 ## Known Gaps
 

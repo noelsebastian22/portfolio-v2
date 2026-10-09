@@ -5,6 +5,25 @@ bottom; never edit one. If an old entry turned out wrong, say so in a new live e
 
 <!-- archived, newest first -->
 
+## 2026-10-07 · claude-code · Phase 13 merged
+
+**Did**
+- Noel heard the sound on PR #4's preview: it plays. Merged as `175b8ba`. www.noel-sebastian.com serves the same script chunks as the local build, and the lazy `connect` chunk returns 200.
+- Phase 13 marked complete; its section and the superseded 2026-09-26 sound-toggle Decision are archived in `docs/archive/plan-phases.md`, and the "unheard" gap is closed. Figures moved from branch to live.
+- BUILD-PLAN.md trimmed back under lint's 60,000 B (59,999) by tightening this phase's own Decisions and gaps.
+
+**Decided**
+- The sound's voice is to be reworked later; the mechanics stay (Deferred by Noel — 2026-10-07).
+
+**Open**
+- **The sound reads like a horror or sci-fi film score, not a portfolio** (Known Gaps → Deferred by Noel — 2026-10-07).
+
+**Next**
+Start Phase 14 (`/websites` restyle): expand BUILD-PLAN's Phase 14 section into task-level steps, brainstorm first, then a design spec. Or, if Noel prefers, rework the sound's voice first — by ear, in `lib/audio/engine.ts`.
+
+**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (live; +1,124 vs Phase 12) · audio chunk 1,783 (lazy)
+
+
 ## 2026-10-06 · claude-code · Phase 13 audio, PR #4
 
 **Did**
