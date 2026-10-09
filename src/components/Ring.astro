@@ -7,7 +7,7 @@
  * cards, same content, same links in both, so everything here is server-rendered and the island
  * only adds behaviour.
  *
- * **The split is a track.** §6 has the line split into five at the ring, one branch per
+ * **The split is a track.** §6 has the line split at the ring, one branch per
  * card. In 2D that is a horizontal track above the rail, the signal's own weight and
  * colour, which the curve meets exactly where it reaches the centre: the track's centre
  * line carries `data-signal-split`, and the renderer pins control point `RING_SPLIT_POINT`
@@ -73,7 +73,7 @@ const RETURN_PX_PER_S = 1600;
 
 const seconds = (value: number) => `${value.toFixed(2)}s`;
 
-/** The counter's two digits: `01 / 05`. */
+/** The counter's two digits: `01 / 04`. */
 const pad = (value: number) => String(value).padStart(2, '0');
 
 const cards = ringProjects.map((project) => {
@@ -603,7 +603,7 @@ const srcset = (urls: Record<string, string>) =>
     pointer-events: none;
   }
 
-  /* One 3D context for all five, so they depth-sort; stage.ts sets its perspective. */
+  /* One 3D context for all the cards, so they depth-sort; stage.ts sets its perspective. */
   .ring--3d .ring__cards {
     position: absolute;
     inset: 0;
@@ -741,7 +741,7 @@ const srcset = (urls: Record<string, string>) =>
     white-space: nowrap;
   }
 
-  /* The card in front reads first; the count out of five recedes. */
+  /* The card in front reads first; the total recedes. */
   .ring__count [data-ring-count] {
     color: var(--type);
   }

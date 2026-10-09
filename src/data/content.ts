@@ -160,13 +160,6 @@ export const ringProjects = [
     tagline: 'Angular 22 · Supabase · PWA',
   },
   {
-    slug: 'ezytrack',
-    title: 'Ezytrack',
-    site: 'https://ezytrack.noel-sebastian.com/',
-    desc: 'Market-leading GPS fleet-tracking business site — real-time vehicle visibility, route history, geofencing and dashcam integration for Australian fleets.',
-    tagline: 'Astro · Tailwind v4 · TypeScript',
-  },
-  {
     slug: 'plumber',
     title: 'PLUMBER.',
     site: 'https://plumber.noel-sebastian.com/',

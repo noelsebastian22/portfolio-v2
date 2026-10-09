@@ -207,12 +207,4 @@ export const websitesWork = [
     img: '/images/gallery/laserclinic-card.webp',
     desc: 'A one-room male waxing and laser studio. Every price published up front, before-and-after sliders you drag to compare, and a booking link on every screen so nobody has to ring and explain what they want.',
   },
-  {
-    title: 'FleetPoint',
-    kind: 'Concept build · Fleet telematics',
-    concept: true,
-    site: 'https://ezytrack.noel-sebastian.com/',
-    img: '/images/gallery/ezytrack-card.webp',
-    desc: 'A larger marketing site for a GPS fleet-tracking product — several services, a feature comparison, and a quote form built to qualify the lead.',
-  },
 ];

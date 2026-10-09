@@ -97,7 +97,7 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
 | Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **64,984 (79.3%)** (Phase 13), +1,124 vs Phase 12 — the sound island, the emissions bus, `onTick`. `/websites` live **58,752 (71.7%)**, −391 (Phase 14: the nav's script gone), gated since Phase 14 | 2026-10-07 |
 | Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,887 (53.1%)** (Phase 12), +119 vs Phase 11 (the ring left WebGL in R4); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-06 |
-| Ring chunk gzip (lazy, after load, no Three.js) | — | live **4,518** (`lib/ring/stage.ts`; not in any page's initial graph) | 2026-10-06 |
+| Ring chunk gzip (lazy, after load, no Three.js) | — | branch **5,401** (`lib/ring/stage.ts`; not in any page's initial graph), +863 vs 4,538: `ringProjects` now rides in it, so the count follows the list — about +200 per project | 2026-10-10 |
 | Audio chunk gzip (lazy, only once sound is turned on) | ≤ 5,120 | live **1,783** (`lib/audio/connect.ts` + `engine.ts` + `score.ts`; in no page's initial graph or `modulepreload`) | 2026-10-06 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
@@ -615,6 +615,12 @@ decision was made; this section records *what it is*.
   1200, Epidemic Sound): speed → lowpass and the tick stay, the drone and notes go. Hosted on
   Vercel Blob, never in this public repo; no merge before the licence check. Spec
   `2026-10-09-sound-track-design.md` D1–D16.
+- **2026-10-10 (Noel)** — **Ezytrack is off the site** — client work he no longer wants to
+  present. Gone from the ring (now four cards, `RING_CARD_COUNT = 4`) and from `/websites`
+  (now three, one row from 960px); its master, captures and card deleted. Replacements to come.
+- **2026-10-10 (Noel)** — **The ring's card count follows `ringProjects`.** `RING_CARD_COUNT` is
+  its length; the radius stays 1.1 card widths up to five cards and widens from six so side cards
+  stay clear (`radiusPerCardWidth`, tested 4–12); under `MIN_RING_CARDS` (4) the rail stays 2D.
 
 ## Known Gaps
 

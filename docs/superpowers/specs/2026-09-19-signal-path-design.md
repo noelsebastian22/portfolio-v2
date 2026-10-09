@@ -389,13 +389,13 @@ enters frame.
 
 ### 04 — The Ring: `mergeMap()`
 
-**Content:** the shipped freelance work — Daybook, Ezytrack, PLUMBER., TopDel Renovations,
-Menzone.
+**Content:** the shipped freelance work — Daybook, PLUMBER., TopDel Renovations, Menzone.
+Ezytrack was removed on 2026-10-10: client work Noel no longer wants to present.
 
 `content.ts` carries them as `ringProjects`. TopDel used to appear twice, once as
 `freelanceCaseStudy` as well; that is gone, and the ring is the only home for freelance work.
 
-**Visual:** on a capable desktop, a floating 3D ring seen from a little above: the five cards
+**Visual:** on a capable desktop, a floating 3D ring seen from a little above: the cards (one per `ringProjects` entry)
 on an invisible circle, with no hoop and no drops. The cards are the server-rendered rail cards,
 restyled in CSS 3D — no WebGL — and placed by one pure geometry module (`lib/ring/geometry.ts`),
 in its own lazily loaded chunk behind its own gate. The section **pins** with `position:

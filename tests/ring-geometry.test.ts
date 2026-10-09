@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   CARD_FACING_SHARE,
+  MIN_RADIUS_PER_CARD_WIDTH,
+  MIN_RING_CARDS,
+  RING_HAS_ENOUGH_CARDS,
   FIT_MARGIN_PX,
   MIN_RING_SCALE,
   NAV_GAP_PX,
@@ -35,6 +38,7 @@ import {
   project,
   rawSteps,
   ringPoint,
+  radiusPerCardWidth,
   ringRadius,
   ringRiseAt,
   settleTarget,
@@ -66,13 +70,30 @@ describe('the ring holds the shipped sites', () => {
     expect(RING_CARD_COUNT).toBe(ringProjects.length);
     expect(STEP_DEG).toBe(360 / RING_CARD_COUNT);
   });
+
+  it('turns in 3D only from MIN_RING_CARDS up', () => {
+    expect(RING_HAS_ENOUGH_CARDS).toBe(RING_CARD_COUNT >= MIN_RING_CARDS);
+  });
 });
 
 describe('ringRadius', () => {
-  // Side cards at ±72° must clear the front card on screen, with room for a focus ring.
+  // Side cards at ±STEP_DEG must clear the front card on screen, with room for a focus ring.
   it('keeps the side cards clear of the front card', () => {
     const sideNearEdge = applyMatrix(cardMatrix(STEP_DEG, R, 0), [-CARD / 2, 0, 0])[0];
     expect(sideNearEdge - CARD / 2).toBeGreaterThan(24);
+  });
+
+  it.each([4, 5, 6, 7, 8, 9, 10, 12])('keeps the side cards clear with %i cards', (cardCount) => {
+    const step = 360 / cardCount;
+    const radius = ringRadius(CARD, cardCount);
+    const sideNearEdge = applyMatrix(cardMatrix(step, radius, 0), [-CARD / 2, 0, 0])[0];
+    expect(sideNearEdge - CARD / 2).toBeGreaterThan(24);
+  });
+
+  it('keeps the look tuned for five cards, widening only when the cards crowd', () => {
+    expect(radiusPerCardWidth(4)).toBe(MIN_RADIUS_PER_CARD_WIDTH);
+    expect(radiusPerCardWidth(5)).toBe(MIN_RADIUS_PER_CARD_WIDTH);
+    expect(radiusPerCardWidth(8)).toBeGreaterThan(radiusPerCardWidth(6));
   });
 
   it('keeps the side cards clear of the front card on screen, at the checkpoint', () => {
@@ -89,8 +110,8 @@ describe('ringRadius', () => {
 });
 
 describe('the pin', () => {
-  it('is lead + four steps + tail', () => {
-    expect(pinLength(VH)).toBeCloseTo(VH * (PIN_LEAD_VH + 4 * PIN_STEP_VH + PIN_TAIL_VH), 9);
+  it('is lead + a step per turn + tail', () => {
+    expect(pinLength(VH)).toBeCloseTo(VH * (PIN_LEAD_VH + (RING_CARD_COUNT - 1) * PIN_STEP_VH + PIN_TAIL_VH), 9);
   });
 
   it('puts card i dead front at stepOffset(i)', () => {
@@ -159,6 +180,7 @@ describe('the pin', () => {
     const vh = 800;
     const notch = 100;
     const at = (card: number) => stepOffset(card, vh);
+    const LAST = RING_CARD_COUNT - 1;
 
     it('settles a nudge back to the nearest card', () => {
       const nudge = SETTLE_NUDGE_SHARE * PIN_STEP_VH * vh - 1;
@@ -180,23 +202,23 @@ describe('the pin', () => {
       // At 1280×800 the page came to rest at 5687 for a card at 5687.34: never one card past it.
       expect(settleTarget(at(1) - 0.34, at(2), vh)).toBe(1);
       expect(settleTarget(at(1) + 0.34, at(0), vh)).toBe(1);
-      expect(settleTarget(at(4) + 0.34, at(3), vh)).toBe(4);
+      expect(settleTarget(at(LAST) + 0.34, at(LAST - 1), vh)).toBe(LAST);
       expect(settleTarget(at(0) - 0.34, at(1), vh)).toBe(0);
     });
 
     it('lets a reader leave through the tail and the lead', () => {
-      expect(settleTarget(at(4) + notch, at(4), vh)).toBeNull();
+      expect(settleTarget(at(LAST) + notch, at(LAST), vh)).toBeNull();
       expect(settleTarget(at(0) - notch, at(0), vh)).toBeNull();
     });
 
     it('settles a reader coming in from either side on the first card they meet', () => {
       expect(settleTarget(at(0) - notch, -vh, vh)).toBe(0);
-      expect(settleTarget(at(4) + notch, pinLength(vh) + vh, vh)).toBe(4);
+      expect(settleTarget(at(LAST) + notch, pinLength(vh) + vh, vh)).toBe(LAST);
     });
 
     it('never names a card outside the ring', () => {
       for (let offset = 1; offset < pinLength(vh); offset += 7) {
-        for (const rest of [-vh, 0, at(0), at(2), at(4), pinLength(vh) + vh]) {
+        for (const rest of [-vh, 0, at(0), at(2), at(LAST), pinLength(vh) + vh]) {
           const card = settleTarget(offset, rest, vh);
           if (card !== null) {
             expect(card).toBeGreaterThanOrEqual(0);
@@ -238,14 +260,14 @@ describe('cardAngle and cardPose', () => {
     // The sides recede under the overlay (recede), not by opacity: a see-through card shows the line and the cards behind it.
     expect(cardPose(STEP_DEG).opacity).toBe(1);
     expect(cardPose(110).opacity).toBe(0);
-    expect(cardPose(144).opacity).toBe(0);
+    expect(cardPose(2 * STEP_DEG).opacity).toBe(0);
     for (const a of [40, 60, 72, 90, 100]) expect(cardPose(a).opacity).toBeCloseTo(cardPose(-a).opacity, 12);
-    expect(cardPose(72).opacity).toBeGreaterThan(0.3);
-    expect(cardPose(144).isInert).toBe(true);
-    expect(cardPose(72).isFront).toBe(false);
+    expect(cardPose(STEP_DEG).opacity).toBeGreaterThan(0.3);
+    expect(cardPose(2 * STEP_DEG).isInert).toBe(true);
+    expect(cardPose(STEP_DEG).isFront).toBe(false);
     // Front until it is halfway to the next card's place.
-    expect(cardPose(35).isFront).toBe(true);
-    expect(cardPose(37).isFront).toBe(false);
+    expect(cardPose(STEP_DEG / 2 - 1).isFront).toBe(true);
+    expect(cardPose(STEP_DEG / 2 + 1).isFront).toBe(false);
   });
 
   it('fades on an S-curve, not a ramp — still near full strength just past 30°', () => {

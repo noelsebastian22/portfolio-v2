@@ -9,6 +9,27 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-10 · claude-code · Ezytrack removed, ring dynamic
+
+**Did**
+- Removed Ezytrack (client work Noel won't present): its `ringProjects` entry, the "FleetPoint" card in `data/websites.ts`, its `ring-captures.json` key, both scripts' lists, and the master, card and four ring captures.
+- `/websites` work grid is one column, then three from 960px (was two from 768px) so three cards sit in one row, as `Pricing.astro` does.
+- `RING_CARD_COUNT` is now `ringProjects.length`; `radiusPerCardWidth(count)` widens the ring from six cards; `mountRingStage` keeps the 2D rail below `MIN_RING_CARDS` (4). `ring-geometry.test.ts` no longer hard-codes five-card angles; new clearance test for 4–12 cards.
+
+**Decided**
+- Ezytrack is off the site; replacements to come.
+- The ring's card count follows `ringProjects`.
+
+**Open**
+- The 3D ring with four cards (sides at ±90°) has not been looked at in a browser — tests only.
+- `ezytrack.noel-sebastian.com` is still live, and the Upwork entry 2 listing itself is untouched — Noel's call.
+- This work sits on `chore/ring-projects`, branched from `feat/sound-track` (docs-only ahead of `master`); not pushed, no PR.
+
+**Next**
+Scroll the 3D ring on desktop (1280×800) in `npm run dev`; if it reads right, push `chore/ring-projects` and open a PR to `master`. The sound plan's Tasks 1 and 3 still wait on `feat/sound-track`.
+
+**Numbers** — build green · 351 tests (+9) · JS on `/` 64,982 gzip (−2) · `/websites` 58,752 (±0) · ring chunk 5,401 (+863, `ringProjects` now in it) · lint WARN: BUILD-PLAN 60.8 KB (limit 60,000), up from ~60.1 by today's two Decisions — still nothing closed to archive; the sound gap's archiving on merge brings it under · verify: one line, the ring chunk figure, replaced on purpose
+
 ## 2026-10-10 · claude-code · Sound rework planned
 
 **Did**
@@ -45,27 +66,3 @@ Run plan Tasks 1 and 3 (`scripts/audio.mjs`, `lib/audio/brightness.ts`) — neit
 Start Phase 15 (preloader + OG images, `src/islands/preloader.ts`, `scripts/og-image.mjs`). Expand BUILD-PLAN's Phase 15 section into tasks, brainstorm first, then write a design spec. A `/websites`-specific OG image would close the second gap above. Alternatively, rework the sound's voice first, by ear, in `lib/audio/engine.ts`.
 
 **Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0, live) · `/websites` 58,752 (live)
-
-## 2026-10-07 · claude-code · Phase 14 websites, PR #5
-
-**Did**
-- Rebuilt `/websites` on the Signal Path system: seven section components in `src/components/websites/` + `SectionHead`, shared primitives in `src/styles/websites.css`, `WebsitesNav` without its script. Content in `data/websites.ts` untouched; no Tailwind left in `src/`.
-- Put it back live: `vercel.json` redirect, sitemap filter gone; Contact links `/websites`; `scripts/budget.mjs` gates `/websites`.
-- Review round (controller, from screenshots): prices aligned across tiers, the doubled "Concept" label dropped, the hero frame's underline removed, `ContactForm` `hideChoice` so clients are never offered "A role".
-- Browser check (headless Chromium, 5 widths): no sideways scroll, anchors settle at 96px as on `/`, focus ring on every control; JS off renders all sections, FAQ opens, form posts. PR #5 open, not merged.
-
-**Decided**
-- Phase 14 restyles only; `data/websites.ts` frozen; the line stays unanchored (Noel).
-- `ContactForm` `hideChoice`; `/websites` budget-gated (controller).
-
-**Didn't work**
-- Measuring anchor jumps 1.6s after the click read "under the nav" on `astro preview`: Lenis's glide takes ~2s. Sampled over 4s, `/websites` and `/` both settle at the section top = 96px. Not a bug.
-
-**Open**
-- **`/websites` has no phone number** and **Shared `/websites` links preview as the recruiter site** (Known Gaps → Post-launch).
-- A dev server Noel started at 14:52 is still on :4321; it was left running.
-
-**Next**
-Noel opens PR #5's preview on a phone (hero, pricing, a test quote; `/websites` without the slash loads) and merges; then mark Phase 14 complete and start Phase 15 (preloader + OG images).
-
-**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0) · `/websites` 58,752 (−391)

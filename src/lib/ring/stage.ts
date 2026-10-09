@@ -22,6 +22,7 @@ import {
   CARD_FACING_SHARE,
   PERSPECTIVE_PX,
   RING_CARD_COUNT,
+  RING_HAS_ENOUGH_CARDS,
   RING_TILT_DEG,
   cardAngle,
   cardMatrix,
@@ -87,7 +88,7 @@ export interface RingStage {
 
 /**
  * Mounts the ring over section 04's rail, or returns null when it does not fit this window
- * (D12, R3) — the rail stays. Any exception afterwards, in a draw or a re-measure, unmounts it:
+ * (D12, R3) or has too few cards to turn (`MIN_RING_CARDS`) — the rail stays. Any exception afterwards, in a draw or a re-measure, unmounts it:
  * the rail comes back and the reader keeps their place (design §5).
  */
 export function mountRingStage({ section }: { section: HTMLElement }): RingStage | null {
@@ -99,7 +100,8 @@ export function mountRingStage({ section }: { section: HTMLElement }): RingStage
   const nav = section.querySelector<HTMLElement>('[data-ring-nav]');
   const count = section.querySelector<HTMLElement>('[data-ring-count]');
   const dots = Array.from(section.querySelectorAll<HTMLButtonElement>('[data-ring-dot]'));
-  if (!rail || !track || !stage || !nav || !count || cards.length !== RING_CARD_COUNT || dots.length !== RING_CARD_COUNT) {
+  const isRingComplete = cards.length === RING_CARD_COUNT && dots.length === RING_CARD_COUNT;
+  if (!RING_HAS_ENOUGH_CARDS || !rail || !track || !stage || !nav || !count || !isRingComplete) {
     return null;
   }
 
