@@ -20,14 +20,22 @@
  * Pure: no DOM.
  */
 
+import { ringProjects } from '../../data/content';
 import { unit } from '../signal/draw';
 
 export type Vec3 = readonly [x: number, y: number, z: number];
 /** 16 numbers, column-major — CSS `matrix3d` order. */
 export type Mat4 = readonly number[];
 
-export const RING_CARD_COUNT = 5;
+/** One card per ring project: adding a project to content.ts adds a card, nothing else. */
+export const RING_CARD_COUNT = ringProjects.length;
 export const STEP_DEG = 360 / RING_CARD_COUNT;
+/**
+ * Below four cards the side cards' place (`STEP_DEG`) is past `FADE_GONE_DEG`, so the fade
+ * would have nothing to stand on: the ring stays the 2D rail instead.
+ */
+export const MIN_RING_CARDS = 4;
+export const RING_HAS_ENOUGH_CARDS = RING_CARD_COUNT >= MIN_RING_CARDS;
 /**
  * The look-down, degrees (D8), tuned by eye (revision R4). The eye sits below the ring (the
  * perspective origin is the viewport's centre), so with none the side cards' tops fall below the
@@ -37,8 +45,14 @@ export const STEP_DEG = 360 / RING_CARD_COUNT;
 export const RING_TILT_DEG = 8;
 /** How far the pointer can add to the look-down, either way, degrees. */
 export const POINTER_TILT_DEG = 3;
-/** Radius per card width: clears the side cards from the front one with room for a focus ring. */
-export const RADIUS_PER_CARD_WIDTH = 1.1;
+/**
+ * Radius per card width, at least: the look tuned for five cards (revision R4). More cards sit
+ * closer together round the circle, so from six on the ring widens to keep its side cards clear
+ * (`radiusPerCardWidth`).
+ */
+export const MIN_RADIUS_PER_CARD_WIDTH = 1.1;
+/** Clear space between a side card's near edge and the front card's, per card width — room for a focus ring. */
+export const SIDE_CLEARANCE_PER_CARD_WIDTH = 0.08;
 /**
  * The pin, in viewport heights: a lead-in on the first card, a step per turn, a tail. Short, so
  * the ring turns at once under the reader's scroll and a step is a flick, not a stretch
@@ -98,8 +112,20 @@ const smooth = (t: number) => {
 const tidyZero = (v: number) => (v === 0 ? 0 : v);
 const lastCard = RING_CARD_COUNT - 1;
 
-export function ringRadius(cardWidth: number): number {
-  return cardWidth * RADIUS_PER_CARD_WIDTH;
+/**
+ * The radius per card width that clears a side card from the front one: a side card's top sits
+ * `R·sin(step)` out and it turns `step · CARD_FACING_SHARE`, which swings its near edge in by
+ * half its projected width. Flat, before perspective — which only shrinks the side cards.
+ */
+export function radiusPerCardWidth(cardCount: number): number {
+  const step = radians(360 / cardCount);
+  const nearEdgeInset = 0.5 * Math.cos(step * CARD_FACING_SHARE);
+  const clearing = (0.5 + nearEdgeInset + SIDE_CLEARANCE_PER_CARD_WIDTH) / Math.sin(step);
+  return Math.max(MIN_RADIUS_PER_CARD_WIDTH, clearing);
+}
+
+export function ringRadius(cardWidth: number, cardCount = RING_CARD_COUNT): number {
+  return cardWidth * radiusPerCardWidth(cardCount);
 }
 
 // ── The pin ────────────────────────────────────────────────────────────────────────

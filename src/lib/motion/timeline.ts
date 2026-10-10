@@ -35,7 +35,7 @@ function ensurePluginRegistered(): void {
 
 /**
  * Registrations seen per scope, so multiple elements sharing a `SectionId` (the Ring's
- * five cards, all `id: 'ring'`) get distinct trigger ids instead of colliding. GSAP's
+ * cards, all `id: 'ring'`) get distinct trigger ids instead of colliding. GSAP's
  * registry is last-write-wins on a duplicate id, and `kill()` deletes its registry entry
  * unconditionally — with a shared id, killing one trigger silently unregisters a sibling
  * that is still alive. The suffix keeps the label readable in devtools while making each

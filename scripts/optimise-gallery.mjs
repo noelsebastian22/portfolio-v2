@@ -36,7 +36,7 @@
  *
  *   <master>-card.webp   the top 900x495 in plain colour
  *
- * /websites gets the lighter treatment (spec §14), so its four cards stay
+ * /websites gets the lighter treatment (spec §14), so its three cards stay
  * untreated. They crop to the hero and never reveal the rest of the page.
  *
  * Both lists are explicit tables below: this script writes only what something
@@ -60,20 +60,20 @@ const MANIFEST = path.join(ROOT, 'src', 'data', 'ring-captures.json');
 const RING_URL = '/images/ring';
 
 /**
- * The ring's five cards, keyed by `ringProjects[].slug` in content.ts. The
+ * The ring's cards, keyed by `ringProjects[].slug` in content.ts. The
  * key names the output. The master is whatever file holds that site: PLUMBER.
  * was screenshotted as plumping.png.
  */
 const RING = {
   daybook: 'daybook.png',
-  ezytrack: 'ezytrack.png',
   plumber: 'plumping.png',
   'topdel-renovations': 'topdel-renovations.png',
   laserclinic: 'laserclinic.png',
+  saanjh: 'saanjh.jpg',
 };
 
 /** Masters whose `-card.webp` src/data/websites.ts → websitesWork references. */
-const CARDS = ['topdel-renovations.png', 'plumping.png', 'laserclinic.png', 'ezytrack.png'];
+const CARDS = ['topdel-renovations.png', 'plumping.png', 'laserclinic.png', 'saanjh.jpg'];
 
 /** 1x and 2x for a card of roughly 360-440 CSS px. */
 const RING_WIDTHS = [480, 960];

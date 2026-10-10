@@ -9,59 +9,69 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
-## 2026-10-07 · claude-code · Phase 14 merged
+## 2026-10-11 · cowork · Saanjh joins the ring
 
 **Did**
-- Noel checked PR #5's preview and merged it as `034309b`. www.noel-sebastian.com serves `/websites` and `/websites/` with a 200 and no redirect, lists `/websites/` in `sitemap-0.xml`, and serves the same script chunks as a local build of `master` on `/` and `/websites/`.
-- Marked Phase 14 complete. Its section had already been archived on the branch, so the pointer is gone and the heading reads Phase 15 only. Figures moved from the branch to live.
-
-**Open**
-- **`/websites` has no phone number** and **Shared `/websites` links preview as the recruiter site** (Known Gaps → Post-launch).
-
-**Next**
-Start Phase 15 (preloader + OG images, `src/islands/preloader.ts`, `scripts/og-image.mjs`). Expand BUILD-PLAN's Phase 15 section into tasks, brainstorm first, then write a design spec. A `/websites`-specific OG image would close the second gap above. Alternatively, rework the sound's voice first, by ear, in `lib/audio/engine.ts`.
-
-**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0, live) · `/websites` 58,752 (live)
-
-## 2026-10-07 · claude-code · Phase 14 websites, PR #5
-
-**Did**
-- Rebuilt `/websites` on the Signal Path system: seven section components in `src/components/websites/` + `SectionHead`, shared primitives in `src/styles/websites.css`, `WebsitesNav` without its script. Content in `data/websites.ts` untouched; no Tailwind left in `src/`.
-- Put it back live: `vercel.json` redirect, sitemap filter gone; Contact links `/websites`; `scripts/budget.mjs` gates `/websites`.
-- Review round (controller, from screenshots): prices aligned across tiers, the doubled "Concept" label dropped, the hero frame's underline removed, `ContactForm` `hideChoice` so clients are never offered "A role".
-- Browser check (headless Chromium, 5 widths): no sideways scroll, anchors settle at 96px as on `/`, focus ring on every control; JS off renders all sections, FAQ opens, form posts. PR #5 open, not merged.
+- Added Saanjh, a concept restaurant site live at `saanjh.noel-sebastian.com` (repo `noelsebastian22/saanjh`), as the fifth `ringProjects` card and a fourth `websitesWork` card. New master `gallery-masters/saanjh.jpg` plus `RING` and `CARDS` entries in `scripts/optimise-gallery.mjs`; the other captures came out byte-identical.
+- `/websites` work grid picks its columns from the card count (`Work.astro` `columns`): 2 × 2 for four cards.
 
 **Decided**
-- Phase 14 restyles only; `data/websites.ts` frozen; the line stays unanchored (Noel).
-- `ContactForm` `hideChoice`; `/websites` budget-gated (controller).
+- Saanjh takes Ezytrack's place on the ring and joins `/websites`.
+- The `/websites` work grid fills its rows: three columns for a multiple of three cards, otherwise two.
 
 **Didn't work**
-- Measuring anchor jumps 1.6s after the click read "under the nav" on `astro preview`: Lenis's glide takes ~2s. Sampled over 4s, `/websites` and `/` both settle at the section top = 96px. Not a bug.
+- Checking the 3D ring through Claude's browser pane or an automated Chrome tab. `.ring--3d` never appears there, on `localhost:4321` or on the live site (pane at 1280×800, Chrome at 1337×643; the gate passes and `stage.ts` loads). Those tabs are in the background, so the stage never ticks into 3D. The ring has to be checked by hand.
+- Capturing Saanjh full-page with motion on: its sky is fixed and parallaxed, so a scroll-and-stitch seamed at every viewport. Under reduced motion with a flat sky colour the frames tile cleanly; that is the master.
 
 **Open**
-- **`/websites` has no phone number** and **Shared `/websites` links preview as the recruiter site** (Known Gaps → Post-launch).
-- A dev server Noel started at 14:52 is still on :4321; it was left running.
+- The 3D ring with five cards (Saanjh last) has not been looked at in a browser, tests only. Nor was the four-card version.
+- `chore/ring-projects` (Ezytrack removal plus Saanjh) is pushed with a PR to `master`, not merged.
 
 **Next**
-Noel opens PR #5's preview on a phone (hero, pricing, a test quote; `/websites` without the slash loads) and merges; then mark Phase 14 complete and start Phase 15 (preloader + OG images).
+Open the PR's Vercel preview on desktop at 1280×800, scroll section 04's 3D ring through all five cards and check `/websites` reads 2 × 2; if both look right, merge.
 
-**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0) · `/websites` 58,752 (−391)
+**Numbers** — build green · 352 tests (+1) · JS on `/` 64,987 gzip (+5) · `/websites` 58,752 (±0) · ring chunk 5,547 (+146, the fifth project) · lint WARN: BUILD-PLAN 61.4 KB (limit 60,000), +0.6 KB for today's two Decisions; still nothing closed to archive, as on 2026-10-10
 
-## 2026-10-07 · claude-code · Phase 13 merged
+## 2026-10-10 · claude-code · Ezytrack removed, ring dynamic
 
 **Did**
-- Noel heard the sound on PR #4's preview: it plays. Merged as `175b8ba`. www.noel-sebastian.com serves the same script chunks as the local build, and the lazy `connect` chunk returns 200.
-- Phase 13 marked complete; its section and the superseded 2026-09-26 sound-toggle Decision are archived in `docs/archive/plan-phases.md`, and the "unheard" gap is closed. Figures moved from branch to live.
-- BUILD-PLAN.md trimmed back under lint's 60,000 B (59,999) by tightening this phase's own Decisions and gaps.
+- Removed Ezytrack (client work Noel won't present): its `ringProjects` entry, the "FleetPoint" card in `data/websites.ts`, its `ring-captures.json` key, both scripts' lists, and the master, card and four ring captures.
+- `/websites` work grid is one column, then three from 960px (was two from 768px) so three cards sit in one row, as `Pricing.astro` does.
+- `RING_CARD_COUNT` is now `ringProjects.length`; `radiusPerCardWidth(count)` widens the ring from six cards; `mountRingStage` keeps the 2D rail below `MIN_RING_CARDS` (4). `ring-geometry.test.ts` no longer hard-codes five-card angles; new clearance test for 4–12 cards.
 
 **Decided**
-- The sound's voice is to be reworked later; the mechanics stay (Deferred by Noel — 2026-10-07).
+- Ezytrack is off the site; replacements to come.
+- The ring's card count follows `ringProjects`.
 
 **Open**
-- **The sound reads like a horror or sci-fi film score, not a portfolio** (Known Gaps → Deferred by Noel — 2026-10-07).
+- The 3D ring with four cards (sides at ±90°) has not been looked at in a browser — tests only.
+- `ezytrack.noel-sebastian.com` is still live, and the Upwork entry 2 listing itself is untouched — Noel's call.
+- This work sits on `chore/ring-projects`, branched from `feat/sound-track` (docs-only ahead of `master`); not pushed, no PR.
 
 **Next**
-Start Phase 14 (`/websites` restyle): expand BUILD-PLAN's Phase 14 section into task-level steps, brainstorm first, then a design spec. Or, if Noel prefers, rework the sound's voice first — by ear, in `lib/audio/engine.ts`.
+Scroll the 3D ring on desktop (1280×800) in `npm run dev`; if it reads right, push `chore/ring-projects` and open a PR to `master`. The sound plan's Tasks 1 and 3 still wait on `feat/sound-track`.
 
-**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (live; +1,124 vs Phase 12) · audio chunk 1,783 (lazy)
+**Numbers** — build green · 351 tests (+9) · JS on `/` 64,982 gzip (−2) · `/websites` 58,752 (±0) · ring chunk 5,401 (+863, `ringProjects` now in it) · lint WARN: BUILD-PLAN 60.8 KB (limit 60,000), up from ~60.1 by today's two Decisions — still nothing closed to archive; the sound gap's archiving on merge brings it under · verify: one line, the ring chunk figure, replaced on purpose
 
+## 2026-10-10 · claude-code · Sound rework planned
+
+**Did**
+- Started Phase 15 brainstorming; Noel paused it to rework the sound first (preloader understanding: hero renders under the curtain at full opacity, decided before first paint by inline `<head>` script, 0ms LCP cost).
+- Wrote spec `docs/superpowers/specs/2026-10-09-sound-track-design.md` (D1–D16) and plan `docs/superpowers/plans/2026-10-09-sound-track.md` (5 tasks) on `feat/sound-track`. No site code changed.
+
+**Decided**
+- Phase 15 waits for the sound rework.
+- A licensed track ("A New Daydream", DEX 1200, Epidemic Sound) replaces the synthesised voice; Vercel Blob, not the repo; licence gate before merge.
+
+**Didn't work**
+- **A lo-fi re-voicing of the synth** (A major pentatonic, Amaj7 triangle pad with wow, two-operator FM e-piano notes, 1.2 s room, tape hiss, cutoff 1–4.5 kHz). Built on the branch, green, Noel listened: "nope this is not what I am looking for." Discarded, never committed. He wants a recorded track, not a better synth.
+- **Identifying saifullah.dev's music from its files.** It streams Ogg Vorbis from `/api/audio?track=default` (~0.9 MB) and `digital-minimalism`, plus `/effects/*.ogg`; the tags were stripped by an ffmpeg re-encode, the page credits nothing, and the author has no public repos. Not downloaded or used — not ours. Noel found the track he wanted on Epidemic Sound himself.
+
+**Open**
+- **The sound reads like a horror or sci-fi film score** (Known Gaps → Deferred 2026-10-07) — now blocked on Noel's Epidemic Sound account (the file) and the licence answer (spec D12).
+- `portfolio-v2` is a public repo: the track must never be committed (spec D2).
+
+**Next**
+Run plan Tasks 1 and 3 (`scripts/audio.mjs`, `lib/audio/brightness.ts`) — neither needs the file. Once Noel has `assets-src/audio/a-new-daydream.wav`, Task 2 onward.
+
+**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0) · `/websites` 58,752 (±0) · lint WARN: BUILD-PLAN ~60.1 KB (limit 60,000) — nothing closed to archive; archiving the sound gap when the rework merges brings it under

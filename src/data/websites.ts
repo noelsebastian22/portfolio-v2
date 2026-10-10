@@ -208,11 +208,11 @@ export const websitesWork = [
     desc: 'A one-room male waxing and laser studio. Every price published up front, before-and-after sliders you drag to compare, and a booking link on every screen so nobody has to ring and explain what they want.',
   },
   {
-    title: 'FleetPoint',
-    kind: 'Concept build · Fleet telematics',
+    title: 'Saanjh',
+    kind: 'Concept build · Restaurant',
     concept: true,
-    site: 'https://ezytrack.noel-sebastian.com/',
-    img: '/images/gallery/ezytrack-card.webp',
-    desc: 'A larger marketing site for a GPS fleet-tracking product — several services, a feature comparison, and a quote form built to qualify the lead.',
+    site: 'https://saanjh.noel-sebastian.com/',
+    img: '/images/gallery/saanjh-card.webp',
+    desc: 'A modern Indian restaurant under a night sky that drifts as you scroll. Guests pick a venue, party size, date and time on one calendar and leave with a confirmation they can add to their own.',
   },
 ];

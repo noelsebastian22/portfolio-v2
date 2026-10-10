@@ -11,18 +11,6 @@
       "960": "/images/ring/daybook-960w.webp"
     }
   },
-  "ezytrack": {
-    "width": 960,
-    "height": 5239,
-    "avif": {
-      "480": "/images/ring/ezytrack-480w.avif",
-      "960": "/images/ring/ezytrack-960w.avif"
-    },
-    "webp": {
-      "480": "/images/ring/ezytrack-480w.webp",
-      "960": "/images/ring/ezytrack-960w.webp"
-    }
-  },
   "plumber": {
     "width": 960,
     "height": 4871,
@@ -57,6 +45,18 @@
     "webp": {
       "480": "/images/ring/laserclinic-480w.webp",
       "960": "/images/ring/laserclinic-960w.webp"
+    }
+  },
+  "saanjh": {
+    "width": 960,
+    "height": 7071,
+    "avif": {
+      "480": "/images/ring/saanjh-480w.avif",
+      "960": "/images/ring/saanjh-960w.avif"
+    },
+    "webp": {
+      "480": "/images/ring/saanjh-480w.webp",
+      "960": "/images/ring/saanjh-960w.webp"
     }
   }
 }
