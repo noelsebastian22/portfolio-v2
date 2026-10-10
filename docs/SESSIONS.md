@@ -9,6 +9,29 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-11 · cowork · Saanjh joins the ring
+
+**Did**
+- Added Saanjh, a concept restaurant site live at `saanjh.noel-sebastian.com` (repo `noelsebastian22/saanjh`), as the fifth `ringProjects` card and a fourth `websitesWork` card. New master `gallery-masters/saanjh.jpg` plus `RING` and `CARDS` entries in `scripts/optimise-gallery.mjs`; the other captures came out byte-identical.
+- `/websites` work grid picks its columns from the card count (`Work.astro` `columns`): 2 × 2 for four cards.
+
+**Decided**
+- Saanjh takes Ezytrack's place on the ring and joins `/websites`.
+- The `/websites` work grid fills its rows: three columns for a multiple of three cards, otherwise two.
+
+**Didn't work**
+- Checking the 3D ring through Claude's browser pane or an automated Chrome tab. `.ring--3d` never appears there, on `localhost:4321` or on the live site (pane at 1280×800, Chrome at 1337×643; the gate passes and `stage.ts` loads). Those tabs are in the background, so the stage never ticks into 3D. The ring has to be checked by hand.
+- Capturing Saanjh full-page with motion on: its sky is fixed and parallaxed, so a scroll-and-stitch seamed at every viewport. Under reduced motion with a flat sky colour the frames tile cleanly; that is the master.
+
+**Open**
+- The 3D ring with five cards (Saanjh last) has not been looked at in a browser, tests only. Nor was the four-card version.
+- `chore/ring-projects` (Ezytrack removal plus Saanjh) is pushed with a PR to `master`, not merged.
+
+**Next**
+Open the PR's Vercel preview on desktop at 1280×800, scroll section 04's 3D ring through all five cards and check `/websites` reads 2 × 2; if both look right, merge.
+
+**Numbers** — build green · 352 tests (+1) · JS on `/` 64,987 gzip (+5) · `/websites` 58,752 (±0) · ring chunk 5,547 (+146, the fifth project) · lint WARN: BUILD-PLAN 61.4 KB (limit 60,000), +0.6 KB for today's two Decisions; still nothing closed to archive, as on 2026-10-10
+
 ## 2026-10-10 · claude-code · Ezytrack removed, ring dynamic
 
 **Did**
@@ -52,17 +75,3 @@ Scroll the 3D ring on desktop (1280×800) in `npm run dev`; if it reads right, p
 Run plan Tasks 1 and 3 (`scripts/audio.mjs`, `lib/audio/brightness.ts`) — neither needs the file. Once Noel has `assets-src/audio/a-new-daydream.wav`, Task 2 onward.
 
 **Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0) · `/websites` 58,752 (±0) · lint WARN: BUILD-PLAN ~60.1 KB (limit 60,000) — nothing closed to archive; archiving the sound gap when the rework merges brings it under
-
-## 2026-10-07 · claude-code · Phase 14 merged
-
-**Did**
-- Noel checked PR #5's preview and merged it as `034309b`. www.noel-sebastian.com serves `/websites` and `/websites/` with a 200 and no redirect, lists `/websites/` in `sitemap-0.xml`, and serves the same script chunks as a local build of `master` on `/` and `/websites/`.
-- Marked Phase 14 complete. Its section had already been archived on the branch, so the pointer is gone and the heading reads Phase 15 only. Figures moved from the branch to live.
-
-**Open**
-- **`/websites` has no phone number** and **Shared `/websites` links preview as the recruiter site** (Known Gaps → Post-launch).
-
-**Next**
-Start Phase 15 (preloader + OG images, `src/islands/preloader.ts`, `scripts/og-image.mjs`). Expand BUILD-PLAN's Phase 15 section into tasks, brainstorm first, then write a design spec. A `/websites`-specific OG image would close the second gap above. Alternatively, rework the sound's voice first, by ear, in `lib/audio/engine.ts`.
-
-**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0, live) · `/websites` 58,752 (live)

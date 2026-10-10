@@ -95,14 +95,14 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **64,984 (79.3%)** (Phase 13), +1,124 vs Phase 12 — the sound island, the emissions bus, `onTick`. `/websites` live **58,752 (71.7%)**, −391 (Phase 14: the nav's script gone), gated since Phase 14 | 2026-10-07 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` branch **64,987 (79.3%)**, +5 vs 64,982 for the fifth ring card; live 64,984 (Phase 13). `/websites` **58,752 (71.7%)**, ±0, gated since Phase 14 | 2026-10-11 |
 | Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,887 (53.1%)** (Phase 12), +119 vs Phase 11 (the ring left WebGL in R4); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-06 |
-| Ring chunk gzip (lazy, after load, no Three.js) | — | branch **5,401** (`lib/ring/stage.ts`; not in any page's initial graph), +863 vs 4,538: `ringProjects` now rides in it, so the count follows the list — about +200 per project | 2026-10-10 |
+| Ring chunk gzip (lazy, after load, no Three.js) | — | branch **5,547** (`lib/ring/stage.ts`; not in any page's initial graph), +146 vs 5,401 for the fifth project: `ringProjects` rides in it, so the count follows the list | 2026-10-11 |
 | Audio chunk gzip (lazy, only once sound is turned on) | ≤ 5,120 | live **1,783** (`lib/audio/connect.ts` + `engine.ts` + `score.ts`; in no page's initial graph or `modulepreload`) | 2026-10-06 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
 | Fonts preloaded | — | 95,660 B (Archivo 57,188 + JetBrains Mono 38,472) | Task 9.8 |
-| Tests | — | 342 | 2026-10-06 |
+| Tests | — | 352 | 2026-10-11 |
 
 ### Measurement history — shipped JS on `/`, gzip
 
@@ -621,6 +621,14 @@ decision was made; this section records *what it is*.
 - **2026-10-10 (Noel)** — **The ring's card count follows `ringProjects`.** `RING_CARD_COUNT` is
   its length; the radius stays 1.1 card widths up to five cards and widens from six so side cards
   stay clear (`radiusPerCardWidth`, tested 4–12); under `MIN_RING_CARDS` (4) the rail stays 2D.
+- **2026-10-11 (Noel)** — **Saanjh is the ring's fifth card and a fourth `/websites` card**, in
+  Ezytrack's place: a concept site for a modern Indian restaurant, live at
+  `saanjh.noel-sebastian.com` (repo `noelsebastian22/saanjh`, its own Vercel project). Its master,
+  `gallery-masters/saanjh.jpg`, is a stitched full-page capture taken under reduced motion,
+  because the site's sky is fixed and parallaxed (Didn't work, 2026-10-11).
+- **2026-10-11 (cowork)** — **The `/websites` work grid fills its rows.** From 960px it runs three
+  columns when the card count is a multiple of three, otherwise two (`Work.astro` `columns`), so
+  four cards read 2 × 2 rather than 3 + 1. Amends 2026-10-10's "one row from 960px".
 
 ## Known Gaps
 

@@ -5,6 +5,20 @@ bottom; never edit one. If an old entry turned out wrong, say so in a new live e
 
 <!-- archived, newest first -->
 
+## 2026-10-07 · claude-code · Phase 14 merged
+
+**Did**
+- Noel checked PR #5's preview and merged it as `034309b`. www.noel-sebastian.com serves `/websites` and `/websites/` with a 200 and no redirect, lists `/websites/` in `sitemap-0.xml`, and serves the same script chunks as a local build of `master` on `/` and `/websites/`.
+- Marked Phase 14 complete. Its section had already been archived on the branch, so the pointer is gone and the heading reads Phase 15 only. Figures moved from the branch to live.
+
+**Open**
+- **`/websites` has no phone number** and **Shared `/websites` links preview as the recruiter site** (Known Gaps → Post-launch).
+
+**Next**
+Start Phase 15 (preloader + OG images, `src/islands/preloader.ts`, `scripts/og-image.mjs`). Expand BUILD-PLAN's Phase 15 section into tasks, brainstorm first, then write a design spec. A `/websites`-specific OG image would close the second gap above. Alternatively, rework the sound's voice first, by ear, in `lib/audio/engine.ts`.
+
+**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0, live) · `/websites` 58,752 (live)
+
 ## 2026-10-07 · claude-code · Phase 14 websites, PR #5
 
 **Did**
