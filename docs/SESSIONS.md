@@ -9,6 +9,20 @@ Only the last three entries live here. Older ones are moved verbatim to `docs/ar
 
 <!-- newest first -->
 
+## 2026-10-11 · cowork · PR #6 merged
+
+**Did**
+- Noel checked PR #6's preview, the 3D ring through all five cards included, and it was merged as `44b7126`. www.noel-sebastian.com serves the Saanjh ring card (`/images/ring/saanjh-480w.avif` 200) and the Saanjh card on `/websites/`, and no longer mentions Ezytrack.
+- Figures moved from the branch to live. The previous entry's two Open items are settled: the five-card ring has been seen, and the branch is merged.
+
+**Open**
+- `ezytrack.noel-sebastian.com` is still live, and its Upwork listing untouched (carried from 2026-10-10, Noel's call).
+
+**Next**
+The sound plan's Tasks 1 and 3 on `feat/sound-track`, once the track file and its licence are in hand.
+
+**Numbers** — build green · 352 tests · JS on `/` 64,987 gzip (±0, live) · `/websites` 58,752 (live) · ring chunk 5,547 (live) · lint WARN as before: BUILD-PLAN 61.5 KB, nothing closed to archive
+
 ## 2026-10-11 · cowork · Saanjh joins the ring
 
 **Did**
@@ -52,26 +66,3 @@ Open the PR's Vercel preview on desktop at 1280×800, scroll section 04's 3D rin
 Scroll the 3D ring on desktop (1280×800) in `npm run dev`; if it reads right, push `chore/ring-projects` and open a PR to `master`. The sound plan's Tasks 1 and 3 still wait on `feat/sound-track`.
 
 **Numbers** — build green · 351 tests (+9) · JS on `/` 64,982 gzip (−2) · `/websites` 58,752 (±0) · ring chunk 5,401 (+863, `ringProjects` now in it) · lint WARN: BUILD-PLAN 60.8 KB (limit 60,000), up from ~60.1 by today's two Decisions — still nothing closed to archive; the sound gap's archiving on merge brings it under · verify: one line, the ring chunk figure, replaced on purpose
-
-## 2026-10-10 · claude-code · Sound rework planned
-
-**Did**
-- Started Phase 15 brainstorming; Noel paused it to rework the sound first (preloader understanding: hero renders under the curtain at full opacity, decided before first paint by inline `<head>` script, 0ms LCP cost).
-- Wrote spec `docs/superpowers/specs/2026-10-09-sound-track-design.md` (D1–D16) and plan `docs/superpowers/plans/2026-10-09-sound-track.md` (5 tasks) on `feat/sound-track`. No site code changed.
-
-**Decided**
-- Phase 15 waits for the sound rework.
-- A licensed track ("A New Daydream", DEX 1200, Epidemic Sound) replaces the synthesised voice; Vercel Blob, not the repo; licence gate before merge.
-
-**Didn't work**
-- **A lo-fi re-voicing of the synth** (A major pentatonic, Amaj7 triangle pad with wow, two-operator FM e-piano notes, 1.2 s room, tape hiss, cutoff 1–4.5 kHz). Built on the branch, green, Noel listened: "nope this is not what I am looking for." Discarded, never committed. He wants a recorded track, not a better synth.
-- **Identifying saifullah.dev's music from its files.** It streams Ogg Vorbis from `/api/audio?track=default` (~0.9 MB) and `digital-minimalism`, plus `/effects/*.ogg`; the tags were stripped by an ffmpeg re-encode, the page credits nothing, and the author has no public repos. Not downloaded or used — not ours. Noel found the track he wanted on Epidemic Sound himself.
-
-**Open**
-- **The sound reads like a horror or sci-fi film score** (Known Gaps → Deferred 2026-10-07) — now blocked on Noel's Epidemic Sound account (the file) and the licence answer (spec D12).
-- `portfolio-v2` is a public repo: the track must never be committed (spec D2).
-
-**Next**
-Run plan Tasks 1 and 3 (`scripts/audio.mjs`, `lib/audio/brightness.ts`) — neither needs the file. Once Noel has `assets-src/audio/a-new-daydream.wav`, Task 2 onward.
-
-**Numbers** — build green · 342 tests · JS on `/` 64,984 gzip (±0) · `/websites` 58,752 (±0) · lint WARN: BUILD-PLAN ~60.1 KB (limit 60,000) — nothing closed to archive; archiving the sound gap when the rework merges brings it under

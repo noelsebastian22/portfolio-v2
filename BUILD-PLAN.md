@@ -95,9 +95,9 @@ Replace values here when a session re-measures; do not add a new "Measured after
 | Accessibility · Best Practices · SEO | 100 | production ×1: 100 · 100 · 100 (previews always score SEO 61 — see Didn't work, 2026-09-29) | 2026-09-29 |
 | CLS | < 0.02 | 0 | Task 9.5 |
 | TBT (lab proxy for INP) | report | 0 | Task 9.5 |
-| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` branch **64,987 (79.3%)**, +5 vs 64,982 for the fifth ring card; live 64,984 (Phase 13). `/websites` **58,752 (71.7%)**, ±0, gated since Phase 14 | 2026-10-11 |
+| Base-path JS gzip (`npm run budget`) | ≤ 81,920 | `/` live **64,987 (79.3%)** (PR #6), +3 vs Phase 13's 64,984: the Saanjh card in, the Ezytrack card out. `/websites` **58,752 (71.7%)**, ±0, gated since Phase 14 | 2026-10-11 |
 | Enhanced WebGL chunk gzip | ≤ 256,000 | live **135,887 (53.1%)** (Phase 12), +119 vs Phase 11 (the ring left WebGL in R4); `npm run budget` fails if Three.js reaches an initial chunk or no enhanced chunk is found | 2026-10-06 |
-| Ring chunk gzip (lazy, after load, no Three.js) | — | branch **5,547** (`lib/ring/stage.ts`; not in any page's initial graph), +146 vs 5,401 for the fifth project: `ringProjects` rides in it, so the count follows the list | 2026-10-11 |
+| Ring chunk gzip (lazy, after load, no Three.js) | — | live **5,547** (PR #6) (`lib/ring/stage.ts`; not in any page's initial graph), +146 vs 5,401 for the fifth project: `ringProjects` rides in it, so the count follows the list | 2026-10-11 |
 | Audio chunk gzip (lazy, only once sound is turned on) | ≤ 5,120 | live **1,783** (`lib/audio/connect.ts` + `engine.ts` + `score.ts`; in no page's initial graph or `modulepreload`) | 2026-10-06 |
 | Render-blocking requests above the fold | 0 | 0 | Task 9.5 |
 | Keyboard · JS off · reduced motion | pass | PASS on `/` | Task 9.5 |
