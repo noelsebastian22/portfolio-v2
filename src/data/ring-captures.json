@@ -46,5 +46,17 @@
       "480": "/images/ring/laserclinic-480w.webp",
       "960": "/images/ring/laserclinic-960w.webp"
     }
+  },
+  "saanjh": {
+    "width": 960,
+    "height": 7071,
+    "avif": {
+      "480": "/images/ring/saanjh-480w.avif",
+      "960": "/images/ring/saanjh-960w.avif"
+    },
+    "webp": {
+      "480": "/images/ring/saanjh-480w.webp",
+      "960": "/images/ring/saanjh-960w.webp"
+    }
   }
 }

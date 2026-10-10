@@ -207,4 +207,12 @@ export const websitesWork = [
     img: '/images/gallery/laserclinic-card.webp',
     desc: 'A one-room male waxing and laser studio. Every price published up front, before-and-after sliders you drag to compare, and a booking link on every screen so nobody has to ring and explain what they want.',
   },
+  {
+    title: 'Saanjh',
+    kind: 'Concept build · Restaurant',
+    concept: true,
+    site: 'https://saanjh.noel-sebastian.com/',
+    img: '/images/gallery/saanjh-card.webp',
+    desc: 'A modern Indian restaurant under a night sky that drifts as you scroll. Guests pick a venue, party size, date and time on one calendar and leave with a confirmation they can add to their own.',
+  },
 ];

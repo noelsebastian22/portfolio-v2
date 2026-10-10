@@ -146,8 +146,8 @@ export const caseStudies: Array<{
 ];
 
 /**
- * Section 04's cards, in ring order: the shipped freelance sites, and Daybook, Noel's own
- * product. `slug` keys the card's capture in `src/data/ring-captures.json`, which
+ * Section 04's cards, in ring order: Daybook, Noel's own product, then the sites he has built
+ * and shipped. `slug` keys the card's capture in `src/data/ring-captures.json`, which
  * `scripts/optimise-gallery.mjs` writes; `site` is the live URL each card links to.
  */
 export const ringProjects = [
@@ -179,6 +179,14 @@ export const ringProjects = [
     site: 'https://laserclinic.noel-sebastian.com/',
     desc: 'Private male waxing and laser hair removal studio in Chippendale — full published price list, before-and-after comparison sliders and online booking built to get first-timers over the line.',
     tagline: 'Astro · Tailwind v4 · TypeScript',
+  },
+  {
+    slug: 'saanjh',
+    title: 'Saanjh',
+    site: 'https://saanjh.noel-sebastian.com/',
+    repo: 'https://github.com/noelsebastian22/saanjh',
+    desc: 'Concept site for a modern Indian restaurant. A canvas night sky pans in depth as you scroll, and a two-step booking flow knows each venue\'s opening days, offers time slots and hands back a calendar file.',
+    tagline: 'Astro · Tailwind v4 · Canvas',
   },
 ];
 

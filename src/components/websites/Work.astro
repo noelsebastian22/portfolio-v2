@@ -9,6 +9,10 @@
  */
 import SectionHead from './SectionHead.astro';
 import { websitesWork as work } from '../../data/websites';
+
+// Three across when the cards fill rows of three, otherwise two, so no row is left
+// holding a single orphaned card (four cards read as 2 x 2, not 3 + 1).
+const columns = work.length % 3 === 0 ? 3 : 2;
 ---
 
 <section class="w-section work" id="work" aria-labelledby="work-title">
@@ -20,7 +24,7 @@ import { websitesWork as work } from '../../data/websites';
       lede="Open any of them on your phone. That is the honest test — how it feels in the hand, and how long it takes to appear."
     />
 
-    <ul class="work__grid" role="list">
+    <ul class="work__grid" role="list" style={`--work-cols: ${columns}`}>
       {work.map((project) => (
         <li class="w-panel work__card">
           <a class="work__shot" href={project.site} target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true">
@@ -70,7 +74,7 @@ import { websitesWork as work } from '../../data/websites';
 
   @media (min-width: 960px) {
     .work__grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(var(--work-cols, 3), minmax(0, 1fr));
     }
   }
 

@@ -69,10 +69,11 @@ const RING = {
   plumber: 'plumping.png',
   'topdel-renovations': 'topdel-renovations.png',
   laserclinic: 'laserclinic.png',
+  saanjh: 'saanjh.jpg',
 };
 
 /** Masters whose `-card.webp` src/data/websites.ts → websitesWork references. */
-const CARDS = ['topdel-renovations.png', 'plumping.png', 'laserclinic.png'];
+const CARDS = ['topdel-renovations.png', 'plumping.png', 'laserclinic.png', 'saanjh.jpg'];
 
 /** 1x and 2x for a card of roughly 360-440 CSS px. */
 const RING_WIDTHS = [480, 960];
